@@ -2,16 +2,19 @@
   "name": "termified-mclauncher",
   "version": "1.0.0",
   "description": "A Minecraft Launcher in the Terminal :D",
-  "main": "build/src/index.js",
+  "main": "build/src/cli/origami.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "gts lint",
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
-    "prepare": "npm.cmd run compile",
-    "pretest": "npm.cmd run compile",
-    "posttest": "npm.cmd run lint"
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run lint"
+  },
+  "bin": {
+    "origami": "build/src/cli/origami.js"
   },
   "keywords": [
     "Minecraft",
