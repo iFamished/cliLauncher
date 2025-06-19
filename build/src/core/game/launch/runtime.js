@@ -1,2 +1,322 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Runtime = void 0;
+// runtime.ts
+const inquirer_1 = __importDefault(require("inquirer"));
+const chalk_1 = __importDefault(require("chalk"));
+const figlet_1 = __importDefault(require("figlet"));
+const gradient = __importStar(require("gradient-string"));
+const handler_1 = require("./handler");
+const fs_1 = require("fs");
+const data_manager = __importStar(require("../../tools/data_manager"));
+const path_1 = __importDefault(require("path"));
+const readline_1 = __importDefault(require("readline"));
+class Runtime {
+    handler = new handler_1.Handler();
+    version;
+    constructor() {
+        this.version = this.getVersion();
+    }
+    async start() {
+        console.clear();
+        await this.showLicenseAgreement();
+        console.clear();
+        this.showHeader();
+        await this.mainMenu();
+    }
+    async showLicenseAgreement() {
+        if (this.hasAgreedToLicense())
+            return;
+        const license = this.getLicense();
+        const lines = license.licenseText.split('\n');
+        const delay = 100; // ms per line
+        let skipped = false;
+        let skipResolver;
+        const rl = readline_1.default.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+        // Listen for key to skip
+        const skipPromise = new Promise((resolve) => {
+            skipResolver = resolve;
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
+            process.stdin.once('data', () => {
+                skipped = true;
+                process.stdin.setRawMode(false);
+                resolve();
+            });
+        });
+        const animateText = async () => {
+            const total = lines.length;
+            for (let i = 0; i < total; i++) {
+                if (skipped)
+                    break;
+                const line = lines[i];
+                const faded = gradient.teen(line);
+                console.log(faded);
+                await new Promise(res => setTimeout(res, delay));
+            }
+            skipped = true;
+            process.stdin.setRawMode(false);
+            skipResolver();
+            console.log();
+        };
+        console.clear();
+        console.log(chalk_1.default.bold(`📜 License: ${license.name}\n`));
+        console.log(chalk_1.default.dim('(Press any key to skip license animation...)\n'));
+        await Promise.race([animateText(), skipPromise]);
+        rl.close();
+        if (skipped) {
+            console.clear();
+            console.log(chalk_1.default.bold(`📜 License: ${license.name}\n`));
+            console.log(gradient.morning(license.licenseText));
+            console.log();
+            process.stdin.setRawMode(false);
+            process.stdin.pause();
+            while (process.stdin.read() !== null) { }
+            readline_1.default.emitKeypressEvents(process.stdin);
+            process.stdin.setRawMode(false);
+            process.stdin.resume();
+        }
+        const { agree, remember } = await inquirer_1.default.prompt([
+            {
+                type: 'confirm',
+                name: 'agree',
+                message: chalk_1.default.hex('#4ADE80')('Do you agree to the license terms?'),
+                default: false
+            },
+            {
+                type: 'confirm',
+                name: 'remember',
+                message: 'Only show this once?',
+                default: true,
+                when: (answers) => answers.agree
+            }
+        ]);
+        if (agree) {
+            if (remember) {
+                data_manager.set("license-agreed", true);
+            }
+        }
+        else {
+            console.log(chalk_1.default.redBright('\n❌ You must agree to the license terms to use Origami.'));
+            process.exit(1);
+        }
+    }
+    getVersion() {
+        try {
+            const pkgPath = path_1.default.resolve(__dirname, '../../../../package.json');
+            const pkg = JSON.parse((0, fs_1.readFileSync)(pkgPath, 'utf-8'));
+            return pkg.version || 'unknown';
+        }
+        catch (_) {
+            return 'unknown';
+        }
+    }
+    getAllLicense() {
+        try {
+            const lcnPath = path_1.default.join(__dirname, '../../../licences.json');
+            const lcn = JSON.parse((0, fs_1.readFileSync)(lcnPath, 'utf-8'));
+            return lcn;
+        }
+        catch (_) {
+            return {};
+        }
+    }
+    getLicense() {
+        try {
+            const pkgPath = path_1.default.join(__dirname, '../../../../package.json');
+            const pkg = JSON.parse((0, fs_1.readFileSync)(pkgPath, 'utf-8'));
+            const lcn = pkg.license || 'GPL-3.0-only';
+            const license = this.getAllLicense()[lcn];
+            return license || { name: 'MIT', licenseText: "" };
+        }
+        catch (_) {
+            return { name: 'MIT', licenseText: "" };
+        }
+    }
+    hasAgreedToLicense() {
+        return data_manager.get("license-agreed") ? true : false;
+    }
+    showHeader() {
+        const logo = figlet_1.default.textSync('Origami', { font: 'Standard' });
+        console.log(gradient.retro(logo));
+        console.log(chalk_1.default.gray(` ✨ Lightweight Minecraft CLI Launcher — Version ${this.version}`));
+        console.log();
+    }
+    async authenticatorMenu() {
+        while (true) {
+            const { choice } = await inquirer_1.default.prompt([
+                {
+                    type: 'list',
+                    name: 'choice',
+                    message: chalk_1.default.hex('#60a5fa')('🔐 Authenticator Menu'),
+                    choices: [
+                        { name: '👤 Choose Account', value: 'choose' },
+                        { name: '➕ Login', value: 'login' },
+                        { name: '❌ Remove Account', value: 'remove' },
+                        new inquirer_1.default.Separator(),
+                        { name: '🔙 Back to Main Menu', value: 'back' }
+                    ]
+                }
+            ]);
+            console.clear();
+            switch (choice) {
+                case 'choose':
+                    await this.handler.choose_account();
+                    break;
+                case 'login':
+                    const provider = await inquirer_1.default.prompt({
+                        type: 'list',
+                        name: 'provider',
+                        message: 'Auth Provider:',
+                        choices: [
+                            { name: 'Microsoft (MSA)', value: 'microsoft' },
+                            { name: 'Mojang (LittleSkin)', value: 'littleskin' },
+                            { name: 'Mojang (Ely.by)', value: 'ely_by' },
+                            { name: 'Mojang (MeowSkin)', value: 'meowskin' }
+                        ]
+                    });
+                    const credentials = provider.provider === "microsoft" ? { email: "", password: "" } : await inquirer_1.default.prompt([
+                        {
+                            type: 'input',
+                            name: 'email',
+                            message: 'Email or Username:',
+                        },
+                        {
+                            type: 'password',
+                            name: 'password',
+                            message: 'Password:',
+                            mask: '*'
+                        },
+                    ]);
+                    const result = await this.handler.login(credentials, provider.provider);
+                    if (result) {
+                        console.log(chalk_1.default.green(`✅ Logged in as ${result.name}`));
+                    }
+                    else {
+                        console.log(chalk_1.default.redBright('❌ Login failed.'));
+                    }
+                    await new Promise(res => setTimeout(res, 2000));
+                    this.showHeader();
+                    break;
+                case 'remove':
+                    await this.handler.remove_account();
+                    break;
+                case 'back':
+                    return;
+            }
+            console.clear();
+        }
+    }
+    async mainMenu() {
+        while (true) {
+            const { choice } = await inquirer_1.default.prompt([
+                {
+                    type: 'list',
+                    name: 'choice',
+                    message: chalk_1.default.hex('#c084fc')('🌸 What do you want to do?'),
+                    choices: [
+                        { name: '🎮 Launch Minecraft', value: 'launch' },
+                        new inquirer_1.default.Separator(),
+                        { name: '🔐 Authenticator', value: 'authenticator' },
+                        { name: '🛠  Configure Settings', value: 'configure_settings' },
+                        new inquirer_1.default.Separator(),
+                        { name: '📂 Choose Profile', value: 'choose_profile' },
+                        { name: '⬇️  Install Minecraft Version', value: 'install_version' },
+                        new inquirer_1.default.Separator(),
+                        { name: '🚪 Exit', value: 'exit' }
+                    ],
+                    loop: false,
+                }
+            ]);
+            switch (choice) {
+                case 'launch':
+                    await this.launch();
+                    console.log('\n\n\n');
+                    this.showHeader();
+                    break;
+                case 'choose_profile':
+                    await this.handler.choose_profile();
+                    console.log('\n\n\n');
+                    this.showHeader();
+                    break;
+                case 'authenticator':
+                    await this.authenticatorMenu();
+                    console.log('\n\n\n');
+                    this.showHeader();
+                    break;
+                case 'configure_settings':
+                    await this.handler.configure_settings();
+                    console.log('\n\n\n');
+                    this.showHeader();
+                    break;
+                case 'install_version':
+                    await this.handler.install_version();
+                    console.log('\n\n\n');
+                    this.showHeader();
+                    break;
+                case 'exit':
+                    this.exit();
+                    return;
+            }
+        }
+    }
+    async launch() {
+        const code = await this.handler.run_minecraft();
+        if (code === 200) {
+            console.log(chalk_1.default.green('✅ Minecraft exited successfully!'));
+        }
+        else {
+            console.log(chalk_1.default.red('❌ Failed to launch Minecraft.'));
+        }
+    }
+    exit() {
+        console.log(chalk_1.default.gray('\n👋 Thanks for using Origami! Happy crafting!'));
+        process.exit(0);
+    }
+}
+exports.Runtime = Runtime;
+// Run directly if executed standalone
+if (require.main === module) {
+    const runtime = new Runtime();
+    runtime.start();
+}
 //# sourceMappingURL=runtime.js.map

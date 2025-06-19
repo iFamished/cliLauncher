@@ -12,6 +12,8 @@ const minecraft_versions_1 = require("../../../utils/minecraft_versions");
 const download_1 = require("../../../utils/download");
 const common_1 = require("../../../utils/common");
 const executor_1 = require("../../../tools/executor");
+const launcher_1 = __importDefault(require("../../../tools/launcher"));
+const handler_1 = require("../../launch/handler");
 const metadata = {
     name: 'Fabric',
     description: 'A lightweight, experimental modding toolchain for Minecraft.',
@@ -65,8 +67,14 @@ async function installFabricViaExecutor() {
         (0, common_1.cleanDir)(INSTALLER_DIR);
         (0, common_1.ensureDir)(INSTALLER_DIR);
         spinner.text = '📦 Downloading Fabric installer...';
+        spinner.stop();
         await (0, download_1.downloader)(jarUrl, jarPath);
         spinner.text = '🚀 Executing Fabric installer...';
+        (0, common_1.waitForFolder)(metadata, minecraftVersion).then(versionFolder => {
+            const profileManager = new launcher_1.default();
+            const versionId = path_1.default.basename(versionFolder);
+            profileManager.addProfile(versionId, minecraftVersion, versionId, metadata, versionId, metadata.name);
+        });
         spinner.stop();
         await (0, executor_1.run)(jarPath, [
             'client',
@@ -85,7 +93,7 @@ async function installFabricViaExecutor() {
     }
     catch (err) {
         spinner.fail('❌ Failed to install Fabric.');
-        console.error(err.message || err);
+        handler_1.logger.error(err.message || err);
         return null;
     }
 }
@@ -93,4 +101,8 @@ async function installFabricViaExecutor() {
 if (require.main === module) {
     installFabricViaExecutor();
 }
+exports.default = {
+    metadata,
+    get: installFabricViaExecutor,
+};
 //# sourceMappingURL=fabric.js.map

@@ -13,6 +13,7 @@ const minecraft_versions_1 = require("../../utils/minecraft_versions");
 const download_1 = require("../../utils/download");
 const common_1 = require("../../utils/common");
 const launcher_1 = __importDefault(require("../../tools/launcher"));
+const handler_1 = require("../launch/handler");
 const metadata = {
     name: 'Vanilla',
     description: 'Pure, unmodded Minecraft client.',
@@ -40,11 +41,11 @@ async function installVanillaViaExecutor() {
         spinner.start('🔍 Fetching version metadata...');
         const res = await axios_1.default.get(versionMeta.url);
         const versionData = res.data;
-        const versionFolder = path_1.default.join((0, common_1.minecraft_dir)(), 'versions', minecraftVersion);
+        let versionFolder = path_1.default.join((0, common_1.minecraft_dir)(), 'versions', minecraftVersion);
+        versionFolder = ensureVersionDir(versionFolder);
         const jarUrl = versionData.downloads.client.url;
         const jarPath = path_1.default.join(versionFolder, `${minecraftVersion}.jar`);
         const jsonPath = path_1.default.join(versionFolder, `${minecraftVersion}.json`);
-        (0, common_1.ensureDir)(versionFolder);
         spinner.text = '📥 Downloading client JAR...';
         spinner.stop();
         await (0, download_1.downloader)(jarUrl, jarPath);
@@ -53,7 +54,8 @@ async function installVanillaViaExecutor() {
         fs_1.default.writeFileSync(jsonPath, versionJson);
         spinner.text = '🧩 Creating launcher profile...';
         const profileManager = new launcher_1.default();
-        profileManager.addProfile(`vanilla-${minecraftVersion}`, minecraftVersion, `Vanilla ${minecraftVersion}`, 'Grass');
+        const name = path_1.default.basename(versionFolder);
+        profileManager.addProfile(name, minecraftVersion, name, metadata, name, 'Grass');
         spinner.succeed(`🎉 Vanilla ${minecraftVersion} installed successfully!`);
         return {
             name: metadata.name,
@@ -67,7 +69,7 @@ async function installVanillaViaExecutor() {
     }
     catch (err) {
         spinner.fail('❌ Failed to install Vanilla.');
-        console.error(err.message || err);
+        handler_1.logger.error(err.message || err);
         return null;
     }
 }
@@ -75,4 +77,24 @@ async function installVanillaViaExecutor() {
 if (require.main === module) {
     installVanillaViaExecutor();
 }
+exports.default = {
+    metadata,
+    get: installVanillaViaExecutor,
+};
+function ensureVersionDir(dir, i = 1) {
+    if (fs_1.default.existsSync(dir)) {
+        const contents = fs_1.default.readdirSync(dir);
+        if (contents.length === 0 || !contents.find(v => v.endsWith('.json')) || contents.find(v => v.endsWith('.jar'))) {
+            (0, common_1.cleanDir)(dir);
+            return ensureVersionDir(dir, i);
+        }
+        const baseName = path_1.default.basename(dir);
+        const parentDir = path_1.default.dirname(dir);
+        const newDir = path_1.default.join(parentDir, `${baseName} (${i})`);
+        return ensureVersionDir(newDir, i + 1);
+    }
+    (0, common_1.ensureDir)(dir);
+    return dir;
+}
+;
 //# sourceMappingURL=vanilla.js.map

@@ -126,8 +126,7 @@ class MCLCore extends events_1.default {
             return this.startMinecraft(launchArguments);
         }
         catch (e) {
-            this.emit('debug', `[MCLC]: Failed to start due to ${e}, closing...`);
-            return null;
+            throw e;
         }
     }
     printVersion() {
@@ -195,10 +194,20 @@ class MCLCore extends events_1.default {
                 { pattern: /\[authlib-injector\]/, colorize: chalk_1.default.hex('#888888') }, // soft gray
                 { pattern: /\[download-/, colorize: chalk_1.default.hex('#00CFFF') }, // bright cyan (Download)
                 { pattern: /\[worker-main-/, colorize: chalk_1.default.hex('#3B82F6') }, // blue-500 (Worker)
+                { pattern: /\[modloading-worker-/, colorize: chalk_1.default.hex('#FBBF24') }, // yellow-400 (MOD)
                 { pattern: /\[render thread\//, colorize: chalk_1.default.hex('#D946EF') }, // fuchsia-400 (Render)
                 { pattern: /\[server thread\//, colorize: chalk_1.default.hex('#EC4899') }, // pink-500 (Server)
                 { pattern: /\[datafixer bootstrap/, colorize: chalk_1.default.hex('#4F46E5') }, // indigo-600 (Bootstrap)
                 { pattern: /\[io-worker-/, colorize: chalk_1.default.hex('#10B981') }, // emerald-500 (I/O)
+                { pattern: /\[earlydisplay\//, colorize: chalk_1.default.hex('#10B981') }, // emerald-500 (EarlyDiplay)
+                // Specific thread log pattern like [main/INFO]
+                { pattern: /\[main/, colorize: chalk_1.default.hex('#60A5FA') }, // blue-400 (Main Info)
+                // Fallbacks for logging levels
+                { pattern: /\binfo\b/, colorize: chalk_1.default.hex('#93C5FD') }, // blue-300
+                { pattern: /\bwarn\b/, colorize: chalk_1.default.hex('#FBBF24') }, // yellow-400
+                { pattern: /\berror\b/, colorize: chalk_1.default.hex('#F87171') }, // red-400
+                { pattern: /\bdebug\b/, colorize: chalk_1.default.hex('#A78BFA') }, // violet-400
+                { pattern: /\bfatal\b/, colorize: chalk_1.default.hex('#EF4444') }, // red-500
             ];
             let colored = raw;
             for (const { pattern, colorize } of logColorRules) {

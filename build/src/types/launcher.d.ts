@@ -8,6 +8,16 @@ export interface LauncherProfile {
     lastUsed: string;
     lastVersionId: string;
     icon?: string;
+    origami: {
+        metadata: Metadata;
+        version: string;
+        path: string;
+    };
+}
+export interface Metadata {
+    name: string;
+    author: string;
+    description: string;
 }
 export interface LauncherAccount {
     id: string;
@@ -30,7 +40,7 @@ export interface LauncherAccount {
     user_properties?: Partial<any> | string;
 }
 export interface LauncherProfiles {
-    profiles: Record<string, LauncherProfile>;
+    origami_profiles: Record<string, LauncherProfile>;
     selectedProfile?: string;
 }
 export interface LauncherAccounts {

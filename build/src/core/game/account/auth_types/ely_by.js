@@ -38,6 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const Authenticator = __importStar(require("../../../tools/authenticator"));
 const authlib_1 = __importDefault(require("../../../tools/authlib"));
+const handler_1 = require("../../launch/handler");
 class MojangAuth {
     credentials;
     account = null;
@@ -88,17 +89,17 @@ class MojangAuth {
                     demo: false
                 },
             };
-            console.log(`✅ Mojang: Logged in as ${auth.name} (${auth.uuid})`);
+            handler_1.logger.log(`✅ Mojang: Logged in as ${auth.name} (${auth.uuid})`);
             return this.account;
         }
         catch (err) {
-            console.error("❌ Mojang authentication failed:", err);
+            handler_1.logger.error("❌ Mojang authentication failed:", err.message);
             return null;
         }
     }
     async token() {
         if (!this.account) {
-            console.warn("⚠️ No Mojang token available. Re-authenticating...");
+            handler_1.logger.warn("⚠️ No Mojang token available. Re-authenticating...");
             return await this.authenticate();
         }
         const { access_token, client_token } = this.account;
@@ -121,12 +122,12 @@ class MojangAuth {
                         demo: false
                     },
                 };
-                console.log("🔄 Mojang token refreshed.");
+                handler_1.logger.log("🔄 Mojang token refreshed.");
             }
             return this.account;
         }
         catch (err) {
-            console.warn("⚠️ Mojang token refresh failed. Re-authenticating...");
+            handler_1.logger.warn("⚠️ Mojang token refresh failed. Re-authenticating...");
             return await this.authenticate();
         }
     }

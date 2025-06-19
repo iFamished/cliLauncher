@@ -42,9 +42,11 @@ exports.moveFileSync = moveFileSync;
 exports.localpath = localpath;
 exports.minecraft_dir = minecraft_dir;
 exports.printVersion = printVersion;
+exports.waitForFolder = waitForFolder;
 const fs_1 = __importStar(require("fs"));
 const envs_1 = __importDefault(require("../tools/envs"));
 const path_1 = __importDefault(require("path"));
+const chokidar_1 = __importDefault(require("chokidar"));
 function ensureDir(dir) {
     if (!fs_1.default.existsSync(dir)) {
         fs_1.default.mkdirSync(dir, { recursive: true });
@@ -79,5 +81,27 @@ function printVersion() {
     else {
         return "LATEST";
     }
+}
+function waitForFolder(metadata, id) {
+    const versionsDir = path_1.default.join(minecraft_dir(), 'versions');
+    function watchForVersion(version, onFound) {
+        const watcher = chokidar_1.default.watch(versionsDir, {
+            depth: 1,
+            ignoreInitial: true,
+        });
+        watcher.on('addDir', (newPath) => {
+            const name = path_1.default.basename(newPath).toLowerCase();
+            if (name.includes(version.toLowerCase()) && name.includes(metadata.name.toLowerCase())) {
+                watcher.close();
+                onFound(newPath);
+            }
+        });
+    }
+    return new Promise((resolve) => {
+        watchForVersion(id, (versionFolder) => {
+            console.log(`📁 Detected ${metadata.name} version folder: ${versionFolder}`);
+            resolve(versionFolder);
+        });
+    });
 }
 //# sourceMappingURL=common.js.map

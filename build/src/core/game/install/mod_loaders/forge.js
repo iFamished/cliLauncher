@@ -10,6 +10,8 @@ const path_1 = __importDefault(require("path"));
 const download_1 = require("../../../utils/download");
 const common_1 = require("../../../utils/common");
 const executor_1 = require("../../../tools/executor");
+const launcher_1 = __importDefault(require("../../../tools/launcher"));
+const handler_1 = require("../../launch/handler");
 const metadata = {
     name: 'Forge',
     description: 'Minecraft Forge client installer',
@@ -61,7 +63,13 @@ async function installForgeViaExecutor() {
         (0, common_1.cleanDir)(INSTALLER_DIR);
         (0, common_1.ensureDir)(INSTALLER_DIR);
         spinner.start('📥 Downloading Forge installer...');
+        spinner.stop();
         await (0, download_1.downloader)(jarUrl, jarPath);
+        (0, common_1.waitForFolder)(metadata, minecraftVersion).then(versionFolder => {
+            const profileManager = new launcher_1.default();
+            const versionId = path_1.default.basename(versionFolder);
+            profileManager.addProfile(versionId, minecraftVersion, versionId, metadata, versionId, metadata.name);
+        });
         spinner.text = '🚀 Running Forge installer...';
         spinner.stop();
         await (0, executor_1.run)(jarPath, []);
@@ -78,7 +86,7 @@ async function installForgeViaExecutor() {
     }
     catch (err) {
         spinner.fail('❌ Forge installation failed.');
-        console.error(err.message || err);
+        handler_1.logger.error(err.message || err);
         return null;
     }
 }
@@ -86,4 +94,8 @@ async function installForgeViaExecutor() {
 if (require.main === module) {
     installForgeViaExecutor();
 }
+exports.default = {
+    metadata,
+    get: installForgeViaExecutor,
+};
 //# sourceMappingURL=forge.js.map

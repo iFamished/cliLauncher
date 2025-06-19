@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const msmc_1 = require("msmc");
 const tokens_1 = require("../../../utils/tokens");
+const handler_1 = require("../../launch/handler");
 class MicrosoftAuth {
     credentials;
     account = null;
@@ -36,7 +37,7 @@ class MicrosoftAuth {
                 this.minecraft = reconstructed;
             }
             catch (e) {
-                console.warn("⚠️ Failed to reconstruct msmc token:", e);
+                handler_1.logger.warn("⚠️ Failed to reconstruct msmc token: " + e.message);
                 this.minecraft = null;
             }
         }
@@ -64,17 +65,17 @@ class MicrosoftAuth {
                     ...mclcAuth.meta,
                 },
             };
-            console.log(`✅ Microsoft: Logged in as ${this.account.name} (${this.account.uuid})`);
+            handler_1.logger.log(`✅ Microsoft: Logged in as ${this.account.name} (${this.account.uuid})`);
             return this.account;
         }
         catch (err) {
-            console.error("❌ Microsoft authentication failed:", err);
+            handler_1.logger.error("❌ Microsoft authentication failed:", err.message);
             return null;
         }
     }
     async token() {
         if (!this.minecraft) {
-            console.warn("⚠️ No valid Minecraft token, re-authenticating...");
+            handler_1.logger.warn("⚠️ No valid Minecraft token, re-authenticating...");
             return await this.authenticate();
         }
         if (!this.minecraft.validate()) {
@@ -82,12 +83,12 @@ class MicrosoftAuth {
                 await this.minecraft.refresh(true);
             }
             catch {
-                console.warn("⚠️ Token refresh failed. Re-authenticating...");
+                handler_1.logger.warn("⚠️ Token refresh failed. Re-authenticating...");
                 return await this.authenticate();
             }
         }
         if (!this.minecraft.validate()) {
-            console.warn("⚠️ Token still invalid after refresh. Re-authenticating...");
+            handler_1.logger.warn("⚠️ Token still invalid after refresh. Re-authenticating...");
             return await this.authenticate();
         }
         return this.account;

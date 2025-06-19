@@ -32,19 +32,24 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LauncherProfileManager = void 0;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const common_1 = require("../utils/common");
+const chalk_1 = __importDefault(require("chalk"));
+const inquirer_1 = __importDefault(require("inquirer"));
 const mcDir = (0, common_1.minecraft_dir)();
-const launcherProfilesPath = path.join(mcDir, 'launcher_profiles.json');
+const launcherProfilesPath = path.join(mcDir, 'origami_profiles.json');
 class LauncherProfileManager {
     filePath;
     data;
     constructor(filePath = launcherProfilesPath) {
         this.filePath = filePath;
-        this.data = { profiles: {} };
+        this.data = { origami_profiles: {} };
         this.load();
     }
     load() {
@@ -63,7 +68,8 @@ class LauncherProfileManager {
     save() {
         fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
     }
-    addProfile(id, versionId, name, icon) {
+    addProfile(id, versionId, version_path, metadata, name, icon) {
+        this.load();
         const now = new Date().toISOString();
         const profile = {
             name: name ?? id,
@@ -71,14 +77,21 @@ class LauncherProfileManager {
             created: now,
             lastUsed: now,
             lastVersionId: versionId,
-            icon: icon ?? 'Furnace'
+            icon: icon ?? 'Furnace',
+            origami: {
+                metadata,
+                version: id,
+                path: version_path
+            }
         };
-        this.data.profiles[id] = profile;
+        this.data.origami_profiles[id] = profile;
         this.save();
+        this.selectProfile(id);
     }
     deleteProfile(id) {
-        if (this.data.profiles[id]) {
-            delete this.data.profiles[id];
+        this.load();
+        if (this.data.origami_profiles[id]) {
+            delete this.data.origami_profiles[id];
             if (this.data.selectedProfile === id) {
                 this.data.selectedProfile = undefined;
             }
@@ -86,23 +99,62 @@ class LauncherProfileManager {
         }
     }
     selectProfile(id) {
-        if (this.data.profiles[id]) {
+        this.load();
+        if (this.data.origami_profiles[id]) {
             this.data.selectedProfile = id;
-            this.data.profiles[id].lastUsed = new Date().toISOString();
+            this.data.origami_profiles[id].lastUsed = new Date().toISOString();
             this.save();
         }
         else {
             console.warn(`Profile "${id}" does not exist.`);
         }
     }
+    async chooseProfile() {
+        this.load();
+        const profileIds = Object.keys(this.data.origami_profiles);
+        if (profileIds.length === 0) {
+            console.log(chalk_1.default.red("❌ No profiles available."));
+            return null;
+        }
+        const choices = profileIds.map((id) => {
+            const profile = this.data.origami_profiles[id];
+            const meta = profile.origami.metadata;
+            const name = chalk_1.default.hex("#c4b5fd")(profile.name);
+            const version = chalk_1.default.green(`[${profile.lastVersionId}]`);
+            const author = chalk_1.default.yellow(meta.author || "unknown");
+            const desc = chalk_1.default.gray(meta.description || "No description");
+            return {
+                name: `${version} ${name} ${chalk_1.default.gray('by')} ${author} - ${desc}`,
+                value: id
+            };
+        });
+        const { selectedId } = await inquirer_1.default.prompt([
+            {
+                type: "list",
+                name: "selectedId",
+                message: chalk_1.default.hex("#f472b6")("🌸 Pick a profile to use:"),
+                choices,
+                loop: false
+            }
+        ]);
+        const selectedProfile = this.getProfile(selectedId);
+        if (selectedProfile) {
+            this.selectProfile(selectedId);
+            console.log(chalk_1.default.green(`✨ Selected profile: ${selectedProfile.name}`));
+        }
+        return selectedProfile ?? null;
+    }
     listProfiles() {
-        return Object.keys(this.data.profiles);
+        this.load();
+        return Object.keys(this.data.origami_profiles);
     }
     getProfile(id) {
-        return this.data.profiles[id];
+        this.load();
+        return this.data.origami_profiles[id];
     }
     getSelectedProfile() {
-        return this.data.selectedProfile;
+        this.load();
+        return this.getProfile(this.data.selectedProfile || "");
     }
 }
 exports.LauncherProfileManager = LauncherProfileManager;

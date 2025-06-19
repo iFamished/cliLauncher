@@ -1,7 +1,7 @@
 {
-  "name": "termified-mclauncher",
+  "name": "origami-launcher",
   "version": "1.0.0",
-  "description": "A Minecraft Launcher in the Terminal :D",
+  "description": "Origami is a terminal-first Minecraft launcher that supports authentication, installation, and launching of Minecraft versions — with built-in support for Microsoft accounts, mod loaders, profile management, and more. Designed for power users, modders, and anyone who loves minimalism and productivity.",
   "main": "build/src/cli/origami.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

@@ -38,56 +38,53 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.fetchVersionManifest = fetchVersionManifest;
 const axios_1 = __importDefault(require("axios"));
-const fs = __importStar(require("fs"));
+const fs = __importStar(require("fs/promises"));
 const path = __importStar(require("path"));
-const fsPromises = fs.promises;
-async function fetchVersionManifest(client, manifestUrl, cache) {
+async function fetchAndCache(url, cachePath, label, emit) {
     try {
-        let body;
-        try {
-            const response = await axios_1.default.get(manifestUrl);
-            body = response.data;
-            if (!fs.existsSync(cache)) {
-                await fsPromises.mkdir(cache, { recursive: true });
-                client.client.emit('debug', '[MCLC]: Cache directory created.');
-            }
-            await fsPromises.writeFile(path.join(cache, 'version_manifest.json'), body);
-            client.client.emit('debug', '[MCLC]: Cached version_manifest.json');
-        }
-        catch (error) {
-            if (error.code === 'ENOTFOUND') {
-                body = await fsPromises.readFile(path.join(cache, 'version_manifest.json'), 'utf-8');
-            }
-            else {
-                return Promise.resolve(error);
-            }
-        }
-        const parsed = JSON.parse(body);
-        const desiredVersion = parsed.versions.find((version) => (version.id) === client.options?.version.number);
-        if (!desiredVersion) {
-            throw new Error(`Failed to find version ${client.options?.version.number} in version_manifest.json`);
-        }
-        try {
-            const response = await axios_1.default.get(desiredVersion.url);
-            const versionBody = response.data;
-            await fsPromises.writeFile(path.join(cache, `${client.options?.version.number}.json`), versionBody);
-            client.client.emit('debug', `[MCLC]: Cached ${client.options?.version.number}.json`);
-            client.version = JSON.parse(versionBody);
-        }
-        catch (error) {
-            if (error.code === 'ENOTFOUND') {
-                const cachedBody = await fsPromises.readFile(path.join(cache, `${client.options?.version.number}.json`), 'utf-8');
-                client.version = JSON.parse(cachedBody);
-            }
-            else {
-                throw error;
-            }
-        }
-        client.client.emit('debug', '[MCLC]: Parsed version from version manifest');
-        return client.version;
+        const { data } = await axios_1.default.get(url);
+        const body = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        await fs.mkdir(path.dirname(cachePath), { recursive: true });
+        await fs.writeFile(cachePath, body);
+        emit(`[MCLC]: Cached ${label}`);
+        return body;
     }
-    catch (error) {
-        throw error;
+    catch (err) {
+        emit(`[MCLC]: Failed to fetch ${label} from network. Trying cache...`);
+        try {
+            return await fs.readFile(cachePath, 'utf-8');
+        }
+        catch {
+            throw new Error(`[MCLC]: Unable to load ${label} from both network and cache.`);
+        }
     }
+}
+async function fetchVersionManifest(client, manifestUrl, cacheDir) {
+    const emit = (msg) => client.client.emit('debug', msg);
+    const versionId = client.options?.version.number;
+    if (!versionId)
+        throw new Error('Version number not specified in client options.');
+    const manifestCachePath = path.join(cacheDir, 'version_manifest.json');
+    const manifestRaw = await fetchAndCache(manifestUrl, manifestCachePath, 'version_manifest.json', emit);
+    let manifest;
+    try {
+        manifest = JSON.parse(manifestRaw);
+    }
+    catch {
+        throw new Error('[MCLC]: Failed to parse version_manifest.json');
+    }
+    const versionMeta = manifest.versions.find(v => v.id === versionId);
+    if (!versionMeta)
+        throw new Error(`[MCLC]: Version ${versionId} not found in manifest.`);
+    const versionCachePath = path.join(cacheDir, `${versionId}.json`);
+    const versionRaw = await fetchAndCache(versionMeta.url, versionCachePath, `${versionId}.json`, emit);
+    try {
+        client.version = JSON.parse(versionRaw);
+    }
+    catch {
+        throw new Error(`[MCLC]: Failed to parse ${versionId}.json`);
+    }
+    emit(`[MCLC]: Loaded version ${versionId} metadata`);
+    return client.version;
 }
 //# sourceMappingURL=utils.js.map

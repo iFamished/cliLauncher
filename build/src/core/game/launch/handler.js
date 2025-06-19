@@ -17,12 +17,15 @@ const logger_1 = require("../../tools/logger");
 const defaults_1 = require("../../../config/defaults");
 const chalk_1 = __importDefault(require("chalk"));
 const launcher_2 = __importDefault(require("../../launcher"));
+const registry_1 = require("../install/registry");
+const inquirer_1 = __importDefault(require("inquirer"));
 exports.logger = new logger_1.Logger();
 exports.progress = exports.logger.progress();
 class Handler {
     profiles = new launcher_1.default();
     accounts = new account_2.default();
     settings = new options_1.default();
+    installers = new registry_1.InstallerRegistry();
     auth_provider = null;
     currentAccount;
     constructor() {
@@ -115,10 +118,21 @@ class Handler {
             return null;
         }
     }
-    async run_minecraft(name) {
+    async choose_profile() {
+        return this.profiles.chooseProfile();
+    }
+    async choose_account() {
+        return this.accounts.chooseAccount();
+    }
+    async run_minecraft(_name) {
         let mc_dir = (0, common_1.minecraft_dir)();
         let version_dir = path_1.default.join(mc_dir, 'versions');
         let cache_dir = path_1.default.join(mc_dir, '.cache');
+        let name = this.profiles.getSelectedProfile()?.name || _name;
+        if (!name) {
+            console.log(chalk_1.default.bgHex('#f87171').hex('#fff')(' 💔 No profile selected! ') + chalk_1.default.hex('#fca5a5')('Please pick a profile before launching the game.'));
+            return null;
+        }
         let version_path = path_1.default.join(version_dir, name);
         let version_json = path_1.default.join(version_path, `${name}.json`);
         if (!(0, fs_1.existsSync)(version_path) || !(0, fs_1.existsSync)(version_json)) {
@@ -161,6 +175,7 @@ class Handler {
                     cache: cache_dir,
                     overrides: {
                         libraryRoot, assetRoot,
+                        gameDirectory: version_path,
                         cwd: version_path,
                         detached: settings.safe_exit,
                         maxSockets: settings.max_sockets,
@@ -199,6 +214,95 @@ class Handler {
     }
     configure_settings() {
         return this.settings.configureOptions();
+    }
+    async install_version() {
+        const installers = this.installers;
+        const availableInstallers = installers.list()
+            .map(id => installers.get(id))
+            .filter((v) => v);
+        if (availableInstallers.length === 0) {
+            exports.logger.warn("⚠️ No available installers found.");
+            return;
+        }
+        const choices = availableInstallers.map(installer => ({
+            name: chalk_1.default.green(`[${installer?.metadata.author}] `) +
+                chalk_1.default.hex("#c4b5fd")(installer?.metadata.name) +
+                chalk_1.default.magenta(" - " + chalk_1.default.yellow(installer?.metadata.description)),
+            value: installer
+        }));
+        const defaultInstaller = availableInstallers.find(v => v?.metadata.name.toLowerCase() === "vanilla");
+        const { selected } = await inquirer_1.default.prompt([
+            {
+                type: "list",
+                name: "selected",
+                message: chalk_1.default.hex("#f472b6")("🌷 Choose a version type to install:"),
+                choices,
+                default: defaultInstaller
+            }
+        ]);
+        const selectedInstaller = selected;
+        if (!selectedInstaller) {
+            exports.logger.error(`❌ Installer "${selected}" not found.`);
+            return;
+        }
+        exports.logger.log(`🔧 Installing via ${selectedInstaller.metadata.name}...`);
+        const result = await selectedInstaller.get();
+        if (result) {
+            exports.logger.success(`🎉 Installed ${result.name} ${result.version} successfully!`);
+        }
+        else {
+            exports.logger.error(`❌ Installation failed.`);
+        }
+    }
+    async remove_account() {
+        const accounts = this.accounts.listAccounts();
+        if (accounts.length === 0) {
+            exports.logger.warn("⚠️ No accounts available to remove.");
+            return;
+        }
+        const { selected } = await inquirer_1.default.prompt([
+            {
+                type: 'list',
+                name: 'selected',
+                message: chalk_1.default.hex('#f87171')('❌ Select an account to remove:'),
+                choices: accounts.map(acc => ({
+                    name: `${acc.name} (${acc.uuid})`,
+                    value: acc.id
+                }))
+            }
+        ]);
+        const selectedAccount = accounts.find(acc => acc.id === selected);
+        if (!selectedAccount) {
+            exports.logger.error("❌ Selected account not found.");
+            return;
+        }
+        const { confirm } = await inquirer_1.default.prompt([
+            {
+                type: 'confirm',
+                name: 'confirm',
+                message: chalk_1.default.red(`Are you sure you want to delete account "${selectedAccount.name}"?`),
+                default: false
+            }
+        ]);
+        if (!confirm) {
+            exports.logger.log("🔙 Account removal cancelled.");
+            return;
+        }
+        const removed = this.accounts.deleteAccount(selected);
+        if (removed) {
+            exports.logger.success(`🗑️ Removed account "${selectedAccount.name}" successfully!`);
+            const selected = this.accounts.getSelectedAccount();
+            if (!selected) {
+                this.currentAccount = undefined;
+                exports.logger.warn("⚠️ No account is now selected.");
+            }
+            else {
+                this.currentAccount = selected;
+            }
+        }
+        else {
+            exports.logger.error("❌ Failed to remove the account.");
+        }
     }
 }
 exports.Handler = Handler;

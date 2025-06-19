@@ -46,7 +46,7 @@ const prompts_1 = require("@inquirer/prompts");
 const chalk_1 = __importDefault(require("chalk"));
 const os_1 = __importDefault(require("os"));
 const mcDir = (0, common_1.minecraft_dir)();
-const launcherProfilesPath = path.join(mcDir, 'launcher_profiles.json');
+const launcherProfilesPath = path.join(mcDir, 'launcher_options.json');
 class LauncherOptionsManager {
     filePath;
     data;

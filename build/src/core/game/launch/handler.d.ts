@@ -7,6 +7,7 @@ export declare class Handler {
     private profiles;
     private accounts;
     private settings;
+    private installers;
     private auth_provider;
     private currentAccount;
     constructor();
@@ -18,6 +19,10 @@ export declare class Handler {
         token: LauncherAccount;
     } | null>;
     login(credentials: Credentials, auth_provider: AUTH_PROVIDERS): Promise<LauncherAccount | null>;
-    run_minecraft(name: string): Promise<200 | null>;
+    choose_profile(): Promise<import("../../../types/launcher").LauncherProfile | null>;
+    choose_account(): Promise<LauncherAccount | null>;
+    run_minecraft(_name?: string): Promise<200 | null>;
     configure_settings(): Promise<void>;
+    install_version(): Promise<void>;
+    remove_account(): Promise<void>;
 }

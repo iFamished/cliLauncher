@@ -12,6 +12,8 @@ const minecraft_versions_1 = require("../../../utils/minecraft_versions");
 const download_1 = require("../../../utils/download");
 const common_1 = require("../../../utils/common");
 const executor_1 = require("../../../tools/executor");
+const launcher_1 = __importDefault(require("../../../tools/launcher"));
+const handler_1 = require("../../launch/handler");
 const metadata = {
     name: 'Quilt',
     description: 'A modular, community-driven mod loader for Minecraft.',
@@ -71,6 +73,11 @@ async function installQuiltViaExecutor() {
         (0, common_1.ensureDir)(INSTALLER_DIR);
         spinner.text = '📦 Downloading Quilt installer...';
         await (0, download_1.downloader)(jarUrl, jarPath);
+        (0, common_1.waitForFolder)(metadata, minecraftVersion).then(versionFolder => {
+            const profileManager = new launcher_1.default();
+            const versionId = path_1.default.basename(versionFolder);
+            profileManager.addProfile(versionId, minecraftVersion, versionId, metadata, versionId, metadata.name);
+        });
         spinner.text = '🚀 Executing Quilt installer...';
         spinner.stop();
         await (0, executor_1.run)(jarPath, [
@@ -87,7 +94,7 @@ async function installQuiltViaExecutor() {
     }
     catch (err) {
         spinner.fail('❌ Failed to install Quilt.');
-        console.error(err.message || err);
+        handler_1.logger.error(err.message || err);
         return null;
     }
 }
@@ -95,4 +102,8 @@ async function installQuiltViaExecutor() {
 if (require.main === module) {
     installQuiltViaExecutor();
 }
+exports.default = {
+    metadata,
+    get: installQuiltViaExecutor,
+};
 //# sourceMappingURL=quilt.js.map

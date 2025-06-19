@@ -35,6 +35,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAuthProviders = getAuthProviders;
 exports.getAuthProvider = getAuthProvider;
+const handler_1 = require("../launch/handler");
 const providers = {
     ely_by: () => Promise.resolve().then(() => __importStar(require('./auth_types/ely_by'))),
     littleskin: () => Promise.resolve().then(() => __importStar(require('./auth_types/littleskin'))),
@@ -55,14 +56,14 @@ async function getAuthProvider(account) {
         if (typeof account === "string") {
             const AuthClass = providers.get(account);
             if (!AuthClass) {
-                console.warn(`🔍 AuthProvider '${account}' not found in registry.`);
+                handler_1.logger.error(`🔍 AuthProvider '${account}' not found in registry.`);
                 return null;
             }
             return new AuthClass("", "");
         }
         const AuthClass = providers.get(account.auth);
         if (!AuthClass) {
-            console.log(`AuthProvider: '${account.auth}' not found`);
+            handler_1.logger.log(`AuthProvider: '${account.auth}' not found`);
             return null;
         }
         let auth_provider = new AuthClass(account.credentials.email, account.credentials.password);
