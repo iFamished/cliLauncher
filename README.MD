@@ -23,13 +23,11 @@ That’s it! Once installed globally, you can use the `origami` command anywhere
 ## 🎮 Features
 
 - 🎨 Beautiful terminal UI with gradient animations and ASCII art
-- 🔐 Microsoft & Mojang Authenticator support (MSA, Ely.by, MeowSkin, etc.)
+- 🔐 Microsoft & Mojang Authenticator support
 - 📂 Profile management (choose/create/remove)
 - ⬇️ Install and manage Minecraft versions (vanilla & modded)
 - 🛠 Customizable settings and CLI-first configuration
 - 💨 Launch Minecraft directly from the terminal
-- 🧠 Smart license agreement with animated display
-- 🧼 Clean UX powered by [Inquirer.js](https://github.com/SBoudrias/Inquirer.js), `figlet`, and `gradient-string`
 
 ---
 
@@ -103,4 +101,4 @@ Found a bug or want to suggest a feature? [Open an issue](https://github.com/mer
 
 ---
 
-_Enjoy the terminal. Happy crafting!_ 🧵
+_Enjoy the terminal. Happy crafting :D_ 🧵
