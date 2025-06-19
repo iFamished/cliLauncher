@@ -1,6 +1,6 @@
+#!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-// cli.ts
 const commander_1 = require("commander");
 const runtime_1 = require("../core/game/launch/runtime");
 const program = new commander_1.Command();

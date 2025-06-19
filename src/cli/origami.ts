@@ -1,4 +1,4 @@
-// cli.ts
+#!/usr/bin/env node
 import { Command } from 'commander';
 import { Runtime } from '../core/game/launch/runtime';
 
