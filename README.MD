@@ -70,7 +70,7 @@ This project is licensed under the **GPL-3.0-only** license.
 ## 🧪 Development
 
 ```bash
-git clone https://github.com/MerasuGD/origami
+git clone https://github.com/merasugd/origami-launcher
 cd origami
 npm install
 npm run dev      
@@ -92,14 +92,14 @@ npm run build
 
 ## 🌐 Links
 
-- 📁 GitHub: [github.com/MerasuGD/origami](https://github.com/MerasuGD/origami)
+- 📁 GitHub: [github.com/merasugd/origami-launcher](https://github.com/merasugd/origami-launcher)
 - 📦 NPM: [npmjs.com/package/origami-launcher](https://www.npmjs.com/package/origami-launcher)
 
 ---
 
 ## 🙏 Support
 
-Found a bug or want to suggest a feature? [Open an issue](https://github.com/MerasuGD/origami/issues) or submit a PR!
+Found a bug or want to suggest a feature? [Open an issue](https://github.com/merasugd/origami-launcher/issues) or submit a PR!
 
 ---
 
