@@ -47,10 +47,13 @@ You'll be presented with a full interactive CLI menu:
 🌸 What do you want to do?
 
 > 🎮 Launch Minecraft
+  -------------------------------
   🔐 Authenticator
   🛠  Configure Settings
+  -------------------------------
   📂 Choose Profile
   ⬇️  Install Minecraft Version
+  -------------------------------
   🚪 Exit
 ```
 
@@ -81,6 +84,7 @@ npm run build
 - [Inquirer](https://github.com/SBoudrias/Inquirer.js) for interactive menus
 - [Figlet](https://github.com/patorjk/figlet.js) for ASCII banners
 - [Gradient-string](https://github.com/bokub/gradient-string) for rainbow text
+- [MCLC](https://github.com/Pierce01/MinecraftLauncher-core) for the back bone of the launcher
 - [Temurin](https://adoptium.net/) for JDK base
 - Minecraft is copyright Mojang
 
