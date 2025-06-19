@@ -14,7 +14,7 @@
     "posttest": "npm run lint"
   },
   "bin": {
-    "origami": "node build/src/cli/origami.js"
+    "origami": "build/src/cli/origami.js"
   },
   "keywords": [
     "Minecraft",
