@@ -1,0 +1,6 @@
+
+
+CREDITS TO THE ORIGINAL `minecraft-launcher-core`
+GITHUB => https://github.com/Pierce01/MinecraftLauncher-core/
+
+THIS IS THE TYPESCRIPT MIGRATED VERSION OF IT!

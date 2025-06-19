@@ -1,0 +1,200 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Logger = exports.ProgressReport = void 0;
+const chalk_1 = __importDefault(require("chalk"));
+const spinnies_1 = __importDefault(require("spinnies"));
+const uuid_1 = require("uuid");
+const tags = {
+    log: chalk_1.default.hex('#00c4cc')('📝 LOG'),
+    warn: chalk_1.default.hex('#ffc107')('⚠️ WARN'),
+    error: chalk_1.default.hex('#ff4d6d')('❌ ERROR'),
+    progress: chalk_1.default.hex('#b388ff')('⏳ PROGRESS'),
+    success: chalk_1.default.greenBright('✅ SUCCESS'),
+};
+const logPrefix = chalk_1.default.hex('#ff80ab').bold('ORIGAMI LOG');
+function getTime() {
+    return chalk_1.default.gray(`[${new Date().toLocaleTimeString()}]`);
+}
+function formatMessage(type, msg) {
+    return `${getTime()} ${logPrefix}: ${tags[type]}: ${msg}`;
+}
+let loggers = {
+    log: (msg) => console.log(formatMessage('log', msg)),
+    warn: (msg) => console.warn(formatMessage('warn', msg)),
+    error: (msg) => console.error(formatMessage('error', msg)),
+    progress: (msg) => console.log(formatMessage('progress', msg)),
+    success: (msg) => console.log(formatMessage('success', msg)),
+};
+;
+function formatTime(ms) {
+    const seconds = Math.floor(ms / 1000) % 60;
+    const minutes = Math.floor(ms / (60 * 1000)) % 60;
+    const hours = Math.floor(ms / (60 * 60 * 1000));
+    const parts = [];
+    if (hours > 0)
+        parts.push(`${hours}h`);
+    if (minutes > 0 || hours > 0)
+        parts.push(`${minutes}m`);
+    parts.push(`${seconds}s`);
+    return parts.join(' ');
+}
+function renderBar(percent, width = 30) {
+    const complete = Math.round(percent * width);
+    const incomplete = width - complete;
+    return '█'.repeat(complete) + '░'.repeat(incomplete);
+}
+class ProgressReport {
+    bars = new Map();
+    spinners = new spinnies_1.default();
+    renderInterval = null;
+    constructor() { }
+    startRenderLoop() {
+        if (this.renderInterval)
+            return;
+        this.renderInterval = setInterval(() => {
+            this.renderAll();
+            if (this.bars.size === 0)
+                this.stopRenderLoop();
+        }, 100);
+    }
+    stopRenderLoop() {
+        if (this.renderInterval) {
+            clearInterval(this.renderInterval);
+            this.renderInterval = null;
+        }
+    }
+    task_logs(spinner, prog = 0, fail = false, str = "no logs.") {
+        switch (prog) {
+            case 0:
+                return { text: formatMessage('progress', `Starting Task ${chalk_1.default.yellow(`\`${spinner.name}\``)}`), color: 'white' };
+            case 1:
+                return { text: formatMessage('progress', `Task ${fail ? chalk_1.default.red(`\`${spinner.name}\``) : chalk_1.default.green(`\`${spinner.name}\``)} ${fail ? 'failed.' : 'has ended successfully!'}`), color: 'white' };
+            default:
+                return { text: formatMessage('progress', `Task ${chalk_1.default.grey(`\`${spinner.name}\``)}: ${str}`), color: 'white' };
+        }
+    }
+    create(name, total) {
+        if (this.bars.has(name)) {
+            loggers.warn(`Progress bar '${name}' already exists.`);
+            return null;
+        }
+        let spinner_id = (0, uuid_1.v4)();
+        let spinner_data = {
+            startTime: Date.now(),
+            total,
+            value: 0,
+            name,
+            id: spinner_id,
+        };
+        this.spinners.add(spinner_id, this.task_logs(spinner_data));
+        this.bars.set(name, spinner_data);
+        return {
+            increment: () => {
+                this.update(name, 1);
+            },
+            update: (amount) => {
+                this.updateTo(name, amount);
+            },
+            total: (newTotal) => {
+                if (newTotal) {
+                    this.setTotal(name, newTotal);
+                }
+                return this.bars.get(name)?.total || newTotal || 0;
+            },
+            stop: (fail = false) => {
+                return this.stop(name, fail);
+            },
+        };
+    }
+    has(name) {
+        return this.bars.has(name);
+    }
+    start() {
+        //this.renderAll();
+        this.startRenderLoop();
+    }
+    update(name, amount = 1) {
+        const bar = this.bars.get(name);
+        if (bar) {
+            bar.value += amount;
+            if (bar.value > bar.total)
+                bar.value = bar.total;
+        }
+        //this.renderAll();
+    }
+    updateTo(name, value) {
+        const bar = this.bars.get(name);
+        if (bar) {
+            bar.value = value;
+            if (bar.value > bar.total)
+                bar.value = bar.total;
+        }
+        //this.renderAll()
+    }
+    setTotal(name, total) {
+        const bar = this.bars.get(name);
+        if (bar)
+            bar.total = total;
+        //this.renderAll()
+    }
+    stop(name, fail = false) {
+        let spinner_data = this.bars.get(name);
+        if (spinner_data) {
+            this.spinners.update(spinner_data.id, this.task_logs(spinner_data, 1, fail));
+            this.spinners.succeed(spinner_data.id);
+        }
+        ;
+        this.bars.delete(name);
+    }
+    stopAll(fail = false) {
+        for (const bar_key of this.bars.keys()) {
+            let bar = this.bars.get(bar_key);
+            if (!bar)
+                continue;
+            if (bar) {
+                this.spinners.update(bar.id, this.task_logs(bar, 1, fail));
+                this.spinners.succeed(bar.id);
+            }
+            ;
+        }
+        this.bars.clear();
+    }
+    renderAll() {
+        for (const bar of this.bars.values()) {
+            const percent = bar.total ? bar.value / bar.total : 0;
+            const elapsed = Date.now() - bar.startTime;
+            const eta = bar.value > 0 ? elapsed / bar.value * (bar.total - bar.value) : 0;
+            const barStr = renderBar(percent);
+            const line = `|${chalk_1.default.cyan(barStr)}| ${(percent * 100).toFixed(1)}% || ETA: ${formatTime(eta)}`;
+            this.spinners.update(bar.id, this.task_logs(bar, -1, false, line));
+            if (bar.value >= bar.total) {
+                this.stop(bar.name);
+            }
+        }
+    }
+}
+exports.ProgressReport = ProgressReport;
+class Logger {
+    _progress = new ProgressReport();
+    constructor() { }
+    log(msg) {
+        loggers.log(msg);
+    }
+    success(msg) {
+        loggers.success(msg);
+    }
+    progress() {
+        return this._progress;
+    }
+    warn(msg) {
+        loggers.warn(msg);
+    }
+    error(...msg) {
+        loggers.error(msg.join(" "));
+    }
+}
+exports.Logger = Logger;
+//# sourceMappingURL=logger.js.map
