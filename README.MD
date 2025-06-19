@@ -6,7 +6,7 @@ Origami is a terminal-first Minecraft launcher that supports authentication, ins
 
 ![Origami CLI](https://img.shields.io/npm/v/origami-launcher?style=flat-square)
 ![License](https://img.shields.io/github/license/merasugd/origami-launcher?style=flat-square)
-[![GitHub](https://img.shields.io/badge/github-merasugd%2Forigami-launcher-blue?logo=github&style=flat-square)](https://github.com/MerasuGD/origami)
+[![GitHub](https://img.shields.io/badge/github-merasugd%2Forigami-launcher-blue?logo=github&style=flat-square)](https://github.com/merasugd/origami-launcher)
 
 ---
 
