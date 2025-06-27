@@ -93,7 +93,7 @@ npm run origami
 ## 🌐 Links
 
 - 📁 GitHub: [github.com/merasugd/origami-launcher](https://github.com/merasugd/origami-launcher)
-- 📦 NPM: [npmjs.com/package/origami-launcher](https://www.npmjs.com/package/origami-minecraft)
+- 📦 NPM: [npmjs.com/package/origami-minecraft](https://www.npmjs.com/package/origami-minecraft)
 
 ---
 
