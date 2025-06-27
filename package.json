@@ -2,10 +2,10 @@
   "name": "origami-launcher",
   "version": "1.0.0",
   "description": "Origami is a terminal-first Minecraft launcher that supports authentication, installation, and launching of Minecraft versions — with built-in support for Microsoft accounts, mod loaders, profile management, and more. Designed for power users, modders, and anyone who loves minimalism and productivity.",
-  "main": "build/src/cli/origami.js",
+  "main": "build/cli/origami.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "origami": "node build/src/cli/origami.js",
+    "origami": "node build/cli/origami.js",
     "lint": "gts lint",
     "clean": "gts clean",
     "compile": "tsc",
@@ -15,7 +15,7 @@
     "posttest": "npm run lint"
   },
   "bin": {
-    "origami": "build/src/cli/origami.js"
+    "origami": "build/cli/origami.js"
   },
   "keywords": [
     "Minecraft",
