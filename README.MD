@@ -71,8 +71,10 @@ This project is licensed under the **GPL-3.0-only** license.
 git clone https://github.com/merasugd/origami-launcher
 cd origami
 npm install
-npm run dev      
-npm run build
+
+# testing
+npm run compile
+npm run origami
 ```
 
 ---

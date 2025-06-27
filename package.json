@@ -5,6 +5,7 @@
   "main": "build/src/cli/origami.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "origami": "node build/src/cli/origami.js",
     "lint": "gts lint",
     "clean": "gts clean",
     "compile": "tsc",
