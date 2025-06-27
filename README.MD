@@ -4,7 +4,7 @@
 
 Origami is a terminal-first Minecraft launcher that supports authentication, installation, and launching of Minecraft versions — with built-in support for Microsoft accounts, mod loaders, profile management, and more. Designed for power users, modders, and anyone who loves minimalism and productivity.
 
-![NPM](https://img.shields.io/npm/v/origami-launcher?style=flat-square)
+![NPM](https://img.shields.io/npm/v/origami-minecraft?style=flat-square)
 ![License](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)
 [![GitHub](https://img.shields.io/badge/github-merasugd%2Forigami-launcher?logo=github&style=flat-square)](https://github.com/merasugd/origami-launcher)
 
@@ -13,7 +13,7 @@ Origami is a terminal-first Minecraft launcher that supports authentication, ins
 ## 🚀 Installation
 
 ```bash
-npm install -g origami-launcher
+npm install -g origami-minecraft
 ```
 
 That’s it! Once installed globally, you can use the `origami` command anywhere.
@@ -69,7 +69,7 @@ This project is licensed under the **GPL-3.0-only** license.
 
 ```bash
 git clone https://github.com/merasugd/origami-launcher
-cd origami
+cd origami-launcher
 npm install
 
 # testing
@@ -93,7 +93,7 @@ npm run origami
 ## 🌐 Links
 
 - 📁 GitHub: [github.com/merasugd/origami-launcher](https://github.com/merasugd/origami-launcher)
-- 📦 NPM: [npmjs.com/package/origami-launcher](https://www.npmjs.com/package/origami-launcher)
+- 📦 NPM: [npmjs.com/package/origami-launcher](https://www.npmjs.com/package/origami-minecraft)
 
 ---
 
