@@ -2,7 +2,7 @@ import type { AUTH_PROVIDERS, AuthProviderConstructor, IAuthProvider } from "../
 import { LauncherAccount } from "../../../types/launcher";
 import { logger } from "../launch/handler";
 
-const providers: Record<string, () => Promise<{ default: AuthProviderConstructor }>> = {
+export const providers: Record<string, () => Promise<{ default: AuthProviderConstructor }>> = {
     ely_by: () => import('./auth_types/ely_by'),
     littleskin: () => import('./auth_types/littleskin'),
     meowskin: () => import('./auth_types/meowskin'),

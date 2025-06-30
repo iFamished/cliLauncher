@@ -9,9 +9,11 @@ import * as data_manager from "../../tools/data_manager";
 import path from 'path';
 import readline from 'readline';
 import { AUTH_PROVIDERS } from '../../../types/account';
+import { minecraft_dir } from '../../utils/common';
+import { removeSync } from 'fs-extra';
 
 export class Runtime {
-    private handler: Handler = new Handler();
+    public handler: Handler = new Handler();
     public version: string;
 
     constructor() {
@@ -261,6 +263,8 @@ export class Runtime {
                         { name: '📂 Choose Profile', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
                         new inquirer.Separator(),
+                        { name: '🧹 Reset Minecraft', value: 'reset_minecraft' },
+                        new inquirer.Separator(),
                         { name: '🚪 Exit', value: 'exit' }
                     ],
                     loop: false,
@@ -298,11 +302,42 @@ export class Runtime {
                     this.showHeader();
 
                     break;
+                case 'reset_minecraft':
+                    await this.resetMinecraft();
+                    console.log('\n\n\n');
+                    this.showHeader();
+
+                    break;
                 case 'exit':
                     this.exit();
                     return;
             }
         }
+    }
+
+    private async resetMinecraft(): Promise<void> {
+        const mcDir = minecraft_dir();
+        
+        const { confirm } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'confirm',
+                message: chalk.redBright(`⚠️  This will delete everything in: ${mcDir}\nAre you sure?`),
+                default: false,
+            }
+        ]);
+
+        if (!confirm) return;
+
+        try {
+            removeSync(mcDir);
+            console.log(chalk.green('🧹 Minecraft directory reset successfully.'));
+        } catch (err) {
+            console.log(chalk.red('❌ Failed to reset Minecraft directory.'));
+            console.error(err);
+        }
+
+        await new Promise(res => setTimeout(res, 2000));
     }
 
     private async launch() {

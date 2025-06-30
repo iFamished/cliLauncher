@@ -67,3 +67,18 @@ export function waitForFolder(metadata: Metadata, id: string) {
         });
     });
 }
+
+export function valid_string(input: any) {
+    return typeof input === 'string';
+}
+
+export function valid_boolean(input: any) {
+    return typeof input === 'boolean';
+}
+
+export function parse_input(input: string | boolean | string[]): string | boolean {
+    if(valid_boolean(input)) return input;
+    else if(valid_string(input)) return input;
+
+    return input.join(' ');
+}

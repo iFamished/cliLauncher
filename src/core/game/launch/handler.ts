@@ -21,10 +21,10 @@ export const logger = new Logger();
 export const progress = logger.progress();
 
 export class Handler {
-    private profiles: LauncherProfileManager = new LauncherProfileManager();
-    private accounts: LauncherAccountManager = new LauncherAccountManager();
-    private settings: LauncherOptionsManager = new LauncherOptionsManager();
-    private installers: InstallerRegistry = new InstallerRegistry();
+    public profiles: LauncherProfileManager = new LauncherProfileManager();
+    public accounts: LauncherAccountManager = new LauncherAccountManager();
+    public settings: LauncherOptionsManager = new LauncherOptionsManager();
+    public installers: InstallerRegistry = new InstallerRegistry();
 
     private auth_provider: IAuthProvider | null = null;
 
