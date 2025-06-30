@@ -77,6 +77,10 @@ export class LauncherProfileManager {
         fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
     }
 
+    reset() {
+        fs.writeFileSync(this.filePath, JSON.stringify({ origami_profiles: {} }, null, 2));
+    }
+
     addProfile(id: string, versionId: string, version_path: string, metadata: Metadata, name?: string, icon?: string, donot_auto_add?: boolean) {
         this.load();
 

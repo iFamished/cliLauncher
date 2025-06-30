@@ -48,6 +48,10 @@ export class LauncherOptionsManager {
         fs.writeFileSync(this.filePath, JSON.stringify(fullData, null, 2));
     }
 
+    reset() {
+        fs.writeFileSync(this.filePath, JSON.stringify({ options: {} }, null, 2));
+    }
+
     public async configureOptions() {
         const memory = await askMemoryLimits(this.data.options.memory);
         const window = await askWindowConfig(this.data.options.window_size);

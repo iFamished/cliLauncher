@@ -13,6 +13,17 @@ Development builds are experimental and **not completely tested**.
 They may contain bugs, incomplete features, or unstable behavior.  
 Some features introduced in these builds may never make it into stable releases.
 
+--- 
+
+### [1.0.1-dev2] - 2025-06-30
+- ✨ Added the support for clean up or resetting data.
+- ✨ Added new `clean` CLI subcommand:
+  - `--minecraft` — resets `.minecraft` directory
+  - `--origami` — resets Origami config/data (e.g. accounts, profiles)
+  - `--all` — resets both
+
+--- 
+
 ### [1.0.1-dev1] - 2025-06-30
 - ✨ Added scriptable CLI subcommands: `menu`, `profile`, `auth`, and `launch`
 - ✨ Implemented `--select`, `--list` flags for `origami profile` command
@@ -27,6 +38,8 @@ Some features introduced in these builds may never make it into stable releases.
 
 > These builds are published to the **npm registry**:  
 > `npm install origami-minecraft`
+
+--- 
 
 ### [1.0.0] - 2025-06-25
 - 🎉 Initial stable release

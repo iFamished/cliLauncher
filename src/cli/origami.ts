@@ -177,6 +177,32 @@ program
         process.exit(0);
     });
 
+    program
+    .command('clean')
+    .description('Reset Origami and/or Minecraft data directories')
+    .option('--minecraft', 'Reset the .minecraft directory')
+    .option('--origami', 'Reset Origami config/data (e.g. profiles, accounts)')
+    .option('--all', 'Reset everything (same as --minecraft + --origami)')
+    .action(async (options) => {
+        const doMinecraft = options.all || options.minecraft;
+        const doOrigami = options.all || options.origami;
+
+        if (!doMinecraft && !doOrigami) {
+            console.log(chalk.red('❌ Please specify what to reset: --minecraft, --origami, or --all'));
+            process.exit(1);
+        }
+
+        if (doMinecraft) {
+            await runtime.resetMinecraft();
+        }
+
+        if (doOrigami) {
+            await runtime.resetOrigami();
+        }
+
+        console.log(chalk.green('✅ Done!'));
+        process.exit(0);
+    });
 
 program.parse(process.argv);
 

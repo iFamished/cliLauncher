@@ -44,6 +44,10 @@ export class LauncherAccountManager {
         fs.writeFileSync(this.filePath, JSON.stringify(fullData, null, 2));
     }
 
+    reset() {
+        fs.writeFileSync(this.filePath, JSON.stringify({ accounts: {} }, null, 2));
+    }
+
     addAccount(account: LauncherAccount) {
         this.data.accounts[account.id] = account;
         this.save();

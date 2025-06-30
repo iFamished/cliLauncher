@@ -9,7 +9,7 @@ import * as data_manager from "../../tools/data_manager";
 import path from 'path';
 import readline from 'readline';
 import { AUTH_PROVIDERS } from '../../../types/account';
-import { minecraft_dir } from '../../utils/common';
+import { localpath, minecraft_dir } from '../../utils/common';
 import { removeSync } from 'fs-extra';
 
 export class Runtime {
@@ -264,6 +264,7 @@ export class Runtime {
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
                         new inquirer.Separator(),
                         { name: '🧹 Reset Minecraft', value: 'reset_minecraft' },
+                        { name: '🧹 Reset Origami', value: 'reset_origami' },
                         new inquirer.Separator(),
                         { name: '🚪 Exit', value: 'exit' }
                     ],
@@ -308,6 +309,12 @@ export class Runtime {
                     this.showHeader();
 
                     break;
+                case 'reset_origami':
+                    await this.resetOrigami();
+                    console.log('\n\n\n');
+                    this.showHeader();
+
+                    break;
                 case 'exit':
                     this.exit();
                     return;
@@ -315,7 +322,7 @@ export class Runtime {
         }
     }
 
-    private async resetMinecraft(): Promise<void> {
+    public async resetMinecraft(): Promise<void> {
         const mcDir = minecraft_dir();
         
         const { confirm } = await inquirer.prompt([
@@ -334,6 +341,38 @@ export class Runtime {
             console.log(chalk.green('🧹 Minecraft directory reset successfully.'));
         } catch (err) {
             console.log(chalk.red('❌ Failed to reset Minecraft directory.'));
+            console.error(err);
+        }
+
+        await new Promise(res => setTimeout(res, 2000));
+    }
+
+    public async resetOrigami(): Promise<void> {
+        const cache = localpath(true);
+        const data = localpath();
+        
+        const { confirm } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'confirm',
+                message: chalk.redBright(`⚠️  This will delete everything in: ${data} and corresponding Origami settings, accounts and profiles\nAre you sure?`),
+                default: false,
+            }
+        ]);
+
+        if (!confirm) return;
+
+        try {
+            removeSync(data);
+            removeSync(cache);
+
+            this.handler.accounts.reset();
+            this.handler.profiles.reset();
+            this.handler.settings.reset();
+
+            console.log(chalk.green('🧹 Origami reset successfully.'));
+        } catch (err) {
+            console.log(chalk.red('❌ Failed to reset Origami'));
             console.error(err);
         }
 
