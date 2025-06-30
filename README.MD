@@ -20,6 +20,14 @@ That’s it! Once installed globally, you can use the `origami` command anywhere
 
 ---
 
+## 🗒️ Changelog
+
+See what's new in dev and stable builds in the [CHANGELOG.md](./CHANGELOG.MD).
+
+⚠️ Dev builds are listed at the top — use them at your own risk!
+
+---
+
 ## 🎮 Features
 
 - 🎨 Beautiful terminal UI with gradient animations and ASCII art
@@ -44,12 +52,6 @@ origami
 ![Preview](./images/image.png)
 
 Navigate using your keyboard to log in, manage accounts, install versions, or launch the game.
-
----
-
-## 🗒️ Changelog
-
-See what's new in dev and stable builds in the [CHANGELOG.md](./CHANGELOG.MD).
 
 ---
 
