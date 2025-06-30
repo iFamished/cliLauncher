@@ -62,7 +62,7 @@ This project is licensed under the **GPL-3.0-only** license.
 ## 🧪 Development
 
 ```bash
-git clone https://github.com/merasugd/origami-launcher
+git clone https://github.com/merasugd/origami-launcher.git
 cd origami-launcher
 npm install
 
