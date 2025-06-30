@@ -13,7 +13,7 @@ All notable changes to this project will be documented in this file.
 ## ✅ Stable Releases
 
 > These builds are published to the **npm registry**:  
-> `npm install your-package`
+> `npm install origami-minecraft`
 
 ### [1.0.0] - 2025-06-25
 - 🎉 Initial stable release
