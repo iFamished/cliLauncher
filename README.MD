@@ -39,23 +39,17 @@ After installation, just run:
 origami
 ```
 
-You'll be presented with a full interactive CLI menu:
+### 🖼️ Preview
 
-```
-🌸 What do you want to do?
-
-> 🎮 Launch Minecraft
-  -------------------------------
-  🔐 Authenticator
-  🛠  Configure Settings
-  -------------------------------
-  📂 Choose Profile
-  ⬇️  Install Minecraft Version
-  -------------------------------
-  🚪 Exit
-```
+![Preview](./images/image.png)
 
 Navigate using your keyboard to log in, manage accounts, install versions, or launch the game.
+
+---
+
+## 🗒️ Changelog
+
+See what's new in dev and stable builds in the [CHANGELOG.md](./CHANGELOG.MD).
 
 ---
 
