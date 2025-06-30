@@ -33,10 +33,11 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.providers = void 0;
 exports.getAuthProviders = getAuthProviders;
 exports.getAuthProvider = getAuthProvider;
 const handler_1 = require("../launch/handler");
-const providers = {
+exports.providers = {
     ely_by: () => Promise.resolve().then(() => __importStar(require('./auth_types/ely_by'))),
     littleskin: () => Promise.resolve().then(() => __importStar(require('./auth_types/littleskin'))),
     meowskin: () => Promise.resolve().then(() => __importStar(require('./auth_types/meowskin'))),
@@ -44,7 +45,7 @@ const providers = {
 };
 async function getAuthProviders() {
     const map = new Map();
-    for (const [key, loader] of Object.entries(providers)) {
+    for (const [key, loader] of Object.entries(exports.providers)) {
         const module = await loader();
         map.set(key, module.default);
     }

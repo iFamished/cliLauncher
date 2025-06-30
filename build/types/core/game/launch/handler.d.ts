@@ -1,13 +1,17 @@
 import { AUTH_PROVIDERS, Credentials } from "../../../types/account";
 import { LauncherAccount } from "../../../types/launcher";
+import LauncherProfileManager from "../../tools/launcher";
+import LauncherAccountManager from "../account/account";
+import LauncherOptionsManager from "./options";
 import { Logger } from "../../tools/logger";
+import { InstallerRegistry } from "../install/registry";
 export declare const logger: Logger;
 export declare const progress: import("../../tools/logger").ProgressReport;
 export declare class Handler {
-    private profiles;
-    private accounts;
-    private settings;
-    private installers;
+    profiles: LauncherProfileManager;
+    accounts: LauncherAccountManager;
+    settings: LauncherOptionsManager;
+    installers: InstallerRegistry;
     private auth_provider;
     private currentAccount;
     constructor();

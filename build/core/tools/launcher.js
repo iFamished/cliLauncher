@@ -42,6 +42,7 @@ const path = __importStar(require("path"));
 const common_1 = require("../utils/common");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
+const fs_extra_1 = require("fs-extra");
 const mcDir = (0, common_1.minecraft_dir)();
 const launcherProfilesPath = path.join(mcDir, 'origami_profiles.json');
 class LauncherProfileManager {
@@ -51,6 +52,36 @@ class LauncherProfileManager {
         this.filePath = filePath;
         this.data = { origami_profiles: {} };
         this.load();
+        this.autoImportVanillaProfiles();
+    }
+    autoImportVanillaProfiles() {
+        const versionsDir = path.join(mcDir, 'versions');
+        if (!fs.existsSync(versionsDir))
+            return;
+        const folders = fs.readdirSync(versionsDir, { withFileTypes: true })
+            .filter(dirent => dirent.isDirectory())
+            .map(dirent => dirent.name);
+        for (const folder of folders) {
+            const versionJsonPath = path.join(versionsDir, folder, `${folder}.json`);
+            if (!fs.existsSync(versionJsonPath))
+                continue;
+            try {
+                const versionJson = (0, fs_extra_1.readJsonSync)(versionJsonPath);
+                const name = folder;
+                const id = versionJson.id || versionJson.inheritsFrom || 'Origami-Imported';
+                if (!this.data.origami_profiles[name]) {
+                    this.addProfile(name, id, path.join(versionsDir, folder), {
+                        name: id,
+                        description: versionJson.type || folder,
+                        author: 'OrigamiImportSystem'
+                    }, id, 'Grass', true);
+                    console.log(chalk_1.default.gray(`✔ Imported version: ${id}`));
+                }
+            }
+            catch (e) {
+                console.warn(chalk_1.default.red(`⚠️ Failed to parse version JSON: ${folder}`));
+            }
+        }
     }
     load() {
         if (fs.existsSync(this.filePath)) {
@@ -68,7 +99,10 @@ class LauncherProfileManager {
     save() {
         fs.writeFileSync(this.filePath, JSON.stringify(this.data, null, 2));
     }
-    addProfile(id, versionId, version_path, metadata, name, icon) {
+    reset() {
+        fs.writeFileSync(this.filePath, JSON.stringify({ origami_profiles: {} }, null, 2));
+    }
+    addProfile(id, versionId, version_path, metadata, name, icon, donot_auto_add) {
         this.load();
         const now = new Date().toISOString();
         const profile = {
@@ -86,7 +120,8 @@ class LauncherProfileManager {
         };
         this.data.origami_profiles[id] = profile;
         this.save();
-        this.selectProfile(id);
+        if (!donot_auto_add)
+            this.selectProfile(id);
     }
     deleteProfile(id) {
         this.load();

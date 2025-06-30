@@ -6,6 +6,7 @@ export declare class LauncherAccountManager {
     constructor(filePath?: string);
     private load;
     private save;
+    reset(): void;
     addAccount(account: LauncherAccount): void;
     deleteAccount(id: string): boolean;
     hasAccount(cred: Credentials, provider: string): boolean;

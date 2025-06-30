@@ -75,6 +75,9 @@ class LauncherAccountManager {
         fullData.selectedAccount = this.data.selectedAccount;
         fs.writeFileSync(this.filePath, JSON.stringify(fullData, null, 2));
     }
+    reset() {
+        fs.writeFileSync(this.filePath, JSON.stringify({ accounts: {} }, null, 2));
+    }
     addAccount(account) {
         this.data.accounts[account.id] = account;
         this.save();

@@ -6,3 +6,6 @@ export declare function localpath(isCache?: boolean): string;
 export declare function minecraft_dir(): string;
 export declare function printVersion(): any;
 export declare function waitForFolder(metadata: Metadata, id: string): Promise<string>;
+export declare function valid_string(input: any): input is string;
+export declare function valid_boolean(input: any): input is boolean;
+export declare function parse_input(input: string | boolean | string[]): string | boolean;

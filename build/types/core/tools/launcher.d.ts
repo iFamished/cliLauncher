@@ -3,9 +3,11 @@ export declare class LauncherProfileManager {
     private filePath;
     private data;
     constructor(filePath?: string);
+    autoImportVanillaProfiles(): void;
     private load;
     private save;
-    addProfile(id: string, versionId: string, version_path: string, metadata: Metadata, name?: string, icon?: string): void;
+    reset(): void;
+    addProfile(id: string, versionId: string, version_path: string, metadata: Metadata, name?: string, icon?: string, donot_auto_add?: boolean): void;
     deleteProfile(id: string): void;
     selectProfile(id: string): void;
     chooseProfile(): Promise<LauncherProfile | null>;

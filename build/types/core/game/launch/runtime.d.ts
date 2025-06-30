@@ -1,5 +1,6 @@
+import { Handler } from './handler';
 export declare class Runtime {
-    private handler;
+    handler: Handler;
     version: string;
     constructor();
     start(): Promise<void>;
@@ -11,6 +12,8 @@ export declare class Runtime {
     private showHeader;
     private authenticatorMenu;
     private mainMenu;
+    resetMinecraft(): Promise<void>;
+    resetOrigami(): Promise<void>;
     private launch;
     private exit;
 }

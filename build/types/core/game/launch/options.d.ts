@@ -5,6 +5,7 @@ export declare class LauncherOptionsManager {
     constructor(filePath?: string);
     private load;
     private save;
+    reset(): void;
     configureOptions(): Promise<void>;
     getFixedOptions(): FIXED_Options;
     setOption<K extends keyof Options>(key: K, value: Options[K]): void;

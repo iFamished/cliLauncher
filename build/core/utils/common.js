@@ -43,6 +43,9 @@ exports.localpath = localpath;
 exports.minecraft_dir = minecraft_dir;
 exports.printVersion = printVersion;
 exports.waitForFolder = waitForFolder;
+exports.valid_string = valid_string;
+exports.valid_boolean = valid_boolean;
+exports.parse_input = parse_input;
 const fs_1 = __importStar(require("fs"));
 const envs_1 = __importDefault(require("../tools/envs"));
 const path_1 = __importDefault(require("path"));
@@ -103,5 +106,18 @@ function waitForFolder(metadata, id) {
             resolve(versionFolder);
         });
     });
+}
+function valid_string(input) {
+    return typeof input === 'string';
+}
+function valid_boolean(input) {
+    return typeof input === 'boolean';
+}
+function parse_input(input) {
+    if (valid_boolean(input))
+        return input;
+    else if (valid_string(input))
+        return input;
+    return input.join(' ');
 }
 //# sourceMappingURL=common.js.map

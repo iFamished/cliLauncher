@@ -47,6 +47,8 @@ const fs_1 = require("fs");
 const data_manager = __importStar(require("../../tools/data_manager"));
 const path_1 = __importDefault(require("path"));
 const readline_1 = __importDefault(require("readline"));
+const common_1 = require("../../utils/common");
+const fs_extra_1 = require("fs-extra");
 class Runtime {
     handler = new handler_1.Handler();
     version;
@@ -262,6 +264,9 @@ class Runtime {
                         { name: '📂 Choose Profile', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
                         new inquirer_1.default.Separator(),
+                        { name: '🧹 Reset Minecraft', value: 'reset_minecraft' },
+                        { name: '🧹 Reset Origami', value: 'reset_origami' },
+                        new inquirer_1.default.Separator(),
                         { name: '🚪 Exit', value: 'exit' }
                     ],
                     loop: false,
@@ -293,11 +298,70 @@ class Runtime {
                     console.log('\n\n\n');
                     this.showHeader();
                     break;
+                case 'reset_minecraft':
+                    await this.resetMinecraft();
+                    console.log('\n\n\n');
+                    this.showHeader();
+                    break;
+                case 'reset_origami':
+                    await this.resetOrigami();
+                    console.log('\n\n\n');
+                    this.showHeader();
+                    break;
                 case 'exit':
                     this.exit();
                     return;
             }
         }
+    }
+    async resetMinecraft() {
+        const mcDir = (0, common_1.minecraft_dir)();
+        const { confirm } = await inquirer_1.default.prompt([
+            {
+                type: 'confirm',
+                name: 'confirm',
+                message: chalk_1.default.redBright(`⚠️  This will delete everything in: ${mcDir}\nAre you sure?`),
+                default: false,
+            }
+        ]);
+        if (!confirm)
+            return;
+        try {
+            (0, fs_extra_1.removeSync)(mcDir);
+            console.log(chalk_1.default.green('🧹 Minecraft directory reset successfully.'));
+        }
+        catch (err) {
+            console.log(chalk_1.default.red('❌ Failed to reset Minecraft directory.'));
+            console.error(err);
+        }
+        await new Promise(res => setTimeout(res, 2000));
+    }
+    async resetOrigami() {
+        const cache = (0, common_1.localpath)(true);
+        const data = (0, common_1.localpath)();
+        const { confirm } = await inquirer_1.default.prompt([
+            {
+                type: 'confirm',
+                name: 'confirm',
+                message: chalk_1.default.redBright(`⚠️  This will delete everything in: ${data} and corresponding Origami settings, accounts and profiles\nAre you sure?`),
+                default: false,
+            }
+        ]);
+        if (!confirm)
+            return;
+        try {
+            (0, fs_extra_1.removeSync)(data);
+            (0, fs_extra_1.removeSync)(cache);
+            this.handler.accounts.reset();
+            this.handler.profiles.reset();
+            this.handler.settings.reset();
+            console.log(chalk_1.default.green('🧹 Origami reset successfully.'));
+        }
+        catch (err) {
+            console.log(chalk_1.default.red('❌ Failed to reset Origami'));
+            console.error(err);
+        }
+        await new Promise(res => setTimeout(res, 2000));
     }
     async launch() {
         const code = await this.handler.run_minecraft();
