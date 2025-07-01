@@ -31,6 +31,7 @@
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
+    "preinstall": "node scripts/cleanup-opposite.js",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run lint"
