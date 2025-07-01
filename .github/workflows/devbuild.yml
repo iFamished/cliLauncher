@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   publish-devbuild:
+    if: contains(github.event.head_commit.message, '[devbuild]')
     name: Publish DevBuild to NPM
     runs-on: ubuntu-latest
 

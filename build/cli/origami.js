@@ -8,6 +8,7 @@ exports.checkForLatestVersion = checkForLatestVersion;
 const commander_1 = require("commander");
 const runtime_1 = require("../core/game/launch/runtime");
 const common_1 = require("../core/utils/common");
+const compare_versions_1 = __importDefault(require("compare-versions"));
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const account_1 = require("../core/game/account");
@@ -180,42 +181,34 @@ program
     process.exit(0);
 });
 async function checkForLatestVersion(currentVersion) {
-    const latestURL = 'https://raw.githubusercontent.com/merasugd/origami-launcher/refs/heads/main/package.json';
+    const stableURL = 'https://registry.npmjs.org/@origami-minecraft/stable';
+    const devURL = 'https://registry.npmjs.org/@origami-minecraft/devbuilds';
     try {
-        const res = await (0, node_fetch_1.default)(latestURL);
-        if (!res.ok)
+        const [stableRes, devRes] = await Promise.all([
+            (0, node_fetch_1.default)(stableURL),
+            (0, node_fetch_1.default)(devURL)
+        ]);
+        if (!stableRes.ok || !devRes.ok)
             return;
-        const pkg = await res.json();
-        const latestVersion = pkg.version;
+        const stableData = await stableRes.json();
+        const devData = await devRes.json();
+        const latestStable = stableData['dist-tags']?.latest ?? '';
+        const latestDev = devData['dist-tags']?.latest ?? devData['dist-tags']?.dev ?? '';
         const isCurrentDev = currentVersion.includes('-dev');
-        const isLatestDev = latestVersion.includes('-dev');
-        const normalize = (v) => v.replace(/-dev\d*$/, '');
-        const splitVersion = (v) => normalize(v).split('.').map(n => parseInt(n, 10) || 0);
-        const currentParts = splitVersion(currentVersion);
-        const latestParts = splitVersion(latestVersion);
-        const isNewer = () => {
-            for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
-                const a = currentParts[i] || 0;
-                const b = latestParts[i] || 0;
-                if (a < b)
-                    return true;
-                if (a > b)
-                    return false;
-            }
-            return false;
-        };
-        if (!isCurrentDev && isNewer()) {
-            console.log(chalk_1.default.yellow(`⚠️ A new stable version is available: ${latestVersion}\nRun:`), chalk_1.default.cyan(`npm install -g origami-minecraft`));
+        const cmpStable = compare_versions_1.default.compareVersions(latestStable, currentVersion);
+        const cmpDev = compare_versions_1.default.compareVersions(latestDev, currentVersion);
+        if (!isCurrentDev && cmpStable > 0) {
+            console.log(chalk_1.default.yellow(`⚠️ A new stable version is available: ${latestStable}\nRun:`), chalk_1.default.cyan(`npm install -g @origami-minecraft/stable`));
         }
-        else if (isCurrentDev && !isLatestDev && isNewer()) {
-            console.log(chalk_1.default.yellow(`⚠️ You're on a development build (${currentVersion}), but a new stable version is available: ${latestVersion}\nRun:`), chalk_1.default.cyan(`npm install -g origami-minecraft`));
+        else if (isCurrentDev && cmpStable > 0) {
+            console.log(chalk_1.default.yellow(`⚠️ You're on a dev build (${currentVersion}), but a new stable version is available: ${latestStable}\nRun:`), chalk_1.default.cyan(`npm install -g @origami-minecraft/stable`));
         }
-        else if (isCurrentDev && isLatestDev && currentVersion < latestVersion) {
-            console.log(chalk_1.default.yellow(`⚠️ A new dev build is available: ${latestVersion}\nRun:`), chalk_1.default.cyan(`npm install -g git+https://github.com/merasugd/origami-launcher.git`));
+        else if (isCurrentDev && cmpDev > 0) {
+            console.log(chalk_1.default.yellow(`⚠️ A new dev build is available: ${latestDev}\nRun:`), chalk_1.default.cyan(`npm install -g @origami-minecraft/devbuilds`));
         }
     }
-    catch (err) {
-        // silent fail
+    catch {
+        // Silent fail
     }
 }
 checkForLatestVersion(runtime.version).then(() => program.parse(process.argv));
