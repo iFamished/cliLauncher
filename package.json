@@ -31,7 +31,7 @@
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
-    "postinstall": "node scripts/cleanup.js",
+    "preinstall": "node scripts/cleanup.js",
     "prepare": "npm run compile",
     "pretest": "npm run compile",
     "posttest": "npm run lint"
