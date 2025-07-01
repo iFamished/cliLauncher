@@ -22,7 +22,7 @@ That’s it! Once installed globally, you can use the `origami` command anywhere
 
 ## 🗒️ Changelog
 
-See what's new in dev and stable builds in the [CHANGELOG.md](./CHANGELOG.MD).
+See what's new in dev and stable builds in the [CHANGELOG.md](./wiki/CHANGELOG.MD).
 
 ⚠️ Dev builds are listed at the top — use them at your own risk!
 
@@ -44,14 +44,21 @@ See what's new in dev and stable builds in the [CHANGELOG.md](./CHANGELOG.MD).
 After installation, just run:
 
 ```bash
-origami
+origami menu
 ```
 
 ### 🖼️ Preview
 
-![Preview](./images/image.png)
+![Preview](./wiki/images/image.png)
 
 Navigate using your keyboard to log in, manage accounts, install versions, or launch the game.
+
+---
+
+### 📘 CLI Documentation
+
+See the full CLI documentation here:  
+📖 [`CLI.md`](./wiki/CLI.MD)
 
 ---
 

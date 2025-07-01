@@ -4,12 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.checkForLatestVersion = checkForLatestVersion;
 const commander_1 = require("commander");
 const runtime_1 = require("../core/game/launch/runtime");
 const common_1 = require("../core/utils/common");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const account_1 = require("../core/game/account");
+const node_fetch_1 = __importDefault(require("node-fetch"));
 const program = new commander_1.Command();
 const runtime = new runtime_1.Runtime();
 program
@@ -177,7 +179,46 @@ program
     console.log(chalk_1.default.green('✅ Done!'));
     process.exit(0);
 });
-program.parse(process.argv);
+async function checkForLatestVersion(currentVersion) {
+    const latestURL = 'https://raw.githubusercontent.com/merasugd/origami-launcher/refs/heads/main/package.json';
+    try {
+        const res = await (0, node_fetch_1.default)(latestURL);
+        if (!res.ok)
+            return;
+        const pkg = await res.json();
+        const latestVersion = pkg.version;
+        const isCurrentDev = currentVersion.includes('-dev');
+        const isLatestDev = latestVersion.includes('-dev');
+        const normalize = (v) => v.replace(/-dev\d*$/, '');
+        const splitVersion = (v) => normalize(v).split('.').map(n => parseInt(n, 10) || 0);
+        const currentParts = splitVersion(currentVersion);
+        const latestParts = splitVersion(latestVersion);
+        const isNewer = () => {
+            for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
+                const a = currentParts[i] || 0;
+                const b = latestParts[i] || 0;
+                if (a < b)
+                    return true;
+                if (a > b)
+                    return false;
+            }
+            return false;
+        };
+        if (!isCurrentDev && isNewer()) {
+            console.log(chalk_1.default.yellow(`⚠️ A new stable version is available: ${latestVersion}\nRun:`), chalk_1.default.cyan(`npm install -g origami-minecraft`));
+        }
+        else if (isCurrentDev && !isLatestDev && isNewer()) {
+            console.log(chalk_1.default.yellow(`⚠️ You're on a development build (${currentVersion}), but a new stable version is available: ${latestVersion}\nRun:`), chalk_1.default.cyan(`npm install -g origami-minecraft`));
+        }
+        else if (isCurrentDev && isLatestDev && currentVersion < latestVersion) {
+            console.log(chalk_1.default.yellow(`⚠️ A new dev build is available: ${latestVersion}\nRun:`), chalk_1.default.cyan(`npm install -g git+https://github.com/merasugd/origami-launcher.git`));
+        }
+    }
+    catch (err) {
+        // silent fail
+    }
+}
+checkForLatestVersion(runtime.version).then(() => program.parse(process.argv));
 if (!process.argv.slice(2).length) {
     program.outputHelp();
 }

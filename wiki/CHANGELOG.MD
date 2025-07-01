@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 > These builds are **not** published to npm.  
 > Installed via:  
-> `npm install git+https://github.com/merasugd/origami-launcher.git`
+> `npm install -g git+https://github.com/merasugd/origami-launcher.git`
 
 ⚠️ **Warning:**  
 Development builds are experimental and **not completely tested**.  
@@ -37,7 +37,18 @@ Some features introduced in these builds may never make it into stable releases.
 ## ✅ Stable Releases
 
 > These builds are published to the **npm registry**:  
-> `npm install origami-minecraft`
+> `npm install -g origami-minecraft`
+
+--- 
+
+### [1.0.1] - 2025-07-01
+- ✨ Added `clean` command for resetting Minecraft or Origami data
+- ✨ Added scriptable subcommands: `menu`, `profile`, `auth`, `launch`
+- ✨ Added `--select`, `--list`, `--login`, `--remove`, `--choose` options
+- ✨ Auto-detects installed Minecraft versions from `.minecraft/versions`
+- ✨ Added version checking on launch to notify about new updates
+- 🔄 Improved CLI error handling and input validation
+- 🔄 Refactored internal command structure with fallback prompts
 
 --- 
 

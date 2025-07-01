@@ -49,6 +49,7 @@ const path_1 = __importDefault(require("path"));
 const readline_1 = __importDefault(require("readline"));
 const common_1 = require("../../utils/common");
 const fs_extra_1 = require("fs-extra");
+const origami_1 = require("../../../cli/origami");
 class Runtime {
     handler = new handler_1.Handler();
     version;
@@ -59,7 +60,7 @@ class Runtime {
         console.clear();
         await this.showLicenseAgreement();
         console.clear();
-        this.showHeader();
+        await this.showHeader();
         await this.mainMenu();
     }
     async showLicenseAgreement() {
@@ -177,7 +178,8 @@ class Runtime {
     hasAgreedToLicense() {
         return data_manager.get("license-agreed") ? true : false;
     }
-    showHeader() {
+    async showHeader() {
+        await (0, origami_1.checkForLatestVersion)(this.version);
         const logo = figlet_1.default.textSync('Origami', { font: 'Standard' });
         console.log(gradient.retro(logo));
         console.log(chalk_1.default.gray(` ✨ Lightweight Minecraft CLI Launcher — Version ${this.version}`));
@@ -237,7 +239,7 @@ class Runtime {
                         console.log(chalk_1.default.redBright('❌ Login failed.'));
                     }
                     await new Promise(res => setTimeout(res, 2000));
-                    this.showHeader();
+                    await this.showHeader();
                     break;
                 case 'remove':
                     await this.handler.remove_account();
@@ -276,37 +278,37 @@ class Runtime {
                 case 'launch':
                     await this.launch();
                     console.log('\n\n\n');
-                    this.showHeader();
+                    await this.showHeader();
                     break;
                 case 'choose_profile':
                     await this.handler.choose_profile();
                     console.log('\n\n\n');
-                    this.showHeader();
+                    await this.showHeader();
                     break;
                 case 'authenticator':
                     await this.authenticatorMenu();
                     console.log('\n\n\n');
-                    this.showHeader();
+                    await this.showHeader();
                     break;
                 case 'configure_settings':
                     await this.handler.configure_settings();
                     console.log('\n\n\n');
-                    this.showHeader();
+                    await this.showHeader();
                     break;
                 case 'install_version':
                     await this.handler.install_version();
                     console.log('\n\n\n');
-                    this.showHeader();
+                    await this.showHeader();
                     break;
                 case 'reset_minecraft':
                     await this.resetMinecraft();
                     console.log('\n\n\n');
-                    this.showHeader();
+                    await this.showHeader();
                     break;
                 case 'reset_origami':
                     await this.resetOrigami();
                     console.log('\n\n\n');
-                    this.showHeader();
+                    await this.showHeader();
                     break;
                 case 'exit':
                     this.exit();

@@ -6,6 +6,7 @@ import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { Credentials, AUTH_PROVIDERS } from '../types/account';
 import { providers } from '../core/game/account';
+import fetch from 'node-fetch';
 
 const program = new Command();
 const runtime = new Runtime();
@@ -204,7 +205,56 @@ program
         process.exit(0);
     });
 
-program.parse(process.argv);
+export async function checkForLatestVersion(currentVersion: string) {
+    const latestURL = 'https://raw.githubusercontent.com/merasugd/origami-launcher/refs/heads/main/package.json';
+
+    try {
+        const res = await fetch(latestURL);
+        if (!res.ok) return;
+        const pkg = await res.json();
+        const latestVersion: string = pkg.version;
+
+        const isCurrentDev = currentVersion.includes('-dev');
+        const isLatestDev = latestVersion.includes('-dev');
+
+        const normalize = (v: string) => v.replace(/-dev\d*$/, '');
+        const splitVersion = (v: string) => normalize(v).split('.').map(n => parseInt(n, 10) || 0);
+
+        const currentParts = splitVersion(currentVersion);
+        const latestParts = splitVersion(latestVersion);
+
+        const isNewer = () => {
+            for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
+                const a = currentParts[i] || 0;
+                const b = latestParts[i] || 0;
+                if (a < b) return true;
+                if (a > b) return false;
+            }
+            return false;
+        };
+
+        if (!isCurrentDev && isNewer()) {
+            console.log(
+                chalk.yellow(`⚠️ A new stable version is available: ${latestVersion}\nRun:`),
+                chalk.cyan(`npm install -g origami-minecraft`)
+            );
+        } else if (isCurrentDev && !isLatestDev && isNewer()) {
+            console.log(
+                chalk.yellow(`⚠️ You're on a development build (${currentVersion}), but a new stable version is available: ${latestVersion}\nRun:`),
+                chalk.cyan(`npm install -g origami-minecraft`)
+            );
+        } else if (isCurrentDev && isLatestDev && currentVersion < latestVersion) {
+            console.log(
+                chalk.yellow(`⚠️ A new dev build is available: ${latestVersion}\nRun:`),
+                chalk.cyan(`npm install -g git+https://github.com/merasugd/origami-launcher.git`)
+            );
+        }
+    } catch (err) {
+        // silent fail
+    }
+}
+
+checkForLatestVersion(runtime.version).then(() => program.parse(process.argv));
 
 if (!process.argv.slice(2).length) {
     program.outputHelp();

@@ -1,2 +1,2 @@
 #!/usr/bin/env node
-export {};
+export declare function checkForLatestVersion(currentVersion: string): Promise<void>;
