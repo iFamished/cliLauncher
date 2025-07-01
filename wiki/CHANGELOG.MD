@@ -40,7 +40,7 @@ Some features introduced in these builds may never make it into stable releases.
 
 --- 
 
-### [1.0.3] - 2025-07-01
+### [1.0.3-1.0.4] - 2025-07-01
 - 🐛 Fixed NPM Package Issues
   - Updated `package.json` metadata to reflect correct scoped naming
   - Deprecated old `origami-minecraft` package with a proper message directing users to:
