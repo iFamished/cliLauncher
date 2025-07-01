@@ -2,7 +2,7 @@
 node_modules/
 
 # Ignore config and tooling files
-.gitignore
+.npmignore
 tsconfig.tsbuildinfo
 
 # Ignore misc
