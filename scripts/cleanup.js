@@ -8,12 +8,8 @@ const opposite = currentName === '@origami-minecraft/stable'
 
 try {
     console.log(`Checking for globally installed ${opposite}...`);
-    const result = execSync(`npm list -g --depth=0 ${opposite}`, { stdio: 'pipe' }).toString();
-
-    if (result.includes(opposite)) {
-        console.log(`Found ${opposite}, removing...`);
-        execSync(`npm uninstall -g ${opposite}`, { stdio: 'inherit' });
-    }
+    execSync(`npm uninstall -g ${opposite}`, { stdio: 'inherit' });
 } catch (err) {
+    console.log(`Checking for globally installed: returned an error ${err}...`);
     // It's okay if not installed
 }
