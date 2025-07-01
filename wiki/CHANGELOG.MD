@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 🔁 Development Builds (Unreleased or GitHub-only)
+## 🔁 Development Builds
   
 > Installed via:  
 > `npm install -g @origami-minecraft/devbuilds`
