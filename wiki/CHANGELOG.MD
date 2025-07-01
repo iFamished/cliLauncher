@@ -43,7 +43,6 @@ Some features introduced in these builds may never make it into stable releases.
 
 ### [1.0.2] - 2025-07-01
 - 🐛 Major issues with installations.
-- 🐛 Major fixes for NPM `origami-minecraft`
 
 ### [1.0.1] - 2025-07-01
 - ✨ Added `clean` command for resetting Minecraft or Origami data
