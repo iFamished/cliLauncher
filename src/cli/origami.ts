@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { Runtime } from '../core/game/launch/runtime';
 import { parse_input, valid_string } from '../core/utils/common';
+import compareVersions from 'compare-versions';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { Credentials, AUTH_PROVIDERS } from '../types/account';
@@ -211,46 +212,31 @@ export async function checkForLatestVersion(currentVersion: string) {
     try {
         const res = await fetch(latestURL);
         if (!res.ok) return;
-        const pkg = await res.json();
-        const latestVersion: string = pkg.version;
+
+        const { version: latestVersion } = await res.json() as { version: string };
 
         const isCurrentDev = currentVersion.includes('-dev');
         const isLatestDev = latestVersion.includes('-dev');
+        const cmp = compareVersions.compareVersions(latestVersion, currentVersion);
 
-        const normalize = (v: string) => v.replace(/-dev\d*$/, '');
-        const splitVersion = (v: string) => normalize(v).split('.').map(n => parseInt(n, 10) || 0);
-
-        const currentParts = splitVersion(currentVersion);
-        const latestParts = splitVersion(latestVersion);
-
-        const isNewer = () => {
-            for (let i = 0; i < Math.max(currentParts.length, latestParts.length); i++) {
-                const a = currentParts[i] || 0;
-                const b = latestParts[i] || 0;
-                if (a < b) return true;
-                if (a > b) return false;
-            }
-            return false;
-        };
-
-        if (!isCurrentDev && isNewer()) {
+        if (!isCurrentDev && cmp > 0 && !isLatestDev) {
             console.log(
                 chalk.yellow(`⚠️ A new stable version is available: ${latestVersion}\nRun:`),
                 chalk.cyan(`npm install -g origami-minecraft`)
             );
-        } else if (isCurrentDev && !isLatestDev && isNewer()) {
+        } else if (isCurrentDev && cmp > 0 && !isLatestDev) {
             console.log(
                 chalk.yellow(`⚠️ You're on a development build (${currentVersion}), but a new stable version is available: ${latestVersion}\nRun:`),
                 chalk.cyan(`npm install -g origami-minecraft`)
             );
-        } else if (isCurrentDev && isLatestDev && currentVersion < latestVersion) {
+        } else if (isCurrentDev && isLatestDev && cmp > 0) {
             console.log(
                 chalk.yellow(`⚠️ A new dev build is available: ${latestVersion}\nRun:`),
                 chalk.cyan(`npm install -g git+https://github.com/merasugd/origami-launcher.git`)
             );
         }
-    } catch (err) {
-        // silent fail
+    } catch {
+        // Silent fail
     }
 }
 
