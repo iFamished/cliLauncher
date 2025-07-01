@@ -188,7 +188,7 @@ async function selectJavaBinary(use_new: boolean = false): Promise<JavaBinary> {
         }
 
         let use_temurin = data_manager.get('use:temurin');
-        if(use_temurin && !use_new) {
+        if(use_temurin && !use_new && fs.existsSync(use_temurin.path)) {
             console.log(chalk.green(`\n✅ Selected: ${chalk.cyan(use_temurin.version || 'Java')}`));
             console.log(chalk.gray(`📁 Path: ${use_temurin.path}\n`));
 

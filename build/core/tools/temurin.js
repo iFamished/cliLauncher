@@ -198,7 +198,7 @@ async function selectJavaBinary(use_new = false) {
             return selectedJava;
         }
         let use_temurin = data_manager.get('use:temurin');
-        if (use_temurin && !use_new) {
+        if (use_temurin && !use_new && fs.existsSync(use_temurin.path)) {
             console.log(chalk_1.default.green(`\n✅ Selected: ${chalk_1.default.cyan(use_temurin.version || 'Java')}`));
             console.log(chalk_1.default.gray(`📁 Path: ${use_temurin.path}\n`));
             return use_temurin;

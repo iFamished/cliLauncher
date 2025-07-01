@@ -12,25 +12,6 @@ Development builds are experimental and **not completely tested**.
 They may contain bugs, incomplete features, or unstable behavior.  
 Some features introduced in these builds may never make it into stable releases.
 
---- 
-
-### [1.0.1-dev2] - 2025-06-30
-- ✨ Added the support for clean up or resetting data.
-- ✨ Added new `clean` CLI subcommand:
-  - `--minecraft` — resets `.minecraft` directory
-  - `--origami` — resets Origami config/data (e.g. accounts, profiles)
-  - `--all` — resets both
-
---- 
-
-### [1.0.1-dev1] - 2025-06-30
-- ✨ Added scriptable CLI subcommands: `menu`, `profile`, `auth`, and `launch`
-- ✨ Implemented `--select`, `--list` flags for `origami profile` command
-- ✨ Implemented `--login`, `--remove`, `--choose` options for `origami auth`
-- ✨ Auto-detect and index valid Minecraft versions from `.minecraft/versions`
-- 🔄 CLI validates and fails gracefully with friendly messages
-- 🔄 Refactored command actions with `commander`, input validators, and fallback to interactive menus
-
 ---
 
 ## ✅ Stable Releases
@@ -39,6 +20,17 @@ Some features introduced in these builds may never make it into stable releases.
 > `npm install -g @origami-minecraft/stable`
 
 --- 
+
+### [1.0.5] - 2025-07-01
+- ✨ **Java Runtime Support (Temurin-based)**
+  - New `java` command:
+    - `origami java --install` to download and install Java (JDK or JRE)
+    - `origami java --select` to choose installed Java versions
+- ✨ **Temurin Java Integration in Menu**
+  - New options in `origami menu` to install or select Java interactively
+  - Auto-detects and remembers selected Java runtime
+
+---
 
 ### [1.0.3-1.0.4] - 2025-07-01
 - 🐛 Fixed NPM Package Issues
@@ -77,11 +69,10 @@ Some features introduced in these builds may never make it into stable releases.
 
 ## 📌 Legend
 
-- ✨ Feature
-- 🐛 Bugfix
-- 🔄 Change
-- ⚠️ Deprecation
-- 🧪 Test
-- 🚧 Refactor
+- ✨ Feature  
+- 🐛 Bugfix  
+- 🔄 Change  
+- ⚠️ Deprecation  
+- 🧪 Test  
+- 🚧 Refactor  
 - 🎉 Release
-

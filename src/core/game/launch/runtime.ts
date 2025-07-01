@@ -317,7 +317,7 @@ export class Runtime {
                 case 'select_java':
                     await temurin.select(true);
                     console.log('\n\n\n');
-                    
+
                     break;
                 case 'reset_minecraft':
                     await this.resetMinecraft();
@@ -396,6 +396,7 @@ export class Runtime {
     }
 
     private async launch() {
+        let isJava = await temurin.select()
         const code = await this.handler.run_minecraft();
         if (code === 200) {
             console.log(chalk.green('✅ Minecraft exited successfully!'));

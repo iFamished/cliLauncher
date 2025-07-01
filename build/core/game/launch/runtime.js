@@ -378,6 +378,7 @@ class Runtime {
         await new Promise(res => setTimeout(res, 2000));
     }
     async launch() {
+        let isJava = await temurin_1.default.select();
         const code = await this.handler.run_minecraft();
         if (code === 200) {
             console.log(chalk_1.default.green('✅ Minecraft exited successfully!'));
