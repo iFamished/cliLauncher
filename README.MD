@@ -12,11 +12,34 @@ Origami is a terminal-first Minecraft launcher that supports authentication, ins
 
 ## 🚀 Installation
 
+### 🔒 Stable (Recommended)
+Install the latest stable version from NPM:
 ```bash
 npm install -g origami-minecraft
 ```
 
-That’s it! Once installed globally, you can use the `origami` command anywhere.
+Once installed, you can use the `origami` command anywhere in your terminal.
+
+---
+
+### 🧪 Development Builds
+
+> 🚧 Development builds are **not published to NPM**. These builds may include experimental features and are considered unstable.
+
+You can install them directly from GitHub, using a specific tag (starting from `1.0.1-dev2`):
+
+#### Install the latest dev build:
+```bash
+npm install -g git+https://github.com/merasugd/origami-launcher.git
+```
+
+#### Install a specific dev version (from GitHub tag):
+```bash
+npm install -g git+https://github.com/merasugd/origami-launcher.git#1.0.1-dev2
+```
+
+You can find all available dev tags here:  
+👉 [GitHub Releases](https://github.com/merasugd/origami-launcher/releases)
 
 ---
 
