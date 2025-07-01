@@ -20,7 +20,6 @@
   },
   "license": "GPL-3.0-only",
   "author": "MerasuGD",
-  "type": "commonjs",
   "main": "build/cli/origami.js",
   "bin": {
     "origami": "build/cli/origami.js"
