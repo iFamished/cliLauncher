@@ -1,15 +1,14 @@
+#!/usr/bin/env node
 const { execSync } = require('child_process');
 const pkg = require('../package.json');
+const opposite = pkg.name === '@origami-minecraft/stable'
+  ? '@origami-minecraft/devbuilds'
+  : '@origami-minecraft/stable';
 
-const currentName = pkg.name;
-const opposite = currentName === '@origami-minecraft/stable'
-    ? '@origami-minecraft/devbuilds'
-    : '@origami-minecraft/stable';
-
+console.log(`✨ postinstall: removing any globally installed ${opposite}...`);
 try {
-    console.log(`Checking for globally installed ${opposite}...`);
-    execSync(`npm uninstall -g ${opposite}`, { stdio: 'inherit' });
+  execSync(`npm uninstall -g ${opposite}`, { stdio: 'inherit' });
+  console.log(`✅ Removed ${opposite} if it was installed.`);
 } catch (err) {
-    console.log(`Checking for globally installed: returned an error ${err}...`);
-    // It's okay if not installed
+  console.warn(`⚠️ No need to remove ${opposite} (it wasn't installed).`);
 }
