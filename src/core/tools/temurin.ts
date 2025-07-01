@@ -119,6 +119,7 @@ async function main() {
     const extractPath = path.join(LOCAL_PATH, 'binaries');
 
     ensureDir(extractPath);
+    ensureDir(localpath(true));
 
     console.log(`\n🌟 Downloading ${fileName} with love... 🌟\n`);
     try {

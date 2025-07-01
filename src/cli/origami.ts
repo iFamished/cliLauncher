@@ -8,6 +8,7 @@ import inquirer from 'inquirer';
 import { Credentials, AUTH_PROVIDERS } from '../types/account';
 import { providers } from '../core/game/account';
 import fetch from 'node-fetch';
+import temurin from '../core/tools/temurin';
 
 const program = new Command();
 const runtime = new Runtime();
@@ -22,6 +23,32 @@ program
     .description('Start the full interactive menu UI')
     .action(() => {
         runtime.start();
+    });
+
+program
+    .command('java')
+    .description('Download or select a Temurin JDK')
+    .option('-i, --install', 'Download and install a Temurin JDK')
+    .option('-s, --select', 'Choose and set the current JDK')
+    .action(async (options) => {
+        if (options.install && options.select) {
+            console.error('❌ Please choose either --install or --select, not both.');
+            process.exit(1);
+        }
+
+        try {
+            if (options.install) {
+                await temurin.download();
+            } else if (options.select) {
+                const java = await temurin.select(true); // force selection
+                console.log('✅ Java set to:', java.version, java.path);
+            } else {
+                program.commands.find(c => c.name() === 'java')!.help();
+            }
+        } catch (err: any) {
+            console.error('😿', err.message);
+            process.exit(1);
+        }
     });
 
 program

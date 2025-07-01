@@ -50,6 +50,7 @@ const readline_1 = __importDefault(require("readline"));
 const common_1 = require("../../utils/common");
 const fs_extra_1 = require("fs-extra");
 const origami_1 = require("../../../cli/origami");
+const temurin_1 = __importDefault(require("../../tools/temurin"));
 class Runtime {
     handler = new handler_1.Handler();
     version;
@@ -266,6 +267,9 @@ class Runtime {
                         { name: '📂 Choose Profile', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
                         new inquirer_1.default.Separator(),
+                        { name: '☕ Install Java', value: 'install_java' },
+                        { name: '📌 Select Java', value: 'select_java' },
+                        new inquirer_1.default.Separator(),
                         { name: '🧹 Reset Minecraft', value: 'reset_minecraft' },
                         { name: '🧹 Reset Origami', value: 'reset_origami' },
                         new inquirer_1.default.Separator(),
@@ -299,6 +303,14 @@ class Runtime {
                     await this.handler.install_version();
                     console.log('\n\n\n');
                     await this.showHeader();
+                    break;
+                case 'install_java':
+                    await temurin_1.default.download();
+                    console.log('\n\n\n');
+                    break;
+                case 'select_java':
+                    await temurin_1.default.select(true);
+                    console.log('\n\n\n');
                     break;
                 case 'reset_minecraft':
                     await this.resetMinecraft();

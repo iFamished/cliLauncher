@@ -39,8 +39,18 @@ export async function downloader(url: string, outputPath: string): Promise<void>
         response.data.pipe(writer);
 
         await new Promise<void>((resolve, reject) => {
-            writer.on('finish', resolve);
-            writer.on('error', reject);
+            async function _resolve(...args: any[]) {
+                await new Promise(res => setTimeout(res, 100));
+                resolve(...args);
+            }
+
+            async function _reject(...args: any[]) {
+                await new Promise(res => setTimeout(res, 100));
+                reject(...args);
+            }
+
+            writer.on('finish', _resolve);
+            writer.on('error', _reject);
         });
 
         download_progress?.stop();

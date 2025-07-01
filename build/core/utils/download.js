@@ -38,8 +38,16 @@ async function downloader(url, outputPath) {
         const writer = fs_1.default.createWriteStream(outputPath);
         response.data.pipe(writer);
         await new Promise((resolve, reject) => {
-            writer.on('finish', resolve);
-            writer.on('error', reject);
+            async function _resolve(...args) {
+                await new Promise(res => setTimeout(res, 100));
+                resolve(...args);
+            }
+            async function _reject(...args) {
+                await new Promise(res => setTimeout(res, 100));
+                reject(...args);
+            }
+            writer.on('finish', _resolve);
+            writer.on('error', _reject);
         });
         download_progress?.stop();
     }

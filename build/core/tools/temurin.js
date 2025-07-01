@@ -145,6 +145,7 @@ async function main() {
     const LOCAL_PATH = (0, common_1.localpath)();
     const extractPath = path.join(LOCAL_PATH, 'binaries');
     (0, common_1.ensureDir)(extractPath);
+    (0, common_1.ensureDir)((0, common_1.localpath)(true));
     console.log(`\n🌟 Downloading ${fileName} with love... 🌟\n`);
     try {
         await (0, download_1.downloader)(pkg.link, downloadPath);

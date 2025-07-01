@@ -13,6 +13,7 @@ const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const account_1 = require("../core/game/account");
 const node_fetch_1 = __importDefault(require("node-fetch"));
+const temurin_1 = __importDefault(require("../core/tools/temurin"));
 const program = new commander_1.Command();
 const runtime = new runtime_1.Runtime();
 program
@@ -24,6 +25,33 @@ program
     .description('Start the full interactive menu UI')
     .action(() => {
     runtime.start();
+});
+program
+    .command('java')
+    .description('Download or select a Temurin JDK')
+    .option('-i, --install', 'Download and install a Temurin JDK')
+    .option('-s, --select', 'Choose and set the current JDK')
+    .action(async (options) => {
+    if (options.install && options.select) {
+        console.error('❌ Please choose either --install or --select, not both.');
+        process.exit(1);
+    }
+    try {
+        if (options.install) {
+            await temurin_1.default.download();
+        }
+        else if (options.select) {
+            const java = await temurin_1.default.select(true); // force selection
+            console.log('✅ Java set to:', java.version, java.path);
+        }
+        else {
+            program.commands.find(c => c.name() === 'java').help();
+        }
+    }
+    catch (err) {
+        console.error('😿', err.message);
+        process.exit(1);
+    }
 });
 program
     .command('launch')

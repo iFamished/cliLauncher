@@ -12,6 +12,7 @@ import { AUTH_PROVIDERS } from '../../../types/account';
 import { localpath, minecraft_dir } from '../../utils/common';
 import { removeSync } from 'fs-extra';
 import { checkForLatestVersion } from '../../../cli/origami';
+import temurin from '../../tools/temurin';
 
 export class Runtime {
     public handler: Handler = new Handler();
@@ -265,6 +266,9 @@ export class Runtime {
                         { name: '📂 Choose Profile', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
                         new inquirer.Separator(),
+                        { name: '☕ Install Java', value: 'install_java' },
+                        { name: '📌 Select Java', value: 'select_java' },
+                        new inquirer.Separator(),
                         { name: '🧹 Reset Minecraft', value: 'reset_minecraft' },
                         { name: '🧹 Reset Origami', value: 'reset_origami' },
                         new inquirer.Separator(),
@@ -304,6 +308,16 @@ export class Runtime {
                     console.log('\n\n\n');
                     await this.showHeader();
 
+                    break;
+                case 'install_java':
+                    await temurin.download();
+                    console.log('\n\n\n');
+
+                    break;
+                case 'select_java':
+                    await temurin.select(true);
+                    console.log('\n\n\n');
+                    
                     break;
                 case 'reset_minecraft':
                     await this.resetMinecraft();

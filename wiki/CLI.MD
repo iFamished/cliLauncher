@@ -99,6 +99,24 @@ origami auth --choose
 
 ---
 
+### `java`
+
+Install or select a Java runtime (Temurin).
+
+#### Options:
+
+* `-i, --install` — Download and install a Temurin JDK
+* `-s, --select` — Choose a JDK installed via Origami
+
+#### Examples:
+
+```bash
+origami java --install
+origami java --select
+```
+
+---
+
 ### `clean`
 
 Reset data folders related to Minecraft or Origami.
@@ -134,6 +152,7 @@ You can log in using:
 
 * You **must select a profile** before launching Minecraft.
 * Development builds (`-devX`) may contain experimental or incomplete features.
+* You can install and select Java via `origami java`.
 * To see all available profiles:
 
   ```bash
@@ -156,7 +175,9 @@ origami --version
 ```bash
 #!/bin/bash
 
-# Script to log in and launch Minecraft with a profile
+# Script to set up Java, log in, and launch Minecraft
+origami java --install
+origami java --select
 origami auth --login microsoft
 origami profile --select myProfile
 origami launch
