@@ -41,7 +41,12 @@ Some features introduced in these builds may never make it into stable releases.
 --- 
 
 ### [1.0.2] - 2025-07-01
-- 🔄 Installations (old versions/devbuilds WILL NOT BE INSTALLABLE FROM THIS POINT)
+- 🚚 **Switched to Scoped Package Installation**
+  - **Breaking Change**: All previous installation methods are now deprecated and unsupported.
+  - `origami-minecraft` is now split into scoped packages:
+    - ✅ Stable builds: `npm install -g @origami-minecraft/stable`
+    - 🧪 Dev builds: `npm install -g @origami-minecraft/devbuilds`
+  - This improves clarity, package separation, and future release workflows.
 
 --- 
 
