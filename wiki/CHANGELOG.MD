@@ -40,9 +40,18 @@ Some features introduced in these builds may never make it into stable releases.
 
 --- 
 
+### [1.0.3] - 2025-07-01
+- 🐛 Fixed NPM Package Issues
+  - Updated `package.json` metadata to reflect correct scoped naming
+  - Deprecated old `origami-minecraft` package with a proper message directing users to:
+    - Stable: `@origami-minecraft/stable`
+    - Dev: `@origami-minecraft/devbuilds`
+
+---
+
 ### [1.0.2] - 2025-07-01
-- 🚚 **Switched to Scoped Package Installation**
-  - **Breaking Change**: All previous installation methods are now deprecated and unsupported.
+- 🔄 **Switched to Scoped Package Installation**
+  - ⚠️ **Breaking Change**: All previous installation methods are now deprecated and unsupported.
   - `origami-minecraft` is now split into scoped packages:
     - ✅ Stable builds: `npm install -g @origami-minecraft/stable`
     - 🧪 Dev builds: `npm install -g @origami-minecraft/devbuilds`
