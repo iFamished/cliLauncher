@@ -1,0 +1,41 @@
+name: DevBuild Publish
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  publish-devbuild:
+    name: Publish DevBuild to NPM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (if applicable)
+        run: npm run compile
+
+      - name: Patch version and rename to devbuilds
+        run: |
+            CURRENT_VERSION=$(node -p "require('./package.json').version")
+            NEW_VERSION=$(npm version prerelease --preid=dev --no-git-tag-version)
+            jq '.name = "@origami-minecraft/devbuilds"' package.json > tmp.json && mv tmp.json package.json
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -am "chore: bump to $NEW_VERSION"
+            git push
+
+      - name: Publish to NPM
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

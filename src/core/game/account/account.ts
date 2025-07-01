@@ -6,6 +6,7 @@ import { AUTH_PROVIDERS, Credentials } from '../../../types/account';
 import { logger } from '../launch/handler';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
+import { Separator } from '@inquirer/prompts';
 
 const mcDir = minecraft_dir();
 const launcherProfilesPath = path.join(mcDir, 'launcher_profiles.json');
@@ -126,7 +127,7 @@ export class LauncherAccountManager {
             grouped[provider].push(account);
         }
 
-        const choices: Array<inquirer.Separator | { name: string; value: string }> = [];
+        const choices: Array<any | { name: string; value: string }> = [];
 
         for (const [provider, providerAccounts] of Object.entries(grouped)) {
             choices.push(new inquirer.Separator(chalk.bold.cyan(`🔑 ${provider.toUpperCase()}`)));
