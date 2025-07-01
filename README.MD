@@ -4,7 +4,7 @@
 
 Origami is a terminal-first Minecraft launcher that supports authentication, installation, and launching of Minecraft versions — with built-in support for Microsoft accounts, mod loaders, profile management, and more. Designed for power users, modders, and anyone who loves minimalism and productivity.
 
-![NPM](https://img.shields.io/npm/v/origami-minecraft?style=flat-square)
+![NPM](https://img.shields.io/npm/v/@origami-minecraft/stable?style=flat-square)
 ![License](https://img.shields.io/badge/license-GPL--3.0--only-blue.svg)
 [![GitHub](https://img.shields.io/badge/github-merasugd%2Forigami-launcher?logo=github&style=flat-square)](https://github.com/merasugd/origami-launcher)
 
@@ -15,7 +15,7 @@ Origami is a terminal-first Minecraft launcher that supports authentication, ins
 ### 🔒 Stable (Recommended)
 Install the latest stable version from NPM:
 ```bash
-npm install -g origami-minecraft
+npm install -g @origami-minecraft/stable
 ```
 
 Once installed, you can use the `origami` command anywhere in your terminal.
@@ -24,22 +24,14 @@ Once installed, you can use the `origami` command anywhere in your terminal.
 
 ### 🧪 Development Builds
 
-> 🚧 Development builds are **not published to NPM**. These builds may include experimental features and are considered unstable.
+> 🚧 Development builds are experimental. These builds may include experimental features and are considered unstable.
 
-You can install them directly from GitHub, using a specific tag (starting from `1.0.1-dev2`):
+You can install them directly from NPM:
 
 #### Install the latest dev build:
 ```bash
-npm install -g git+https://github.com/merasugd/origami-launcher.git
+npm install -g @origami-minecraft/devbuilds
 ```
-
-#### Install a specific dev version (from GitHub tag):
-```bash
-npm install -g git+https://github.com/merasugd/origami-launcher.git#1.0.1-dev2
-```
-
-You can find all available dev tags here:  
-👉 [GitHub Releases](https://github.com/merasugd/origami-launcher/releases)
 
 ---
 
@@ -119,7 +111,7 @@ npm run origami
 ## 🌐 Links
 
 - 📁 GitHub: [github.com/merasugd/origami-launcher](https://github.com/merasugd/origami-launcher)
-- 📦 NPM: [npmjs.com/package/origami-minecraft](https://www.npmjs.com/package/origami-minecraft)
+- 📦 NPM: [npmjs.com/package/origami-minecraft](https://www.npmjs.com/package/@origami-minecraft/stable)
 
 ---
 

@@ -3,10 +3,9 @@
 All notable changes to this project will be documented in this file.
 
 ## 🔁 Development Builds (Unreleased or GitHub-only)
-
-> These builds are **not** published to npm.  
+  
 > Installed via:  
-> `npm install -g git+https://github.com/merasugd/origami-launcher.git`
+> `npm install -g @origami-minecraft/devbuilds`
 
 ⚠️ **Warning:**  
 Development builds are experimental and **not completely tested**.  
@@ -37,12 +36,14 @@ Some features introduced in these builds may never make it into stable releases.
 ## ✅ Stable Releases
 
 > These builds are published to the **npm registry**:  
-> `npm install -g origami-minecraft`
+> `npm install -g @origami-minecraft/stable`
 
 --- 
 
 ### [1.0.2] - 2025-07-01
-- 🐛 Major issues with installations.
+- 🔄 Installations (old versions/devbuilds WILL NOT BE INSTALLABLE FROM THIS POINT)
+
+--- 
 
 ### [1.0.1] - 2025-07-01
 - ✨ Added `clean` command for resetting Minecraft or Origami data

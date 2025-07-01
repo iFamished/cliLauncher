@@ -10,13 +10,13 @@
 ### Stable Release (Recommended)
 
 ```bash
-npm install -g origami-minecraft
+npm install -g @origami-minecraft/stable
 ```
 
 ### Development Build (Unstable, bleeding-edge)
 
 ```bash
-npm install -g git+https://github.com/merasugd/origami-launcher.git
+npm install -g @origami-minecraft/devbuilds
 ```
 
 ---
