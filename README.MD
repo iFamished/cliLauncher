@@ -45,7 +45,7 @@ You can find all available dev tags here:
 
 ## 🗒️ Changelog
 
-See what's new in dev and stable builds in the [CHANGELOG.md](./wiki/CHANGELOG.MD).
+See what's new in dev and stable builds in the [CHANGELOG.md](https://github.com/merasugd/origami-launcher/blob/main/wiki/CHANGELOG.MD).
 
 ⚠️ Dev builds are listed at the top — use them at your own risk!
 
@@ -72,7 +72,7 @@ origami menu
 
 ### 🖼️ Preview
 
-![Preview](./wiki/images/image.png)
+![Preview](https://raw.githubusercontent.com/merasugd/origami-launcher/refs/heads/main/wiki/images/image.png)
 
 Navigate using your keyboard to log in, manage accounts, install versions, or launch the game.
 
@@ -81,7 +81,7 @@ Navigate using your keyboard to log in, manage accounts, install versions, or la
 ### 📘 CLI Documentation
 
 See the full CLI documentation here:  
-📖 [`CLI.md`](./wiki/CLI.MD)
+📖 [`CLI.md`](https://github.com/merasugd/origami-launcher/blob/main/wiki/CLI.MD)
 
 ---
 

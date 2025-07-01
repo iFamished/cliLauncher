@@ -1,22 +1,7 @@
 {
   "name": "origami-minecraft",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Origami is a terminal-first Minecraft launcher that supports authentication, installation, and launching of Minecraft versions — with built-in support for Microsoft accounts, mod loaders, profile management, and more. Designed for power users, modders, and anyone who loves minimalism and productivity.",
-  "main": "build/cli/origami.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "origami": "node build/cli/origami.js",
-    "lint": "gts lint",
-    "clean": "gts clean",
-    "compile": "tsc",
-    "fix": "gts fix",
-    "prepare": "npm run compile",
-    "pretest": "npm run compile",
-    "posttest": "npm run lint"
-  },
-  "bin": {
-    "origami": "build/cli/origami.js"
-  },
   "keywords": [
     "Minecraft",
     "Launcher",
@@ -25,8 +10,32 @@
     "MC",
     "LauncherCore"
   ],
-  "author": "MerasuGD",
+  "homepage": "https://github.com/merasugd/origami-launcher#readme",
+  "bugs": {
+    "url": "https://github.com/merasugd/origami-launcher/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/merasugd/origami-launcher.git"
+  },
   "license": "GPL-3.0-only",
+  "author": "MerasuGD",
+  "type": "commonjs",
+  "main": "build/cli/origami.js",
+  "bin": {
+    "origami": "build/cli/origami.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "origami": "node build/cli/origami.js",
+    "lint": "npx gts lint",
+    "clean": "npx gts clean",
+    "compile": "npx tsc",
+    "fix": "npx gts fix",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run lint"
+  },
   "dependencies": {
     "@inquirer/prompts": "^7.5.3",
     "adm-zip": "^0.5.16",
@@ -38,7 +47,6 @@
     "figlet": "^1.8.1",
     "fs-extra": "^11.3.0",
     "gradient-string": "^3.0.0",
-    "gts": "^6.0.2",
     "msmc": "^5.0.5",
     "ora": "^8.2.0",
     "request": "^2.88.2",

@@ -41,6 +41,10 @@ Some features introduced in these builds may never make it into stable releases.
 
 --- 
 
+### [1.0.2] - 2025-07-01
+- 🐛 `tsc` not found.
+- 🐛 Major fixes for NPM `origami-minecraft`
+
 ### [1.0.1] - 2025-07-01
 - ✨ Added `clean` command for resetting Minecraft or Origami data
 - ✨ Added scriptable subcommands: `menu`, `profile`, `auth`, `launch`
