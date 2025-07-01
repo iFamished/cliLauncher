@@ -1,0 +1,19 @@
+# Ignore development folders
+wiki/
+node_modules/
+
+# Ignore config and tooling files
+.editorconfig
+.eslintrc*
+.prettierrc.*
+.gitignore
+tsconfig.tsbuildinfo
+
+# Ignore local metadata and lockfiles (optional)
+package-lock.json
+
+# Ignore misc
+*.log
+.DS_Store
+.vscode/
+.idea/
