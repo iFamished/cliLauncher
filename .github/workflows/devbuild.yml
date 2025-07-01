@@ -2,7 +2,11 @@ name: DevBuild Publish
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+
+permissions:
+  contents: write
 
 jobs:
   publish-devbuild:
@@ -12,30 +16,35 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
-
+      
       - name: Install dependencies
         run: npm ci
 
-      - name: Build (if applicable)
-        run: npm run compile
-
       - name: Patch version and rename to devbuilds
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-            CURRENT_VERSION=$(node -p "require('./package.json').version")
-            NEW_VERSION=$(npm version prerelease --preid=dev --no-git-tag-version)
-            jq '.name = "@origami-minecraft/devbuilds"' package.json > tmp.json && mv tmp.json package.json
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -am "chore: bump to $NEW_VERSION"
-            git push
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+          NEW_VERSION=$(npm version prerelease --preid=dev --no-git-tag-version)
+          echo "Bumped version: $NEW_VERSION"
+          # Rename unscoped package to the devbuilds scope
+          jq '.name = "@origami-minecraft/devbuilds"' package.json > tmp.json && mv tmp.json package.json
+          git add package.json
+          git commit -m "chore: bump to $NEW_VERSION"
+          git push origin HEAD:main
 
       - name: Publish to NPM
-        run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --tag dev
