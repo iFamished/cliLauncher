@@ -198,6 +198,11 @@ export class ProgressReport {
             const bar = this.bars.get(name);
             if (!bar || bar.value >= bar.total) continue;
 
+            if (bar.value >= bar.total) {
+                this.stop(name);
+                continue;
+            }
+
             const percent = bar.total ? bar.value / bar.total : 0;
             const elapsed = Date.now() - bar.startTime;
             const eta = bar.value > 0 ? elapsed / bar.value * (bar.total - bar.value) : 0;

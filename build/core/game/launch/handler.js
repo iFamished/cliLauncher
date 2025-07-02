@@ -204,19 +204,22 @@ class Handler {
                     }
                     exports.progress.updateTo(type, task);
                 });
-                launcher.on('download-status', (data) => {
+                /*launcher.on('download-status', (data) => {
                     let { name, current, total } = data;
-                    if (!exports.progress.has(name)) {
-                        exports.progress.create(name, total);
-                        exports.progress.start();
+                    
+                    if(!progress.has(name)) {
+                        progress.create(name, total);
+                        progress.start();
                     }
-                    exports.progress.updateTo(name, current);
+
+                    progress.updateTo(name, current);
                 });
+
                 launcher.on('download', (name) => {
-                    if (exports.progress.has(name)) {
-                        exports.progress.stop(name);
+                    if(progress.has(name)) {
+                        progress.stop(name);
                     }
-                });
+                });*/
                 launcher.on('progress-end', (data) => {
                     if (exports.progress.has(data.type)) {
                         exports.progress.stop(data.type);

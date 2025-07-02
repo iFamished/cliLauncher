@@ -249,7 +249,7 @@ export class Handler {
                     progress.updateTo(type, task);
                 });
 
-                launcher.on('download-status', (data) => {
+                /*launcher.on('download-status', (data) => {
                     let { name, current, total } = data;
                     
                     if(!progress.has(name)) {
@@ -264,7 +264,7 @@ export class Handler {
                     if(progress.has(name)) {
                         progress.stop(name);
                     }
-                });
+                });*/
 
                 launcher.on('progress-end', (data) => {
                     if(progress.has(data.type)) {
