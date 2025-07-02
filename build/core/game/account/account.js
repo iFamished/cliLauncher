@@ -37,14 +37,35 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LauncherAccountManager = void 0;
+exports.encrypt = encrypt;
+exports.decrypt = decrypt;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const common_1 = require("../../utils/common");
 const handler_1 = require("../launch/handler");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
-const mcDir = (0, common_1.minecraft_dir)();
-const launcherProfilesPath = path.join(mcDir, 'launcher_profiles.json');
+const crypto_1 = __importDefault(require("crypto"));
+const defaults_1 = require("../../../config/defaults");
+const ENCRYPTION_KEY = crypto_1.default.createHash('sha256').update(defaults_1.ORIGAMI_CLIENT_TOKEN).digest();
+const IV_LENGTH = 16;
+function encrypt(text) {
+    const iv = crypto_1.default.randomBytes(IV_LENGTH);
+    const cipher = crypto_1.default.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    let encrypted = cipher.update(text, 'utf8', 'base64');
+    encrypted += cipher.final('base64');
+    return iv.toString('base64') + ':' + encrypted;
+}
+function decrypt(text) {
+    const [ivBase64, encrypted] = text.split(':');
+    const iv = Buffer.from(ivBase64, 'base64');
+    const decipher = crypto_1.default.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    let decrypted = decipher.update(encrypted, 'base64', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+const mcDir = (0, common_1.minecraft_dir)(true);
+const launcherProfilesPath = path.join(mcDir, 'accounts.dat');
 class LauncherAccountManager {
     filePath;
     data;
@@ -56,11 +77,13 @@ class LauncherAccountManager {
     load() {
         if (fs.existsSync(this.filePath)) {
             try {
-                const raw = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
+                const encrypted = fs.readFileSync(this.filePath, 'utf-8');
+                const raw = JSON.parse(decrypt(encrypted));
                 this.data = raw.accounts ? raw : { accounts: {} };
             }
             catch (err) {
-                handler_1.logger.error('Failed to parse launcher_profiles.json:', err.message);
+                handler_1.logger.error('⚠️ Failed to decrypt or parse account data:', err.message);
+                this.data = { accounts: {} };
             }
         }
         else {
@@ -68,15 +91,11 @@ class LauncherAccountManager {
         }
     }
     save() {
-        const fullData = fs.existsSync(this.filePath)
-            ? JSON.parse(fs.readFileSync(this.filePath, 'utf-8'))
-            : {};
-        fullData.accounts = this.data.accounts;
-        fullData.selectedAccount = this.data.selectedAccount;
-        fs.writeFileSync(this.filePath, JSON.stringify(fullData, null, 2));
+        const encrypted = encrypt(JSON.stringify(this.data));
+        fs.writeFileSync(this.filePath, encrypted);
     }
     reset() {
-        fs.writeFileSync(this.filePath, JSON.stringify({ accounts: {} }, null, 2));
+        fs.unlinkSync(this.filePath);
     }
     addAccount(account) {
         this.data.accounts[account.id] = account;

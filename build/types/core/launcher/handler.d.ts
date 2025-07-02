@@ -4,10 +4,12 @@ export default class Handler {
     client: MCLCore;
     options: ILauncherOptions | null;
     version: any;
-    baseRequest: any;
     constructor(client: MCLCore);
     checkJava(java: string): Promise<unknown>;
-    downloadAsync(url: string, directory: string, name?: string, retry?: boolean, type?: string): Promise<unknown>;
+    downloadAsync(url: string, directory: string, name?: string, retry?: boolean, type?: string, maxRetries?: number): Promise<boolean | {
+        failed: boolean;
+        asset: string | null;
+    }>;
     checkSum(hash: string, file: string): Promise<unknown>;
     getVersion(): Promise<unknown>;
     getJar(): Promise<boolean | undefined>;

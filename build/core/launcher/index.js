@@ -65,6 +65,7 @@ class MCLCore extends events_1.default {
             const modifyJson = await this.getModifyJson();
             const args = [];
             let jvm = [
+                "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED",
                 '-XX:-UseAdaptiveSizePolicy',
                 '-XX:-OmitStackTraceInFastThrow',
                 '-Dfml.ignorePatchDiscrepancies=true',
@@ -168,6 +169,11 @@ class MCLCore extends events_1.default {
         let modifyJson = null;
         if (!this.options || !this.handler)
             return;
+        if (this.options.neoforge) {
+            this.options.neoforge = path_1.default.resolve(this.options.neoforge);
+            const neoJsonPath = path_1.default.join(this.options.neoforge, `${path_1.default.basename(this.options.neoforge)}.json`);
+            modifyJson = JSON.parse(fs_1.default.readFileSync(neoJsonPath, { encoding: 'utf8' }));
+        }
         if (this.options.forge) {
             this.options.forge = path_1.default.resolve(this.options.forge);
             modifyJson = await this.handler.getForgedWrapped();

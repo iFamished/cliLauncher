@@ -36,6 +36,7 @@ export interface IOverrides {
      * Max sockets for downloadAsync.
      */
     maxSockets?: number;
+    connections?: number;
     /**
      * Urls to the Minecraft and Forge resource servers
      *
@@ -145,6 +146,7 @@ export interface ILauncherOptions {
      * Versions below 1.13 should be the "universal" jar while versions above 1.13+ should be the "installer" jar
      */
     forge?: string;
+    neoforge?: string;
     /**
      * Path to the JRE executable file, will default to java if not entered.
      */

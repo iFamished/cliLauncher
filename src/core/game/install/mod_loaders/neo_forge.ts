@@ -98,9 +98,11 @@ async function installNeoForgeViaExecutor(): Promise<ClientJar | null> {
         ensureDir(INSTALL_DIR);
 
         spinner.start('📥 Downloading NeoForge installer...');
+        spinner.stop();
+
         await downloader(jarUrl, jarPath);
         
-        waitForFolder(metadata, mcVersion).then(versionFolder => {
+        waitForFolder(metadata, neoVersion).then(versionFolder => {
             const profileManager = new LauncherProfileManager();
             const versionId = path.basename(versionFolder);
             profileManager.addProfile(versionId, mcVersion, versionId, metadata, versionId, metadata.name);

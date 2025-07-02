@@ -1,8 +1,7 @@
-import { existsSync, readFileSync } from "fs";
 import { AUTH_PROVIDERS, Credentials, IAuthProvider } from "../../../types/account";
 import { LauncherAccount } from "../../../types/launcher";
 import LauncherProfileManager from "../../tools/launcher";
-import { minecraft_dir, printVersion } from "../../utils/common";
+import { ensureDir, minecraft_dir, printVersion } from "../../utils/common";
 import { getAuthProvider } from "../account";
 import LauncherAccountManager from "../account/account";
 import path from "path";
@@ -16,6 +15,7 @@ import MCLCore from "../../launcher";
 import { ILauncherOptions, IUser } from "../../launcher/types";
 import { InstallerRegistry } from "../install/registry";
 import inquirer from "inquirer";
+import { existsSync, writeFileSync, readFileSync } from "fs-extra";
 
 export const logger = new Logger();
 export const progress = logger.progress();
@@ -167,6 +167,10 @@ export class Handler {
             return null;
         }
 
+        let origami_dir = minecraft_dir(true);
+        let origami_data = path.join(origami_dir, 'instances', name);
+        ensureDir(origami_data);
+
         try {
             let java = await temurin.select();
             let auth = await this.get_auth();
@@ -211,11 +215,12 @@ export class Handler {
                     cache: cache_dir,
                     overrides: {
                         libraryRoot, assetRoot,
-                        gameDirectory: version_path,
+                        gameDirectory: origami_data,
                         cwd: version_path,
                         detached: settings.safe_exit,
                         maxSockets: settings.max_sockets,
-                        versionName: `${metadata.name}/${metadata.version}`,               
+                        connections: settings.connections,
+                        versionName: `${metadata.name}/${metadata.version}`,         
                     },
                     launcher: metadata,
                 };
@@ -239,10 +244,28 @@ export class Handler {
                     if(!progress.has(type)) {
                         progress.create(type, total);
                         progress.start();
-                    };
+                    }
 
                     progress.updateTo(type, task);
                 });
+
+                launcher.on('download-status', (data) => {
+                    let { name, current, total } = data;
+                    
+                    if(!progress.has(name)) {
+                        progress.create(name, total);
+                        progress.start();
+                    }
+
+                    progress.updateTo(name, current);
+                });
+
+                launcher.on('download', (name) => {
+                    if(progress.has(name)) {
+                        progress.stop(name);
+                    }
+                });
+
                 launcher.on('progress-end', (data) => {
                     if(progress.has(data.type)) {
                         progress.stop(data.type);
@@ -268,6 +291,11 @@ export class Handler {
         if (availableInstallers.length === 0) {
             logger.warn("⚠️ No available installers found.");
             return;
+        }
+
+        const minecraft_launcher_profiles = path.join(minecraft_dir(), 'launcher_profiles.json');
+        if(!existsSync(minecraft_launcher_profiles)) {
+            writeFileSync(minecraft_launcher_profiles, JSON.stringify({ profiles: {} }));
         }
 
         const choices = availableInstallers.map(installer => ({

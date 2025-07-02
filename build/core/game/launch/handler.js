@@ -4,7 +4,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Handler = exports.progress = exports.logger = void 0;
-const fs_1 = require("fs");
 const launcher_1 = __importDefault(require("../../tools/launcher"));
 const common_1 = require("../../utils/common");
 const account_1 = require("../account");
@@ -19,6 +18,7 @@ const chalk_1 = __importDefault(require("chalk"));
 const launcher_2 = __importDefault(require("../../launcher"));
 const registry_1 = require("../install/registry");
 const inquirer_1 = __importDefault(require("inquirer"));
+const fs_extra_1 = require("fs-extra");
 exports.logger = new logger_1.Logger();
 exports.progress = exports.logger.progress();
 class Handler {
@@ -59,7 +59,7 @@ class Handler {
         };
     }
     getVersion(versionJson) {
-        let version_data = this.jsonParser((0, fs_1.readFileSync)(versionJson, { encoding: "utf-8" }));
+        let version_data = this.jsonParser((0, fs_extra_1.readFileSync)(versionJson, { encoding: "utf-8" }));
         return {
             version: version_data["inheritsFrom"] || version_data["id"],
             type: version_data["type"] || "release",
@@ -135,9 +135,12 @@ class Handler {
         }
         let version_path = path_1.default.join(version_dir, name);
         let version_json = path_1.default.join(version_path, `${name}.json`);
-        if (!(0, fs_1.existsSync)(version_path) || !(0, fs_1.existsSync)(version_json)) {
+        if (!(0, fs_extra_1.existsSync)(version_path) || !(0, fs_extra_1.existsSync)(version_json)) {
             return null;
         }
+        let origami_dir = (0, common_1.minecraft_dir)(true);
+        let origami_data = path_1.default.join(origami_dir, 'instances', name);
+        (0, common_1.ensureDir)(origami_data);
         try {
             let java = await temurin_1.default.select();
             let auth = await this.get_auth();
@@ -175,10 +178,11 @@ class Handler {
                     cache: cache_dir,
                     overrides: {
                         libraryRoot, assetRoot,
-                        gameDirectory: version_path,
+                        gameDirectory: origami_data,
                         cwd: version_path,
                         detached: settings.safe_exit,
                         maxSockets: settings.max_sockets,
+                        connections: settings.connections,
                         versionName: `${metadata.name}/${metadata.version}`,
                     },
                     launcher: metadata,
@@ -198,8 +202,20 @@ class Handler {
                         exports.progress.create(type, total);
                         exports.progress.start();
                     }
-                    ;
                     exports.progress.updateTo(type, task);
+                });
+                launcher.on('download-status', (data) => {
+                    let { name, current, total } = data;
+                    if (!exports.progress.has(name)) {
+                        exports.progress.create(name, total);
+                        exports.progress.start();
+                    }
+                    exports.progress.updateTo(name, current);
+                });
+                launcher.on('download', (name) => {
+                    if (exports.progress.has(name)) {
+                        exports.progress.stop(name);
+                    }
                 });
                 launcher.on('progress-end', (data) => {
                     if (exports.progress.has(data.type)) {
@@ -223,6 +239,10 @@ class Handler {
         if (availableInstallers.length === 0) {
             exports.logger.warn("⚠️ No available installers found.");
             return;
+        }
+        const minecraft_launcher_profiles = path_1.default.join((0, common_1.minecraft_dir)(), 'launcher_profiles.json');
+        if (!(0, fs_extra_1.existsSync)(minecraft_launcher_profiles)) {
+            (0, fs_extra_1.writeFileSync)(minecraft_launcher_profiles, JSON.stringify({ profiles: {} }));
         }
         const choices = availableInstallers.map(installer => ({
             name: chalk_1.default.green(`[${installer?.metadata.author}] `) +

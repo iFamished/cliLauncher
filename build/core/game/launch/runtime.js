@@ -352,6 +352,7 @@ class Runtime {
     }
     async resetOrigami() {
         const cache = (0, common_1.localpath)(true);
+        const origami = (0, common_1.minecraft_dir)(true);
         const data = (0, common_1.localpath)();
         const { confirm } = await inquirer_1.default.prompt([
             {
@@ -366,6 +367,7 @@ class Runtime {
         try {
             (0, fs_extra_1.removeSync)(data);
             (0, fs_extra_1.removeSync)(cache);
+            (0, fs_extra_1.removeSync)(origami);
             this.handler.accounts.reset();
             this.handler.profiles.reset();
             this.handler.settings.reset();

@@ -25,11 +25,20 @@ export function localpath(isCache: boolean = false) {
     return isCache ? envPaths('Origami-Cache').temp : envPaths('Origami-Data').data;
 };
 
-export function minecraft_dir() {
+export function minecraft_dir(origami_data?: boolean) {
     let mc = envPaths('.minecraft').config;
 
     ensureDir(mc);
     ensureDir(path.join(mc, "versions"));
+
+    if(origami_data) {
+        let origami = path.join(mc, 'origami_files');
+
+        ensureDir(origami);
+        ensureDir(path.join(origami, 'instances'));
+        
+        return origami;
+    }
 
     return mc;
 };

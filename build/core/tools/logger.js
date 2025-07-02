@@ -46,10 +46,13 @@ function renderBar(percent, width = 30) {
     const incomplete = width - complete;
     return '█'.repeat(complete) + '░'.repeat(incomplete);
 }
+const MAX_VISIBLE_BARS = 7;
 class ProgressReport {
     bars = new Map();
     spinners = new spinnies_1.default();
     renderInterval = null;
+    visible = new Set();
+    hidden = [];
     constructor() { }
     startRenderLoop() {
         if (this.renderInterval)
@@ -81,39 +84,37 @@ class ProgressReport {
             loggers.warn(`Progress bar '${name}' already exists.`);
             return null;
         }
-        let spinner_id = (0, uuid_1.v4)();
-        let spinner_data = {
+        const spinner_id = (0, uuid_1.v4)();
+        const spinner_data = {
             startTime: Date.now(),
             total,
             value: 0,
             name,
             id: spinner_id,
         };
-        this.spinners.add(spinner_id, this.task_logs(spinner_data));
         this.bars.set(name, spinner_data);
+        if (this.visible.size < MAX_VISIBLE_BARS) {
+            this.visible.add(name);
+            this.spinners.add(spinner_id, this.task_logs(spinner_data));
+        }
+        else {
+            this.hidden.push(name);
+        }
         return {
-            increment: () => {
-                this.update(name, 1);
-            },
-            update: (amount) => {
-                this.updateTo(name, amount);
-            },
+            increment: () => this.update(name, 1),
+            update: (amount) => this.updateTo(name, amount),
             total: (newTotal) => {
-                if (newTotal) {
+                if (newTotal)
                     this.setTotal(name, newTotal);
-                }
                 return this.bars.get(name)?.total || newTotal || 0;
             },
-            stop: (fail = false) => {
-                return this.stop(name, fail);
-            },
+            stop: (fail = false) => this.stop(name, fail),
         };
     }
     has(name) {
         return this.bars.has(name);
     }
     start() {
-        //this.renderAll();
         this.startRenderLoop();
     }
     update(name, amount = 1) {
@@ -123,7 +124,6 @@ class ProgressReport {
             if (bar.value > bar.total)
                 bar.value = bar.total;
         }
-        //this.renderAll();
     }
     updateTo(name, value) {
         const bar = this.bars.get(name);
@@ -132,47 +132,54 @@ class ProgressReport {
             if (bar.value > bar.total)
                 bar.value = bar.total;
         }
-        //this.renderAll()
     }
     setTotal(name, total) {
         const bar = this.bars.get(name);
         if (bar)
             bar.total = total;
-        //this.renderAll()
     }
     stop(name, fail = false) {
-        let spinner_data = this.bars.get(name);
-        if (spinner_data) {
-            this.spinners.update(spinner_data.id, this.task_logs(spinner_data, 1, fail));
-            this.spinners.succeed(spinner_data.id);
+        const spinner = this.bars.get(name);
+        if (!spinner)
+            return;
+        if (this.visible.has(name)) {
+            this.spinners.update(spinner.id, this.task_logs(spinner, 1, fail));
+            this.spinners.succeed(spinner.id);
+            this.visible.delete(name);
+            const next = this.hidden.shift();
+            if (next) {
+                const nextBar = this.bars.get(next);
+                if (nextBar) {
+                    this.spinners.add(nextBar.id, this.task_logs(nextBar));
+                    this.visible.add(next);
+                }
+            }
         }
-        ;
         this.bars.delete(name);
     }
     stopAll(fail = false) {
-        for (const bar_key of this.bars.keys()) {
-            let bar = this.bars.get(bar_key);
-            if (!bar)
-                continue;
-            if (bar) {
-                this.spinners.update(bar.id, this.task_logs(bar, 1, fail));
-                this.spinners.succeed(bar.id);
-            }
-            ;
+        for (const name of [...this.bars.keys()]) {
+            this.stop(name, fail);
         }
-        this.bars.clear();
     }
     renderAll() {
-        for (const bar of this.bars.values()) {
+        for (const name of this.visible) {
+            const bar = this.bars.get(name);
+            if (!bar || bar.value >= bar.total)
+                continue;
             const percent = bar.total ? bar.value / bar.total : 0;
             const elapsed = Date.now() - bar.startTime;
             const eta = bar.value > 0 ? elapsed / bar.value * (bar.total - bar.value) : 0;
             const barStr = renderBar(percent);
             const line = `|${chalk_1.default.cyan(barStr)}| ${(percent * 100).toFixed(1)}% || ETA: ${formatTime(eta)}`;
             this.spinners.update(bar.id, this.task_logs(bar, -1, false, line));
-            if (bar.value >= bar.total) {
-                this.stop(bar.name);
-            }
+        }
+        const completed = [...this.visible].filter(name => {
+            const bar = this.bars.get(name);
+            return bar && bar.value >= bar.total;
+        });
+        for (const name of completed) {
+            this.stop(name);
         }
     }
 }

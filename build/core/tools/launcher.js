@@ -43,8 +43,9 @@ const common_1 = require("../utils/common");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const fs_extra_1 = require("fs-extra");
-const mcDir = (0, common_1.minecraft_dir)();
-const launcherProfilesPath = path.join(mcDir, 'origami_profiles.json');
+const uuid_1 = require("uuid");
+const mcDir = (0, common_1.minecraft_dir)(true);
+const launcherProfilesPath = path.join(mcDir, 'profiles.json');
 class LauncherProfileManager {
     filePath;
     data;
@@ -55,7 +56,7 @@ class LauncherProfileManager {
         this.autoImportVanillaProfiles();
     }
     autoImportVanillaProfiles() {
-        const versionsDir = path.join(mcDir, 'versions');
+        const versionsDir = path.join((0, common_1.minecraft_dir)(), 'versions');
         if (!fs.existsSync(versionsDir))
             return;
         const folders = fs.readdirSync(versionsDir, { withFileTypes: true })
@@ -68,7 +69,7 @@ class LauncherProfileManager {
             try {
                 const versionJson = (0, fs_extra_1.readJsonSync)(versionJsonPath);
                 const name = folder;
-                const id = versionJson.id || versionJson.inheritsFrom || 'Origami-Imported';
+                const id = versionJson.id || versionJson.inheritsFrom || 'Origami-Imported-' + (0, uuid_1.v4)();
                 if (!this.data.origami_profiles[name]) {
                     this.addProfile(name, id, path.join(versionsDir, folder), {
                         name: id,

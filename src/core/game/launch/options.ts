@@ -13,8 +13,8 @@ import {
     WindowSize
 } from '../../../types/launcher_options';
 
-const mcDir = minecraft_dir();
-const launcherProfilesPath = path.join(mcDir, 'launcher_options.json');
+const mcDir = minecraft_dir(true);
+const launcherProfilesPath = path.join(mcDir, 'settings.json');
 
 export class LauncherOptionsManager {
     private filePath: string;
@@ -57,6 +57,7 @@ export class LauncherOptionsManager {
         const window = await askWindowConfig(this.data.options.window_size);
         const safe_exit = await promptBoolean('Enable safe exit?', this.data.options.safe_exit);
         const max_sockets = await promptNumber('Set max sockets:', { min: 1, default: this.data.options.max_sockets || 8 });
+        const connections = await promptNumber('Set parallel connections:', { min: 1, default: this.data.options.connections || 8 });
 
         const fullscreen = window.fullscreen;
 
@@ -65,7 +66,8 @@ export class LauncherOptionsManager {
             window_size: fullscreen ? undefined : window,
             fullscreen,
             safe_exit,
-            max_sockets
+            max_sockets,
+            connections
         };
 
         this.save();
@@ -83,7 +85,8 @@ export class LauncherOptionsManager {
             window_size: opts.window_size,
             fullscreen: opts.fullscreen ?? false,
             safe_exit: opts.safe_exit ?? false,
-            max_sockets: opts.max_sockets ?? 8
+            max_sockets: opts.max_sockets ?? 8,
+            connections: opts.connections ?? 8,
         };
     }
 

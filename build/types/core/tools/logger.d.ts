@@ -8,6 +8,8 @@ export declare class ProgressReport {
     private bars;
     private spinners;
     private renderInterval;
+    private visible;
+    private hidden;
     constructor();
     private startRenderLoop;
     private stopRenderLoop;

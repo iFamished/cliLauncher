@@ -72,6 +72,7 @@ async function installQuiltViaExecutor() {
         (0, common_1.cleanDir)(INSTALLER_DIR);
         (0, common_1.ensureDir)(INSTALLER_DIR);
         spinner.text = '📦 Downloading Quilt installer...';
+        spinner.stop();
         await (0, download_1.downloader)(jarUrl, jarPath);
         (0, common_1.waitForFolder)(metadata, minecraftVersion).then(versionFolder => {
             const profileManager = new launcher_1.default();

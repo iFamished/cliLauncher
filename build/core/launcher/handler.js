@@ -12,21 +12,25 @@ const chalk_1 = __importDefault(require("chalk"));
 const utils_1 = require("./utils");
 const handler_1 = require("../game/launch/handler");
 const axios_1 = __importDefault(require("axios"));
-const request_1 = __importDefault(require("request"));
+const dns_1 = __importDefault(require("dns"));
+const defaults_1 = require("../../config/defaults");
+const https_1 = require("https");
+const EasyDl = require("easydl");
+dns_1.default.setDefaultResultOrder('ipv4first');
+const agent = new https_1.Agent({
+    keepAlive: true,
+    timeout: 50000,
+    maxSockets: 10,
+});
 let counter = 0;
 class Handler {
     client;
     options;
     version;
-    baseRequest;
     constructor(client) {
         this.version = "MCLC-undefined";
         this.client = client;
         this.options = client.options;
-        this.baseRequest = request_1.default.defaults({
-            pool: { maxSockets: this.options?.overrides?.maxSockets || 2 },
-            timeout: this.options?.timeout || 50000
-        });
     }
     checkJava(java) {
         return new Promise(resolve => {
@@ -47,54 +51,47 @@ class Handler {
             });
         });
     }
-    downloadAsync(url, directory, name = "Task", retry = false, type = "Download") {
-        return new Promise(resolve => {
-            fs_1.default.mkdirSync(directory, { recursive: true });
-            const _request = this.baseRequest(url);
-            let receivedBytes = 0;
-            let totalBytes = 0;
-            _request.on('response', (data) => {
-                if (data.statusCode === 404) {
-                    this.client.emit('debug', `[MCLC]: Failed to download ${url} due to: File not found...`);
-                    return resolve(false);
-                }
-                totalBytes = parseInt(data.headers['content-length'] || 0);
-            });
-            _request.on('error', async (error) => {
-                this.client.emit('debug', `[MCLC]: Failed to download asset to ${path_1.default.join(directory, name)} due to\n${error}.` +
-                    ` Retrying... ${retry}`);
-                if (retry)
-                    await this.downloadAsync(url, directory, name, false, type);
-                resolve(false);
-            });
-            _request.on('data', (data) => {
-                receivedBytes += data.length;
-                this.client.emit('download-status', {
-                    name: name,
-                    type: type,
-                    current: receivedBytes,
-                    total: totalBytes
+    async downloadAsync(url, directory, name = 'Task', retry = true, type = 'Download', maxRetries = 2) {
+        const targetPath = path_1.default.join(directory, name);
+        let attempt = 0;
+        fs_1.default.mkdirSync(directory, { recursive: true });
+        while (attempt <= maxRetries) {
+            try {
+                const dl = new EasyDl(url, targetPath, {
+                    connections: this.options?.overrides?.connections || 5,
+                    maxRetry: maxRetries,
+                    httpOptions: {
+                        agent,
+                        headers: { 'User-Agent': defaults_1.ORIGAMi_USER_AGENT },
+                    }
                 });
-            });
-            const file = fs_1.default.createWriteStream(path_1.default.join(directory, name));
-            _request.pipe(file);
-            file.once('finish', () => {
+                dl.on('progress', ({ total, details }) => {
+                    const completed = details.reduce((acc, part) => acc + (part.bytes || 0), 0);
+                    this.client.emit('download-status', {
+                        name,
+                        type,
+                        current: completed,
+                        total: total.bytes || 0,
+                    });
+                });
+                await dl.wait();
                 this.client.emit('download', name);
-                resolve({
-                    failed: false,
-                    asset: null
-                });
-            });
-            file.on('error', async (e) => {
-                this.client.emit('debug', `[MCLC]: Failed to download asset to ${path_1.default.join(directory, name)} due to\n${e}.` +
-                    ` Retrying... ${retry}`);
-                if (fs_1.default.existsSync(path_1.default.join(directory, name)))
-                    fs_1.default.unlinkSync(path_1.default.join(directory, name));
-                if (retry)
-                    await this.downloadAsync(url, directory, name, false, type);
-                resolve(false);
-            });
-        });
+                return true;
+            }
+            catch (err) {
+                this.client.emit('debug', `[DOWNLOADER]: Failed to download ${url} to ${targetPath}:\n${err.message}`);
+                if (fs_1.default.existsSync(targetPath))
+                    fs_1.default.unlinkSync(targetPath);
+                attempt++;
+                if (attempt > maxRetries || !retry) {
+                    return { failed: true, asset: null };
+                }
+                const wait = 500 * Math.pow(2, attempt - 1);
+                this.client.emit('debug', `[DOWNLOADER]: Retrying download (${attempt}/${maxRetries})...`);
+                await new Promise(res => setTimeout(res, wait));
+            }
+        }
+        return { failed: true, asset: null };
     }
     checkSum(hash, file) {
         return new Promise((resolve, _) => {
@@ -156,8 +153,14 @@ class Handler {
             const hash = index.objects[asset].hash;
             const subhash = hash.substring(0, 2);
             const subAsset = path_1.default.join(assetDirectory, 'objects', subhash);
-            if (!fs_1.default.existsSync(path_1.default.join(subAsset, hash)) || !await this.checkSum(hash, path_1.default.join(subAsset, hash))) {
-                await this.downloadAsync(`${this.options?.overrides?.url?.resource}/${subhash}/${hash}`, subAsset, hash, true, 'assets');
+            const assetPath = path_1.default.join(subAsset, hash);
+            const valid = fs_1.default.existsSync(assetPath) && await this.checkSum(hash, assetPath);
+            if (!valid) {
+                const result = await this.downloadAsync(`${this.options?.overrides?.url?.resource}/${subhash}/${hash}`, subAsset, hash, true, 'assets');
+                if (result === false || (typeof result === 'object' && result.failed)) {
+                    this.client.emit('debug', `[MCLC]: Failed to download asset ${asset}, skipping...`);
+                    return; // do not increment counter
+                }
             }
             counter++;
             this.client.emit('progress', {
@@ -506,12 +509,12 @@ class Handler {
                 total: libraries.length
             });
             libs.push(`${jarPath}${path_1.default.sep}${name}`);
-            this.client.emit('progress-end', {
-                type: eventName,
-                task: counter,
-                total: libraries.length
-            });
         }));
+        this.client.emit('progress-end', {
+            type: eventName,
+            task: counter,
+            total: libraries.length
+        });
         counter = 0;
         return libs;
     }

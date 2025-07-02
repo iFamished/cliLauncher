@@ -9,7 +9,19 @@ import { fetchVersionManifest } from "./utils"
 import { logger } from "../game/launch/handler"
 import axios from "axios"
 import { ILauncherOptions } from "./types"
-import request from "request"
+
+import dns from 'dns';
+import { ORIGAMi_USER_AGENT } from "../../config/defaults"
+import { Agent } from "https"
+import EasyDl = require("easydl")
+
+dns.setDefaultResultOrder('ipv4first');
+
+const agent = new Agent({
+    keepAlive: true,
+    timeout: 50000,
+    maxSockets: 10,
+});
 
 let counter = 0
 
@@ -17,17 +29,11 @@ export default class Handler {
     public client: MCLCore;
     public options: ILauncherOptions | null;
     public version: any;
-    public baseRequest: any;
 
     constructor (client: MCLCore) {
         this.version = "MCLC-undefined";
         this.client = client;
         this.options = client.options;
-
-        this.baseRequest = request.defaults({
-            pool: { maxSockets: this.options?.overrides?.maxSockets || 2 },
-            timeout: this.options?.timeout || 50000
-        })
     }
 
     public checkJava(java: string) {
@@ -50,60 +56,59 @@ export default class Handler {
         })
     }
 
-    public downloadAsync (url: string, directory: string, name: string = "Task", retry: boolean = false, type: string = "Download") {
-        return new Promise(resolve => {
-            fs.mkdirSync(directory, { recursive: true })
+    public async downloadAsync(
+        url: string,
+        directory: string,
+        name = 'Task',
+        retry = true,
+        type = 'Download',
+        maxRetries = 2
+    ): Promise<boolean | { failed: boolean; asset: string | null }> {
+        const targetPath = path.join(directory, name);
+        let attempt = 0;
 
-            const _request = this.baseRequest(url)
+        fs.mkdirSync(directory, { recursive: true });
 
-            let receivedBytes = 0
-            let totalBytes = 0
+        while (attempt <= maxRetries) {
+            try {
+                const dl = new EasyDl(url, targetPath, {
+                    connections: this.options?.overrides?.connections || 5,
+                    maxRetry: maxRetries,
+                    httpOptions: {
+                        agent,
+                        headers: { 'User-Agent': ORIGAMi_USER_AGENT },
+                    }
+                });
 
-            _request.on('response', (data: any) => {
-                if (data.statusCode === 404) {
-                    this.client.emit('debug', `[MCLC]: Failed to download ${url} due to: File not found...`);
-                    return resolve(false);
+                dl.on('progress', ({ total, details }) => {
+                    const completed = details.reduce((acc, part) => acc + (part.bytes || 0), 0);
+                    this.client.emit('download-status', {
+                        name,
+                        type,
+                        current: completed,
+                        total: total.bytes || 0,
+                    });
+                });
+
+                await dl.wait();
+                this.client.emit('download', name);
+                return true;
+            } catch (err: any) {
+                this.client.emit('debug', `[DOWNLOADER]: Failed to download ${url} to ${targetPath}:\n${err.message}`);
+                if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+                attempt++;
+
+                if (attempt > maxRetries || !retry) {
+                    return { failed: true, asset: null };
                 }
 
-                totalBytes = parseInt(data.headers['content-length'] || 0);
-            });
+                const wait = 500 * Math.pow(2, attempt - 1);
+                this.client.emit('debug', `[DOWNLOADER]: Retrying download (${attempt}/${maxRetries})...`);
+                await new Promise(res => setTimeout(res, wait));
+            }
+        }
 
-            _request.on('error', async(error: any) => {
-                this.client.emit('debug', `[MCLC]: Failed to download asset to ${path.join(directory, name)} due to\n${error}.` +
-                            ` Retrying... ${retry}`);
-                if (retry) await this.downloadAsync(url, directory, name, false, type);
-                resolve(false);
-            });
-
-            _request.on('data', (data: any) => {
-                receivedBytes += data.length
-                this.client.emit('download-status', {
-                    name: name,
-                    type: type,
-                    current: receivedBytes,
-                    total: totalBytes
-                })
-            })
-
-            const file = fs.createWriteStream(path.join(directory, name))
-            _request.pipe(file)
-
-            file.once('finish', () => {
-                this.client.emit('download', name)
-                resolve({
-                    failed: false,
-                    asset: null
-                })
-            })
-
-            file.on('error', async (e) => {
-                this.client.emit('debug', `[MCLC]: Failed to download asset to ${path.join(directory, name)} due to\n${e}.` +
-                            ` Retrying... ${retry}`);
-                if (fs.existsSync(path.join(directory, name))) fs.unlinkSync(path.join(directory, name));
-                if (retry) await this.downloadAsync(url, directory, name, false, type);
-                resolve(false)
-            })
-        })
+        return { failed: true, asset: null };
     }
 
     public checkSum(hash: string, file: string) {
@@ -174,9 +179,15 @@ export default class Handler {
             const hash = index.objects[asset].hash;
             const subhash = hash.substring(0, 2);
             const subAsset = path.join(assetDirectory, 'objects', subhash);
+            const assetPath = path.join(subAsset, hash);
 
-            if (!fs.existsSync(path.join(subAsset, hash)) || !await this.checkSum(hash, path.join(subAsset, hash))) {
-                await this.downloadAsync(`${this.options?.overrides?.url?.resource}/${subhash}/${hash}`, subAsset, hash, true, 'assets');
+            const valid = fs.existsSync(assetPath) && await this.checkSum(hash, assetPath);
+            if (!valid) {
+                const result = await this.downloadAsync(`${this.options?.overrides?.url?.resource}/${subhash}/${hash}`, subAsset, hash, true, 'assets');
+                if (result === false || (typeof result === 'object' && result.failed)) {
+                    this.client.emit('debug', `[MCLC]: Failed to download asset ${asset}, skipping...`);
+                    return; // do not increment counter
+                }
             }
 
             counter++;
@@ -554,13 +565,14 @@ export default class Handler {
                 total: libraries.length
             });
             libs.push(`${jarPath}${path.sep}${name}`);
+        }));
 
-            this.client.emit('progress-end', {
-                type: eventName,
-                task: counter,
-                total: libraries.length
-            });
-        }))
+        this.client.emit('progress-end', {
+            type: eventName,
+            task: counter,
+            total: libraries.length
+        });
+        
         counter = 0
 
         return libs

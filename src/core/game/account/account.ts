@@ -6,10 +6,31 @@ import { AUTH_PROVIDERS, Credentials } from '../../../types/account';
 import { logger } from '../launch/handler';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { Separator } from '@inquirer/prompts';
+import crypto from 'crypto';
+import { ORIGAMI_CLIENT_TOKEN } from '../../../config/defaults';
 
-const mcDir = minecraft_dir();
-const launcherProfilesPath = path.join(mcDir, 'launcher_profiles.json');
+const ENCRYPTION_KEY = crypto.createHash('sha256').update(ORIGAMI_CLIENT_TOKEN).digest();
+const IV_LENGTH = 16;
+
+export function encrypt(text: string): string {
+    const iv = crypto.randomBytes(IV_LENGTH);
+    const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    let encrypted = cipher.update(text, 'utf8', 'base64');
+    encrypted += cipher.final('base64');
+    return iv.toString('base64') + ':' + encrypted;
+}
+
+export function decrypt(text: string): string {
+    const [ivBase64, encrypted] = text.split(':');
+    const iv = Buffer.from(ivBase64, 'base64');
+    const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    let decrypted = decipher.update(encrypted, 'base64', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
+const mcDir = minecraft_dir(true);
+const launcherProfilesPath = path.join(mcDir, 'accounts.dat');
 
 export class LauncherAccountManager {
     private filePath: string;
@@ -24,10 +45,12 @@ export class LauncherAccountManager {
     private load() {
         if (fs.existsSync(this.filePath)) {
             try {
-                const raw = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
-                this.data = raw.accounts ? raw as LauncherAccounts : { accounts: {} };
+                const encrypted = fs.readFileSync(this.filePath, 'utf-8');
+                const raw = JSON.parse(decrypt(encrypted));
+                this.data = raw.accounts ? raw : { accounts: {} };
             } catch (err) {
-                logger.error('Failed to parse launcher_profiles.json:', (err as Error).message);
+                logger.error('⚠️ Failed to decrypt or parse account data:', (err as Error).message);
+                this.data = { accounts: {} };
             }
         } else {
             this.save();
@@ -35,18 +58,12 @@ export class LauncherAccountManager {
     }
 
     private save() {
-        const fullData = fs.existsSync(this.filePath)
-            ? JSON.parse(fs.readFileSync(this.filePath, 'utf-8'))
-            : {};
-
-        fullData.accounts = this.data.accounts;
-        fullData.selectedAccount = this.data.selectedAccount;
-
-        fs.writeFileSync(this.filePath, JSON.stringify(fullData, null, 2));
+        const encrypted = encrypt(JSON.stringify(this.data));
+        fs.writeFileSync(this.filePath, encrypted);
     }
 
     reset() {
-        fs.writeFileSync(this.filePath, JSON.stringify({ accounts: {} }, null, 2));
+        fs.unlinkSync(this.filePath);
     }
 
     addAccount(account: LauncherAccount) {

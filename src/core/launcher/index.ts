@@ -5,6 +5,7 @@ import fs from "fs";
 import EventEmitter from "events";
 import chalk from "chalk";
 import { ILauncherOptions } from "./types";
+import { minecraft_dir } from "../utils/common";
 
 export default class MCLCore extends EventEmitter {
     public options: ILauncherOptions | null = null;
@@ -36,7 +37,7 @@ export default class MCLCore extends EventEmitter {
                     ? this.options.overrides.fw
                     : undefined
                 }
-            }
+            }     
 
             this.handler = new Handler(this);
 
@@ -74,6 +75,7 @@ export default class MCLCore extends EventEmitter {
             const args: string[] = [];
 
             let jvm = [
+                "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED",
                 '-XX:-UseAdaptiveSizePolicy',
                 '-XX:-OmitStackTraceInFastThrow',
                 '-Dfml.ignorePatchDiscrepancies=true',
@@ -182,7 +184,11 @@ export default class MCLCore extends EventEmitter {
 
         if(!this.options || !this.handler) return;
 
-        if (this.options.forge) {
+        if (this.options.neoforge) {
+            this.options.neoforge = path.resolve(this.options.neoforge);
+            const neoJsonPath = path.join(this.options.neoforge, `${path.basename(this.options.neoforge)}.json`);
+            modifyJson = JSON.parse(fs.readFileSync(neoJsonPath, { encoding: 'utf8' }));
+        } if (this.options.forge) {
             this.options.forge = path.resolve(this.options.forge);
             modifyJson = await this.handler.getForgedWrapped();
         } else if (this.options.version.custom) {

@@ -1,5 +1,7 @@
 import { LauncherAccount } from '../../../types/launcher';
 import { Credentials } from '../../../types/account';
+export declare function encrypt(text: string): string;
+export declare function decrypt(text: string): string;
 export declare class LauncherAccountManager {
     private filePath;
     private data;

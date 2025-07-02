@@ -78,6 +78,8 @@ export async function installQuiltViaExecutor(): Promise<ClientJar | null> {
         ensureDir(INSTALLER_DIR);
 
         spinner.text = '📦 Downloading Quilt installer...';
+        spinner.stop();
+        
         await downloader(jarUrl, jarPath);
 
         waitForFolder(metadata, minecraftVersion).then(versionFolder => {

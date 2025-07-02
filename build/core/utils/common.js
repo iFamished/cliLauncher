@@ -68,10 +68,16 @@ function localpath(isCache = false) {
     return isCache ? (0, envs_1.default)('Origami-Cache').temp : (0, envs_1.default)('Origami-Data').data;
 }
 ;
-function minecraft_dir() {
+function minecraft_dir(origami_data) {
     let mc = (0, envs_1.default)('.minecraft').config;
     ensureDir(mc);
     ensureDir(path_1.default.join(mc, "versions"));
+    if (origami_data) {
+        let origami = path_1.default.join(mc, 'origami_files');
+        ensureDir(origami);
+        ensureDir(path_1.default.join(origami, 'instances'));
+        return origami;
+    }
     return mc;
 }
 ;

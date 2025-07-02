@@ -4,6 +4,7 @@ export interface Options {
     fullscreen?: boolean;
     safe_exit?: boolean;
     max_sockets?: number;
+    connections?: number;
 }
 export interface FIXED_Options {
     memory: FIXED_MemoryOptions;
@@ -11,6 +12,7 @@ export interface FIXED_Options {
     fullscreen: boolean;
     safe_exit: boolean;
     max_sockets: number;
+    connections: number;
 }
 export interface FIXED_MemoryOptions {
     min: string;
