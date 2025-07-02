@@ -27,7 +27,7 @@ export default class Handler {
     getLaunchOptions(modification: any): Promise<any[] | undefined>;
     getJVM(): Promise<any>;
     isLegacy(): boolean;
-    getOS(): "linux" | "windows" | "osx";
+    getOS(): "windows" | "osx" | "linux";
     getMemory(): string[] | undefined;
     extractPackage(options?: ILauncherOptions | null): Promise<boolean | undefined>;
 }

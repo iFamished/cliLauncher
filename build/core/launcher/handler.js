@@ -59,7 +59,7 @@ class Handler {
             try {
                 const dl = new EasyDl(url, targetPath, {
                     connections: this.options?.overrides?.connections || 5,
-                    maxRetry: maxRetries,
+                    maxRetry: 50,
                     httpOptions: {
                         agent,
                         headers: { 'User-Agent': defaults_1.ORIGAMi_USER_AGENT },

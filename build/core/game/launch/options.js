@@ -84,7 +84,7 @@ class LauncherOptionsManager {
         const window = await askWindowConfig(this.data.options.window_size);
         const safe_exit = await promptBoolean('Enable safe exit?', this.data.options.safe_exit);
         const max_sockets = await promptNumber('Set max sockets:', { min: 1, default: this.data.options.max_sockets || 8 });
-        const connections = await promptNumber('Set parallel connections:', { min: 1, default: this.data.options.connections || 8 });
+        const connections = await promptNumber('Set parallel connections:', { min: 1, default: this.data.options.connections || 5, max: 5 });
         const fullscreen = window.fullscreen;
         this.data.options = {
             memory,
