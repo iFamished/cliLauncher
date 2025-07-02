@@ -44,6 +44,11 @@ const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const fs_extra_1 = require("fs-extra");
 const uuid_1 = require("uuid");
+const forge_1 = __importDefault(require("../game/install/mod_loaders/forge"));
+const neo_forge_1 = __importDefault(require("../game/install/mod_loaders/neo_forge"));
+const fabric_1 = __importDefault(require("../game/install/mod_loaders/fabric"));
+const quilt_1 = __importDefault(require("../game/install/mod_loaders/quilt"));
+const vanilla_1 = __importDefault(require("../game/install/vanilla"));
 const mcDir = (0, common_1.minecraft_dir)(true);
 const launcherProfilesPath = path.join(mcDir, 'profiles.json');
 class LauncherProfileManager {
@@ -55,6 +60,27 @@ class LauncherProfileManager {
         this.load();
         this.autoImportVanillaProfiles();
     }
+    fetchMetadata(folder, versionJsonPath) {
+        const name = folder.toLowerCase();
+        const versionJson = (0, fs_extra_1.readJsonSync)(versionJsonPath);
+        const id = versionJson.id || versionJson.inheritsFrom || 'Origami-Imported-' + (0, uuid_1.v4)();
+        if (name.includes('forge')) {
+            return { version: id, metadata: forge_1.default.metadata };
+        }
+        else if (name.includes('neoforge')) {
+            return { version: id, metadata: neo_forge_1.default.metadata };
+        }
+        else if (name.includes('fabric')) {
+            return { version: id, metadata: fabric_1.default.metadata };
+        }
+        else if (name.includes('quilt')) {
+            return { version: id, metadata: quilt_1.default.metadata };
+        }
+        else {
+            return { version: id, metadata: vanilla_1.default.metadata };
+        }
+    }
+    ;
     autoImportVanillaProfiles() {
         const versionsDir = path.join((0, common_1.minecraft_dir)(), 'versions');
         if (!fs.existsSync(versionsDir))
@@ -67,16 +93,11 @@ class LauncherProfileManager {
             if (!fs.existsSync(versionJsonPath))
                 continue;
             try {
-                const versionJson = (0, fs_extra_1.readJsonSync)(versionJsonPath);
                 const name = folder;
-                const id = versionJson.id || versionJson.inheritsFrom || 'Origami-Imported-' + (0, uuid_1.v4)();
-                if (!this.data.origami_profiles[name]) {
-                    this.addProfile(name, id, path.join(versionsDir, folder), {
-                        name: id,
-                        description: versionJson.type || folder,
-                        author: 'OrigamiImportSystem'
-                    }, id, 'Grass', true);
-                    console.log(chalk_1.default.gray(`✔ Imported version: ${id}`));
+                const manifest = this.fetchMetadata(name, versionJsonPath);
+                if (!this.data.origami_profiles[manifest.version] || !Object.values(this.data.origami_profiles).find(v => v.name === name)) {
+                    this.addProfile(name, manifest.version, name, manifest.metadata, name, manifest.metadata.name);
+                    console.log(chalk_1.default.gray(`✔ Imported version: ${name}`));
                 }
             }
             catch (e) {

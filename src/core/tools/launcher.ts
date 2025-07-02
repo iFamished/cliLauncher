@@ -7,6 +7,12 @@ import inquirer from 'inquirer';
 import { readJsonSync } from 'fs-extra';
 import { v4 } from 'uuid';
 
+import forge from '../game/install/mod_loaders/forge';
+import neoforge from '../game/install/mod_loaders/neo_forge';
+import fabric from '../game/install/mod_loaders/fabric';
+import quilt from '../game/install/mod_loaders/quilt';
+import vanilla from '../game/install/vanilla';
+
 const mcDir = minecraft_dir(true);
 const launcherProfilesPath = path.join(mcDir, 'profiles.json');
 
@@ -20,6 +26,24 @@ export class LauncherProfileManager {
         this.load();
         this.autoImportVanillaProfiles();
     }
+
+    public fetchMetadata(folder: string, versionJsonPath: string): { version: string, metadata: Metadata } {
+        const name = folder.toLowerCase();
+        const versionJson = readJsonSync(versionJsonPath);
+        const id = versionJson.id || versionJson.inheritsFrom || 'Origami-Imported-'+v4();
+
+        if(name.includes('forge')) {
+            return { version: id, metadata: forge.metadata }
+        } else if(name.includes('neoforge')) {
+            return { version: id, metadata: neoforge.metadata }
+        } else if(name.includes('fabric')) {
+            return { version: id, metadata: fabric.metadata }
+        } else if(name.includes('quilt')) {
+            return { version: id, metadata: quilt.metadata }
+        } else {
+            return { version: id, metadata: vanilla.metadata }
+        }
+    };
 
     public autoImportVanillaProfiles() {
         const versionsDir = path.join(minecraft_dir(), 'versions');
@@ -35,25 +59,12 @@ export class LauncherProfileManager {
             if (!fs.existsSync(versionJsonPath)) continue;
 
             try {
-                const versionJson = readJsonSync(versionJsonPath);
                 const name = folder;
-                const id = versionJson.id || versionJson.inheritsFrom || 'Origami-Imported-'+v4();
+                const manifest = this.fetchMetadata(name, versionJsonPath);
 
-                if (!this.data.origami_profiles[name]) {
-                    this.addProfile(
-                        name,
-                        id,
-                        path.join(versionsDir, folder),
-                        {
-                            name: id,
-                            description: versionJson.type || folder,
-                            author: 'OrigamiImportSystem'
-                        },
-                        id,
-                        'Grass',
-                        true,
-                    );
-                    console.log(chalk.gray(`✔ Imported version: ${id}`));
+                if (!this.data.origami_profiles[manifest.version] || !Object.values(this.data.origami_profiles).find(v => v.name === name)) {
+                    this.addProfile(name, manifest.version, name, manifest.metadata, name, manifest.metadata.name);
+                    console.log(chalk.gray(`✔ Imported version: ${name}`));
                 }
             } catch (e) {
                 console.warn(chalk.red(`⚠️ Failed to parse version JSON: ${folder}`));

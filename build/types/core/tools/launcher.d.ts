@@ -3,6 +3,10 @@ export declare class LauncherProfileManager {
     private filePath;
     private data;
     constructor(filePath?: string);
+    fetchMetadata(folder: string, versionJsonPath: string): {
+        version: string;
+        metadata: Metadata;
+    };
     autoImportVanillaProfiles(): void;
     private load;
     private save;
