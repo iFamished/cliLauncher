@@ -16,6 +16,9 @@ const dns_1 = __importDefault(require("dns"));
 const defaults_1 = require("../../config/defaults");
 const https_1 = require("https");
 const EasyDl = require("easydl");
+const p_limit_1 = __importDefault(require("p-limit"));
+const os_1 = require("os");
+const downloadLimiter = (0, p_limit_1.default)(getDownloadConcurrency());
 dns_1.default.setDefaultResultOrder('ipv4first');
 const agent = new https_1.Agent({
     keepAlive: true,
@@ -23,6 +26,19 @@ const agent = new https_1.Agent({
     maxSockets: 10,
 });
 let counter = 0;
+function getDownloadConcurrency() {
+    const platform_ = (0, os_1.platform)();
+    switch (platform_) {
+        case 'win32':
+            return 32;
+        case 'darwin':
+            return 16;
+        case 'linux':
+            return 64;
+        default:
+            return 16;
+    }
+}
 class Handler {
     client;
     options;
@@ -52,46 +68,48 @@ class Handler {
         });
     }
     async downloadAsync(url, directory, name = 'Task', retry = true, type = 'Download', maxRetries = 2) {
-        const targetPath = path_1.default.join(directory, name);
-        let attempt = 0;
-        fs_1.default.mkdirSync(directory, { recursive: true });
-        while (attempt <= maxRetries) {
-            try {
-                const dl = new EasyDl(url, targetPath, {
-                    connections: this.options?.overrides?.connections || 5,
-                    maxRetry: 50,
-                    httpOptions: {
-                        agent,
-                        headers: { 'User-Agent': defaults_1.ORIGAMi_USER_AGENT },
-                    }
-                });
-                dl.on('progress', ({ total, details }) => {
-                    const completed = details.reduce((acc, part) => acc + (part.bytes || 0), 0);
-                    this.client.emit('download-status', {
-                        name,
-                        type,
-                        current: completed,
-                        total: total.bytes || 0,
+        return downloadLimiter(async () => {
+            const targetPath = path_1.default.join(directory, name);
+            let attempt = 0;
+            fs_1.default.mkdirSync(directory, { recursive: true });
+            while (attempt <= maxRetries) {
+                try {
+                    const dl = new EasyDl(url, targetPath, {
+                        connections: this.options?.overrides?.connections || 5,
+                        maxRetry: 50,
+                        httpOptions: {
+                            agent,
+                            headers: { 'User-Agent': defaults_1.ORIGAMi_USER_AGENT },
+                        }
                     });
-                });
-                await dl.wait();
-                this.client.emit('download', name);
-                return true;
-            }
-            catch (err) {
-                this.client.emit('debug', `[DOWNLOADER]: Failed to download ${url} to ${targetPath}:\n${err.message}`);
-                if (fs_1.default.existsSync(targetPath))
-                    fs_1.default.unlinkSync(targetPath);
-                attempt++;
-                if (attempt > maxRetries || !retry) {
-                    return { failed: true, asset: null };
+                    dl.on('progress', ({ total, details }) => {
+                        const completed = details.reduce((acc, part) => acc + (part.bytes || 0), 0);
+                        this.client.emit('download-status', {
+                            name,
+                            type,
+                            current: completed,
+                            total: total.bytes || 0,
+                        });
+                    });
+                    await dl.wait();
+                    this.client.emit('download', name);
+                    return true;
                 }
-                const wait = 500 * Math.pow(2, attempt - 1);
-                this.client.emit('debug', `[DOWNLOADER]: Retrying download (${attempt}/${maxRetries})...`);
-                await new Promise(res => setTimeout(res, wait));
+                catch (err) {
+                    this.client.emit('debug', `[DOWNLOADER]: Failed to download ${url} to ${targetPath}:\n${err.message}`);
+                    if (fs_1.default.existsSync(targetPath))
+                        fs_1.default.unlinkSync(targetPath);
+                    attempt++;
+                    if (attempt > maxRetries || !retry) {
+                        return { failed: true, asset: null };
+                    }
+                    const wait = 500 * Math.pow(2, attempt - 1);
+                    this.client.emit('debug', `[DOWNLOADER]: Retrying download (${attempt}/${maxRetries})...`);
+                    await new Promise(res => setTimeout(res, wait));
+                }
             }
-        }
-        return { failed: true, asset: null };
+            return { failed: true, asset: null };
+        });
     }
     checkSum(hash, file) {
         return new Promise((resolve, _) => {
