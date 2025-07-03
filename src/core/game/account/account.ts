@@ -56,6 +56,58 @@ function decryptWithKey(text: string, key: Buffer): string {
     return decrypted;
 }
 
+async function migrateLegacyFormat(filePath: string, currentKey: Buffer): Promise<LauncherAccounts | null> {
+    try {
+        const raw = fs.readFileSync(filePath, 'utf-8');
+
+        // Case 1: Plain JSON file (unencrypted)
+        try {
+            const parsed = JSON.parse(raw);
+            if (parsed.accounts) {
+                logger.warn('⚠️ Detected unencrypted accounts.dat. Migrating to encrypted format...');
+                const newData = parsed as LauncherAccounts;
+
+                const plaintext = JSON.stringify(newData);
+                const encrypted = encryptWithKey(plaintext, currentKey);
+                const hmac = computeHMAC(encrypted, currentKey);
+
+                const wrapped = { encrypted, hmac };
+                fs.writeFileSync(filePath, JSON.stringify(wrapped, null, 2));
+                return newData;
+            }
+        } catch (_) {
+            // Not valid JSON, fall through to next check
+        }
+
+        // Case 2: Legacy encrypted format (AES-256-CBC with static ORIGAMI_CLIENT_TOKEN)
+        try {
+            const legacyKey = crypto.createHash('sha256').update(ORIGAMI_CLIENT_TOKEN).digest();
+            const decrypted = decryptWithKey(raw, legacyKey);
+            const parsed = JSON.parse(decrypted);
+
+            if (parsed.accounts) {
+                logger.warn('⚠️ Detected legacy-encrypted accounts.dat. Migrating to encrypted format...');
+                const newData = parsed as LauncherAccounts;
+
+                const plaintext = JSON.stringify(newData);
+                const encrypted = encryptWithKey(plaintext, currentKey);
+                const hmac = computeHMAC(encrypted, currentKey);
+
+                const wrapped = { encrypted, hmac };
+                fs.writeFileSync(filePath, JSON.stringify(wrapped, null, 2));
+                return newData;
+            }
+        } catch (_) {
+            // Not decryptable with legacy key
+        }
+
+        return null;
+    } catch (err) {
+        logger.error('❌ Failed to read or migrate legacy accounts.dat:', (err as Error).message);
+        return null;
+    }
+}
+
 export class LauncherAccountManager {
     private filePath: string;
     private data: LauncherAccounts;
@@ -64,6 +116,7 @@ export class LauncherAccountManager {
     constructor(filePath: string = launcherProfilesPath) {
         this.filePath = filePath;
         this.data = { accounts: {} };
+        this.load();
     }
 
     private async ensureKey() {
@@ -80,18 +133,35 @@ export class LauncherAccountManager {
                 const rawContent = fs.readFileSync(this.filePath, 'utf-8');
                 const parsed = JSON.parse(rawContent);
 
+                if (!parsed.encrypted || !parsed.hmac) {
+                    throw new Error("Not new format");
+                }
+
                 const { encrypted, hmac } = parsed;
                 const computedHmac = computeHMAC(encrypted, this.key!);
 
-                if (computedHmac !== hmac) throw new Error('HMAC validation failed. Possible tampering.');
+                if (computedHmac !== hmac) {
+                    throw new Error('HMAC validation failed.');
+                }
 
                 const decrypted = decryptWithKey(encrypted, this.key!);
                 const json = JSON.parse(decrypted);
 
-                this.data = json.accounts ? json : { accounts: {} };
+                if (json.accounts) {
+                    this.data = json;
+                } else {
+                    throw new Error("Decrypted JSON does not contain accounts.");
+                }
             } catch (err) {
-                logger.error('⚠️ Failed to load account data:', (err as Error).message);
-                this.data = { accounts: {} };
+                logger.warn('⚠️ Encrypted load failed. Attempting migration...');
+                const migrated = await migrateLegacyFormat(this.filePath, this.key!);
+
+                if (migrated) {
+                    this.data = migrated;
+                } else {
+                    logger.error('❌ Could not migrate legacy accounts.dat. Starting fresh.');
+                    this.data = { accounts: {} };
+                }
             }
         } else {
             await this.save();
