@@ -38,6 +38,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LauncherOptionsManager = void 0;
 exports.promptNumber = promptNumber;
+exports.promptString = promptString;
 exports.promptBoolean = promptBoolean;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
@@ -194,6 +195,10 @@ async function askWindowConfig(def) {
 async function promptNumber(message, opts) {
     const { min, max, default: def } = opts ?? {};
     return (await (0, prompts_1.number)({ message, min, max, default: def })) || def || 0;
+}
+async function promptString(message, opts) {
+    const { default: def } = opts ?? {};
+    return (await (0, prompts_1.input)({ message, default: def })) || def || "";
 }
 async function promptBoolean(message, defaultValue = false) {
     return await (0, prompts_1.confirm)({ message, default: defaultValue });

@@ -311,7 +311,7 @@ class Handler {
             exports.logger.log("🔙 Account removal cancelled.");
             return;
         }
-        const removed = this.accounts.deleteAccount(selected);
+        const removed = await this.accounts.deleteAccount(selected);
         if (removed) {
             exports.logger.success(`🗑️ Removed account "${selectedAccount.name}" successfully!`);
             const selected = this.accounts.getSelectedAccount();

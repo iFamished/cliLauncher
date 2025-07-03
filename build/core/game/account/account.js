@@ -37,117 +37,135 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LauncherAccountManager = void 0;
-exports.encrypt = encrypt;
-exports.decrypt = decrypt;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
+const os = __importStar(require("os"));
+const crypto_1 = __importDefault(require("crypto"));
+const keytar_1 = __importDefault(require("keytar"));
 const common_1 = require("../../utils/common");
 const handler_1 = require("../launch/handler");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
-const crypto_1 = __importDefault(require("crypto"));
 const defaults_1 = require("../../../config/defaults");
-const ENCRYPTION_KEY = crypto_1.default.createHash('sha256').update(defaults_1.ORIGAMI_CLIENT_TOKEN).digest();
+const SERVICE = 'OrigamiLauncher';
+const ACCOUNT = 'encryption-key';
 const IV_LENGTH = 16;
-function encrypt(text) {
+const HMAC_ALGO = 'sha256';
+const mcDir = (0, common_1.minecraft_dir)(true);
+const launcherProfilesPath = path.join(mcDir, 'accounts.dat');
+async function getOrGenerateKey() {
+    const stored = await keytar_1.default.getPassword(SERVICE, ACCOUNT);
+    if (stored) {
+        return Buffer.from(stored, 'hex');
+    }
+    const fingerprint = `${os.hostname()}-${os.arch()}-${os.platform()}-${defaults_1.ORIGAMI_CLIENT_TOKEN}`;
+    const salt = crypto_1.default.randomBytes(16);
+    const key = crypto_1.default.pbkdf2Sync(fingerprint, salt, 100_000, 32, 'sha256');
+    await keytar_1.default.setPassword(SERVICE, ACCOUNT, key.toString('hex'));
+    return key;
+}
+function computeHMAC(data, key) {
+    return crypto_1.default.createHmac(HMAC_ALGO, key).update(data).digest('base64');
+}
+function encryptWithKey(text, key) {
     const iv = crypto_1.default.randomBytes(IV_LENGTH);
-    const cipher = crypto_1.default.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    const cipher = crypto_1.default.createCipheriv('aes-256-cbc', key, iv);
     let encrypted = cipher.update(text, 'utf8', 'base64');
     encrypted += cipher.final('base64');
     return iv.toString('base64') + ':' + encrypted;
 }
-function decrypt(text) {
+function decryptWithKey(text, key) {
     const [ivBase64, encrypted] = text.split(':');
     const iv = Buffer.from(ivBase64, 'base64');
-    const decipher = crypto_1.default.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
+    const decipher = crypto_1.default.createDecipheriv('aes-256-cbc', key, iv);
     let decrypted = decipher.update(encrypted, 'base64', 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
 }
-const mcDir = (0, common_1.minecraft_dir)(true);
-const launcherProfilesPath = path.join(mcDir, 'accounts.dat');
 class LauncherAccountManager {
     filePath;
     data;
+    key = null;
     constructor(filePath = launcherProfilesPath) {
         this.filePath = filePath;
         this.data = { accounts: {} };
-        this.load();
     }
-    load() {
+    async ensureKey() {
+        if (!this.key) {
+            this.key = await getOrGenerateKey();
+        }
+    }
+    async load() {
+        await this.ensureKey();
         if (fs.existsSync(this.filePath)) {
             try {
-                const encrypted = fs.readFileSync(this.filePath, 'utf-8');
-                const raw = JSON.parse(decrypt(encrypted));
-                this.data = raw.accounts ? raw : { accounts: {} };
+                const rawContent = fs.readFileSync(this.filePath, 'utf-8');
+                const parsed = JSON.parse(rawContent);
+                const { encrypted, hmac } = parsed;
+                const computedHmac = computeHMAC(encrypted, this.key);
+                if (computedHmac !== hmac)
+                    throw new Error('HMAC validation failed. Possible tampering.');
+                const decrypted = decryptWithKey(encrypted, this.key);
+                const json = JSON.parse(decrypted);
+                this.data = json.accounts ? json : { accounts: {} };
             }
             catch (err) {
-                handler_1.logger.error('⚠️ Failed to decrypt or parse account data:', err.message);
+                handler_1.logger.error('⚠️ Failed to load account data:', err.message);
                 this.data = { accounts: {} };
             }
         }
         else {
-            this.save();
+            await this.save();
         }
     }
-    save() {
-        const encrypted = encrypt(JSON.stringify(this.data));
-        fs.writeFileSync(this.filePath, encrypted);
+    async save() {
+        await this.ensureKey();
+        const plaintext = JSON.stringify(this.data);
+        const encrypted = encryptWithKey(plaintext, this.key);
+        const hmac = computeHMAC(encrypted, this.key);
+        const final = { encrypted, hmac };
+        fs.writeFileSync(this.filePath, JSON.stringify(final, null, 2));
     }
     reset() {
-        fs.unlinkSync(this.filePath);
+        if (fs.existsSync(this.filePath)) {
+            fs.unlinkSync(this.filePath);
+        }
     }
-    addAccount(account) {
+    async addAccount(account) {
         this.data.accounts[account.id] = account;
-        this.save();
+        await this.save();
     }
-    deleteAccount(id) {
-        try {
-            if (this.data.accounts[id]) {
-                delete this.data.accounts[id];
-                if (this.data.selectedAccount === id) {
-                    this.data.selectedAccount = undefined;
-                }
-                this.save();
-                return true;
-            }
-            else
-                return false;
+    async deleteAccount(id) {
+        if (this.data.accounts[id]) {
+            delete this.data.accounts[id];
+            if (this.data.selectedAccount === id)
+                this.data.selectedAccount = undefined;
+            await this.save();
+            return true;
         }
-        catch (_) {
-            return false;
-        }
+        return false;
     }
     hasAccount(cred, provider) {
-        let all_entries = Object.entries(this.data.accounts).map(([_, account]) => {
-            return account;
-        });
-        return all_entries.find(entry => entry.auth === provider.toLowerCase() && entry.credentials === cred) ? true : false;
+        return Object.values(this.data.accounts).some(acc => acc.auth === provider.toLowerCase() && acc.credentials === cred);
     }
     getAccount(id) {
-        let got = this.data.accounts[id];
-        if (got) {
-            return got;
-        }
-        else {
+        const acc = this.data.accounts[id];
+        if (!acc) {
             handler_1.logger.error(`Account "${id}" does not exist.`);
             return null;
         }
+        return acc;
     }
-    selectAccount(id) {
-        let got = this.data.accounts[id];
-        if (got) {
-            this.data.selectedAccount = got.id;
-            this.save();
-            return got;
-        }
-        else {
-            handler_1.logger.error(`Account "${id}" does not exist.`);
+    async selectAccount(id) {
+        const acc = this.getAccount(id);
+        if (!acc)
             return null;
-        }
+        this.data.selectedAccount = acc.id;
+        await this.save();
+        return acc;
     }
     listAccounts() {
-        return Object.keys(this.data.accounts).map(key => this.data.accounts[key]);
+        return Object.values(this.data.accounts);
     }
     getSelectedAccount() {
         return this.data.accounts[this.data.selectedAccount || "no-id"];
@@ -182,7 +200,7 @@ class LauncherAccountManager {
                 loop: false
             }
         ]);
-        const selectedAccount = this.selectAccount(selectedId);
+        const selectedAccount = await this.selectAccount(selectedId);
         if (selectedAccount) {
             console.log(chalk_1.default.green(`✅ Selected account: ${selectedAccount.name}`));
         }

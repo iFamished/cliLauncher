@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { minecraft_dir } from '../../utils/common';
 import { LauncherOptions } from '../../../types/launcher';
-import { confirm, number, select } from '@inquirer/prompts';
+import { confirm, input, number, select } from '@inquirer/prompts';
 import chalk from "chalk";
 import os from 'os';
 import {
@@ -182,6 +182,11 @@ async function askWindowConfig(def?: WindowSize) {
 export async function promptNumber(message: string, opts?: { min?: number; max?: number; default?: number }): Promise<number> {
     const { min, max, default: def } = opts ?? {};
     return (await number({ message, min, max, default: def })) || def || 0;
+}
+
+export async function promptString(message: string, opts?: { default?: string }): Promise<string> {
+    const { default: def } = opts ?? {};
+    return (await input({ message, default: def })) || def || "";
 }
 
 export async function promptBoolean(message: string, defaultValue = false): Promise<boolean> {

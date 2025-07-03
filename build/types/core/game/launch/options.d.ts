@@ -15,5 +15,8 @@ export declare function promptNumber(message: string, opts?: {
     max?: number;
     default?: number;
 }): Promise<number>;
+export declare function promptString(message: string, opts?: {
+    default?: string;
+}): Promise<string>;
 export declare function promptBoolean(message: string, defaultValue?: boolean): Promise<boolean>;
 export default LauncherOptionsManager;

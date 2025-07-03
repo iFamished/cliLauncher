@@ -167,7 +167,7 @@ program
                     }
                 ]);
                 if (confirm.confirm) {
-                    const removed = handler.accounts.deleteAccount(id);
+                    const removed = await handler.accounts.deleteAccount(id);
                     if (removed) {
                         console.log(chalk_1.default.green(`🗑️ Removed account "${account.name}" successfully.`));
                     }
