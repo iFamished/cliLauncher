@@ -12,7 +12,7 @@ import inquirer from 'inquirer';
 import { ORIGAMI_CLIENT_TOKEN } from '../../../config/defaults';
 
 const SERVICE = 'OrigamiLauncher';
-const ACCOUNT = 'encryption-key';
+const ACCOUNT = os.userInfo().username;
 
 const IV_LENGTH = 16;
 const HMAC_ALGO = 'sha256';
