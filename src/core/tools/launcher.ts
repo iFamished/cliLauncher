@@ -30,7 +30,7 @@ export class LauncherProfileManager {
     public fetchMetadata(folder: string, versionJsonPath: string): { version: string, metadata: Metadata } {
         const name = folder.toLowerCase();
         const versionJson = readJsonSync(versionJsonPath);
-        const id = versionJson.id || versionJson.inheritsFrom || 'Origami-Imported-'+v4();
+        const id =  versionJson.inheritsFrom || versionJson.id || 'Origami-Imported-'+v4();
 
         if(name.includes('forge')) {
             return { version: id, metadata: forge.metadata }
@@ -62,7 +62,7 @@ export class LauncherProfileManager {
                 const name = folder;
                 const manifest = this.fetchMetadata(name, versionJsonPath);
 
-                if (!this.data.origami_profiles[manifest.version] || !Object.values(this.data.origami_profiles).find(v => v.name === name)) {
+                if (!this.data.origami_profiles[name] || !Object.values(this.data.origami_profiles).find(v => v.name === name)) {
                     this.addProfile(name, manifest.version, name, manifest.metadata, name, manifest.metadata.name);
                     console.log(chalk.gray(`✔ Imported version: ${name}`));
                 }

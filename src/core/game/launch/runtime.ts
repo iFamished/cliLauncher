@@ -398,7 +398,8 @@ export class Runtime {
     }
 
     private async launch() {
-        let isJava = await temurin.select()
+        await temurin.select();
+        
         const code = await this.handler.run_minecraft();
         if (code === 200) {
             console.log(chalk.green('✅ Minecraft exited successfully!'));
