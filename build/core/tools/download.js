@@ -8,9 +8,10 @@ const axios_1 = __importDefault(require("axios"));
 const fs_1 = __importDefault(require("fs"));
 const defaults_1 = require("../../config/defaults");
 const handler_1 = require("../game/launch/handler");
+const path_1 = __importDefault(require("path"));
 async function downloader(url, outputPath) {
     const progress_manager = handler_1.logger.progress();
-    const download_progress = progress_manager.create(`Download`, 1);
+    const download_progress = progress_manager.create(path_1.default.basename(outputPath), 1);
     try {
         const response = await (0, axios_1.default)({
             url,

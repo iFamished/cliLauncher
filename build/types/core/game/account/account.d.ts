@@ -11,11 +11,11 @@ export declare class LauncherAccountManager {
     reset(): void;
     addAccount(account: LauncherAccount): Promise<void>;
     deleteAccount(id: string): Promise<boolean>;
-    hasAccount(cred: Credentials, provider: string): boolean;
-    getAccount(id: string): LauncherAccount | null;
+    hasAccount(cred: Credentials, provider: string): Promise<boolean>;
+    getAccount(id: string): Promise<LauncherAccount | null>;
     selectAccount(id: string): Promise<LauncherAccount | null>;
-    listAccounts(): LauncherAccount[];
-    getSelectedAccount(): LauncherAccount | undefined;
+    listAccounts(): Promise<LauncherAccount[]>;
+    getSelectedAccount(): Promise<LauncherAccount | null>;
     chooseAccount(): Promise<LauncherAccount | null>;
 }
 export default LauncherAccountManager;

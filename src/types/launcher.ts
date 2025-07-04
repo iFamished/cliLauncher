@@ -20,6 +20,8 @@ export interface Metadata {
     name: string;
     author: string;
     description: string;
+    unstable?: boolean;
+    jvm?: string;
 }
 
 export interface LauncherAccount {

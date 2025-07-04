@@ -4,6 +4,8 @@ export default class Handler {
     client: MCLCore;
     options: ILauncherOptions | null;
     version: any;
+    private agent;
+    private limit;
     constructor(client: MCLCore);
     checkJava(java: string): Promise<unknown>;
     downloadAsync(url: string, directory: string, name?: string, retry?: boolean, type?: string, maxRetries?: number): Promise<boolean | {

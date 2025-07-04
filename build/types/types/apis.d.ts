@@ -7,5 +7,6 @@ export interface APIMetadata {
     name: string;
     author: string;
     description: string;
-    bedrock?: boolean;
+    unstable?: boolean;
+    jvm?: string;
 }

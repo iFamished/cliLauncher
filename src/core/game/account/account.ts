@@ -147,8 +147,12 @@ export class LauncherAccountManager {
                 const decrypted = decryptWithKey(encrypted, this.key!);
                 const json = JSON.parse(decrypted);
 
+                if (json.selectedAccount) {
+                    this.data.selectedAccount = json.selectedAccount;
+                }
+
                 if (json.accounts) {
-                    this.data = json;
+                    this.data.accounts = json.accounts;
                 } else {
                     throw new Error("Decrypted JSON does not contain accounts.");
                 }
@@ -171,7 +175,7 @@ export class LauncherAccountManager {
     async save() {
         await this.ensureKey();
 
-        const plaintext = JSON.stringify(this.data);
+        const plaintext = JSON.stringify({ accounts: this.data.accounts, selectedAccount: this.data.selectedAccount });
         const encrypted = encryptWithKey(plaintext, this.key!);
         const hmac = computeHMAC(encrypted, this.key!);
 
@@ -186,11 +190,15 @@ export class LauncherAccountManager {
     }
 
     async addAccount(account: LauncherAccount) {
+        await this.load();
+
         this.data.accounts[account.id] = account;
         await this.save();
     }
 
     async deleteAccount(id: string) {
+        await this.load();
+        
         if (this.data.accounts[id]) {
             delete this.data.accounts[id];
             if (this.data.selectedAccount === id) this.data.selectedAccount = undefined;
@@ -200,11 +208,15 @@ export class LauncherAccountManager {
         return false;
     }
 
-    hasAccount(cred: Credentials, provider: string): boolean {
+    async hasAccount(cred: Credentials, provider: string): Promise<boolean> {
+        await this.load();
+
         return Object.values(this.data.accounts).some(acc => acc.auth === provider.toLowerCase() && acc.credentials === cred);
     }
 
-    getAccount(id: string): LauncherAccount | null {
+    async getAccount(id: string): Promise<LauncherAccount | null> {
+        await this.load();
+
         const acc = this.data.accounts[id];
         if (!acc) {
             logger.error(`Account "${id}" does not exist.`);
@@ -214,7 +226,7 @@ export class LauncherAccountManager {
     }
 
     async selectAccount(id: string): Promise<LauncherAccount | null> {
-        const acc = this.getAccount(id);
+        const acc = await this.getAccount(id);
         if (!acc) return null;
 
         this.data.selectedAccount = acc.id;
@@ -222,16 +234,20 @@ export class LauncherAccountManager {
         return acc;
     }
 
-    listAccounts(): LauncherAccount[] {
+    async listAccounts(): Promise<LauncherAccount[]> {
+        await this.load();
+
         return Object.values(this.data.accounts);
     }
 
-    getSelectedAccount(): LauncherAccount | undefined {
-        return this.data.accounts[this.data.selectedAccount || "no-id"];
+    async getSelectedAccount(): Promise<LauncherAccount | null> {
+        await this.load();
+
+        return this.getAccount(this.data.selectedAccount || 'no-id');
     }
 
     async chooseAccount(): Promise<LauncherAccount | null> {
-        const accounts = this.listAccounts();
+        const accounts = await this.listAccounts();
         if (accounts.length === 0) {
             console.log(chalk.red("❌ No accounts found."));
             return null;

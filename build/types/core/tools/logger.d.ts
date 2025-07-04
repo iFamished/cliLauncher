@@ -14,7 +14,7 @@ export declare class ProgressReport {
     private startRenderLoop;
     private stopRenderLoop;
     private task_logs;
-    create(name: string, total: number): Bar | null;
+    create(name: string, total: number, hideTaskLogs?: boolean): Bar | null;
     has(name: string): boolean;
     start(): void;
     update(name: string, amount?: number): void;

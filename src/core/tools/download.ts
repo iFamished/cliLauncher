@@ -2,10 +2,11 @@ import axios from "axios";
 import fs from "fs";
 import { ORIGAMi_USER_AGENT } from "../../config/defaults";
 import { logger } from "../game/launch/handler";
+import path from "path";
 
 export async function downloader(url: string, outputPath: string): Promise<void> {
     const progress_manager = logger.progress();
-    const download_progress = progress_manager.create(`Download`, 1);
+    const download_progress = progress_manager.create(path.basename(outputPath), 1);
 
     try {
         const response = await axios({

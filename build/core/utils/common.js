@@ -46,10 +46,14 @@ exports.waitForFolder = waitForFolder;
 exports.valid_string = valid_string;
 exports.valid_boolean = valid_boolean;
 exports.parse_input = parse_input;
+exports.getSafeConcurrencyLimit = getSafeConcurrencyLimit;
+exports.limitedAll = limitedAll;
 const fs_1 = __importStar(require("fs"));
 const envs_1 = __importDefault(require("../tools/envs"));
 const path_1 = __importDefault(require("path"));
 const chokidar_1 = __importDefault(require("chokidar"));
+const os_1 = require("os");
+const p_limit_1 = __importDefault(require("p-limit"));
 function ensureDir(dir) {
     if (!fs_1.default.existsSync(dir)) {
         fs_1.default.mkdirSync(dir, { recursive: true });
@@ -125,5 +129,22 @@ function parse_input(input) {
     else if (valid_string(input))
         return input;
     return input.join(' ');
+}
+function getSafeConcurrencyLimit() {
+    const platform_ = (0, os_1.platform)();
+    switch (platform_) {
+        case 'win32':
+            return 32;
+        case 'darwin':
+            return 16;
+        case 'linux':
+            return 64;
+        default:
+            return 16;
+    }
+}
+async function limitedAll(tasks, limit = (0, p_limit_1.default)(getSafeConcurrencyLimit())) {
+    const wrappedTasks = tasks.map(task => typeof task === 'function' ? limit(task) : limit(() => task));
+    return Promise.all(wrappedTasks);
 }
 //# sourceMappingURL=common.js.map

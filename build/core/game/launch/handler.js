@@ -27,10 +27,8 @@ class Handler {
     settings = new options_1.default();
     installers = new registry_1.InstallerRegistry();
     auth_provider = null;
-    currentAccount;
-    constructor() {
-        this.currentAccount = this.accounts.getSelectedAccount();
-    }
+    currentAccount = null;
+    constructor() { }
     jsonParser(str) {
         try {
             return JSON.parse(str);
@@ -66,6 +64,7 @@ class Handler {
         };
     }
     async get_auth() {
+        this.currentAccount = await this.accounts.getSelectedAccount();
         if (!this.currentAccount) {
             exports.logger.warn("⚠️  No account selected! Please log in first. 🐾");
             return null;
@@ -90,7 +89,7 @@ class Handler {
     }
     async login(credentials, auth_provider) {
         try {
-            if (this.accounts.hasAccount(credentials, auth_provider)) {
+            if (await this.accounts.hasAccount(credentials, auth_provider)) {
                 exports.logger.warn("⚠️  An account with these credentials already exists! Skipping login. 🐾");
                 return null;
             }
@@ -107,9 +106,9 @@ class Handler {
                 exports.logger.error("🚫 Authentication failed — invalid credentials or network error.");
                 return null;
             }
-            this.accounts.addAccount(token);
-            this.accounts.selectAccount(token.id);
-            this.currentAccount = this.accounts.getSelectedAccount();
+            await this.accounts.addAccount(token);
+            await this.accounts.selectAccount(token.id);
+            this.currentAccount = token;
             exports.logger.log(`✅ Logged in as ${token.name} [${token.uuid}] via "${auth_provider}" 🎉`);
             return token;
         }
@@ -149,7 +148,14 @@ class Handler {
             return await new Promise(async (resolve) => {
                 let libraryRoot = path_1.default.join(mc_dir, 'libraries');
                 let assetRoot = path_1.default.join(mc_dir, 'assets');
+                let loader = this.installers.get(this.installers.list().sort((a, b) => b.length - a.length).find(ld => name.toLowerCase().startsWith(ld) || name.toLowerCase().includes(ld)) || 'vanilla');
                 let jvmArgs = `${auth.jvm}`;
+                if (loader && loader.metadata.unstable) {
+                    exports.logger.warn(`⚠️ Heads up! ${loader.metadata.name} support is a bit wobbly right now — it might break or misbehave 🧪👀`);
+                }
+                if (loader && loader.metadata.jvm) {
+                    jvmArgs = `${loader.metadata.jvm} ${jvmArgs}`;
+                }
                 let javaPath = java.path;
                 let auth_token = auth.token;
                 let version = this.getVersion(version_json);
@@ -204,25 +210,22 @@ class Handler {
                     }
                     exports.progress.updateTo(type, task);
                 });
-                /*launcher.on('download-status', (data) => {
-                    let { name, current, total } = data;
-                    
-                    if(!progress.has(name)) {
-                        progress.create(name, total);
-                        progress.start();
-                    }
-
-                    progress.updateTo(name, current);
-                });
-
-                launcher.on('download', (name) => {
-                    if(progress.has(name)) {
-                        progress.stop(name);
-                    }
-                });*/
                 launcher.on('progress-end', (data) => {
                     if (exports.progress.has(data.type)) {
                         exports.progress.stop(data.type);
+                    }
+                });
+                launcher.on('download-status', (data) => {
+                    let { name, current, total } = data;
+                    if (!exports.progress.has(name)) {
+                        exports.progress.create(name, total, true);
+                        exports.progress.start();
+                    }
+                    exports.progress.updateTo(name, current);
+                });
+                launcher.on('download', (name) => {
+                    if (exports.progress.has(name)) {
+                        exports.progress.stop(name);
                     }
                 });
             });
@@ -278,7 +281,7 @@ class Handler {
         }
     }
     async remove_account() {
-        const accounts = this.accounts.listAccounts();
+        const accounts = await this.accounts.listAccounts();
         if (accounts.length === 0) {
             exports.logger.warn("⚠️ No accounts available to remove.");
             return;
@@ -314,9 +317,9 @@ class Handler {
         const removed = await this.accounts.deleteAccount(selected);
         if (removed) {
             exports.logger.success(`🗑️ Removed account "${selectedAccount.name}" successfully!`);
-            const selected = this.accounts.getSelectedAccount();
+            const selected = await this.accounts.getSelectedAccount();
             if (!selected) {
-                this.currentAccount = undefined;
+                this.currentAccount = null;
                 exports.logger.warn("⚠️ No account is now selected.");
             }
             else {

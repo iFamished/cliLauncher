@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { minecraft_dir } from '../../utils/common';
+import { getSafeConcurrencyLimit, minecraft_dir } from '../../utils/common';
 import { LauncherOptions } from '../../../types/launcher';
 import { confirm, input, number, select } from '@inquirer/prompts';
 import chalk from "chalk";
@@ -57,7 +57,7 @@ export class LauncherOptionsManager {
         const window = await askWindowConfig(this.data.options.window_size);
         const safe_exit = await promptBoolean('Enable safe exit?', this.data.options.safe_exit);
         const max_sockets = await promptNumber('Set max sockets:', { min: 1, default: this.data.options.max_sockets || 8 });
-        const connections = await promptNumber('Set parallel connections:', { min: 1, default: this.data.options.connections || 5 });
+        const connections = await promptNumber('Set parallel connections:', { min: 8, default: this.data.options.connections || getSafeConcurrencyLimit(), max: getSafeConcurrencyLimit() });
 
         const fullscreen = window.fullscreen;
 
@@ -67,7 +67,7 @@ export class LauncherOptionsManager {
             fullscreen,
             safe_exit,
             max_sockets,
-            connections
+            connections,
         };
 
         this.save();
@@ -86,7 +86,7 @@ export class LauncherOptionsManager {
             fullscreen: opts.fullscreen ?? false,
             safe_exit: opts.safe_exit ?? false,
             max_sockets: opts.max_sockets ?? 8,
-            connections: opts.connections ?? 8,
+            connections: opts.connections ?? getSafeConcurrencyLimit(),
         };
     }
 

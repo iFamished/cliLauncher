@@ -7,6 +7,7 @@ export declare class LauncherProfileManager {
         version: string;
         metadata: Metadata;
     };
+    private cleanupProfiles;
     autoImportVanillaProfiles(): void;
     private load;
     private save;

@@ -45,6 +45,30 @@ export class LauncherProfileManager {
         }
     };
 
+    private cleanupProfiles() {
+        const versionsDir = path.join(minecraft_dir(), 'versions');
+
+        const removed: string[] = [];
+
+        for (const id of Object.keys(this.data.origami_profiles)) {
+            const profile = this.data.origami_profiles[id];
+            const versionFolder = path.join(versionsDir, profile.origami.path);
+
+            if (!fs.existsSync(versionFolder)) {
+                removed.push(id);
+                delete this.data.origami_profiles[id];
+                if (this.data.selectedProfile === id) {
+                    this.data.selectedProfile = undefined;
+                }
+            }
+        }
+
+        if (removed.length > 0) {
+            console.log(chalk.gray(`🧹 Cleaned up ${removed.length} invalid profile(s): ${removed.join(", ")}`));
+            this.save();
+        }
+    }
+
     public autoImportVanillaProfiles() {
         const versionsDir = path.join(minecraft_dir(), 'versions');
         if (!fs.existsSync(versionsDir)) return;
@@ -76,6 +100,7 @@ export class LauncherProfileManager {
         if (fs.existsSync(this.filePath)) {
             try {
                 this.data = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
+                this.cleanupProfiles(); 
             } catch (err) {
                 console.error('Failed to parse launcher_profiles.json:', err);
             }

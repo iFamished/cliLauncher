@@ -3,6 +3,8 @@ import envPaths from "../tools/envs";
 import path, { join } from "path";
 import chokidar from "chokidar";
 import { Metadata } from "../../types/launcher";
+import { platform } from "os";
+import pLimit, { LimitFunction } from "p-limit";
 
 export function ensureDir(dir: string) {
     if (!fs.existsSync(dir)) {
@@ -90,4 +92,30 @@ export function parse_input(input: string | boolean | string[]): string | boolea
     else if(valid_string(input)) return input;
 
     return input.join(' ');
+}
+
+export function getSafeConcurrencyLimit(): number {
+    const platform_ = platform();
+    
+    switch (platform_) {
+        case 'win32':
+            return 32;
+        case 'darwin':
+            return 16;
+        case 'linux':
+            return 64;
+        default:
+            return 16;
+    }
+}
+
+export async function limitedAll<T>(
+    tasks: (() => Promise<T>)[] | Promise<T>[],
+    limit: LimitFunction = pLimit(getSafeConcurrencyLimit())
+): Promise<T[]> {
+    const wrappedTasks = tasks.map(task =>
+        typeof task === 'function' ? limit(task) : limit(() => task)
+    );
+
+    return Promise.all(wrappedTasks);
 }

@@ -153,7 +153,7 @@ program
         }
         if (options.remove) {
             const id = options.remove.trim();
-            const account = handler.accounts.getAccount(id);
+            const account = await handler.accounts.getAccount(id);
             if (!account) {
                 console.log(chalk_1.default.red(`❌ Account with ID "${id}" not found.`));
             }

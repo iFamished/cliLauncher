@@ -1,4 +1,5 @@
 import { Metadata } from "../../types/launcher";
+import { LimitFunction } from "p-limit";
 export declare function ensureDir(dir: string): void;
 export declare function cleanDir(dir: string): void;
 export declare function moveFileSync(oldPath: string, newPath: string): void;
@@ -9,3 +10,5 @@ export declare function waitForFolder(metadata: Metadata, id: string): Promise<s
 export declare function valid_string(input: any): input is string;
 export declare function valid_boolean(input: any): input is boolean;
 export declare function parse_input(input: string | boolean | string[]): string | boolean;
+export declare function getSafeConcurrencyLimit(): number;
+export declare function limitedAll<T>(tasks: (() => Promise<T>)[] | Promise<T>[], limit?: LimitFunction): Promise<T[]>;

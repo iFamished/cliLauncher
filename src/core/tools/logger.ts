@@ -35,6 +35,7 @@ type ProgressState = {
     value: number;
     name: string;
     id: string;
+    hideTaskLogs: boolean;
 };
 
 export interface Bar {
@@ -101,19 +102,20 @@ export class ProgressReport {
         }
     }
 
-    create(name: string, total: number): Bar | null {
+    create(name: string, total: number, hideTaskLogs: boolean = false): Bar | null {
         if (this.bars.has(name)) {
             loggers.warn(`Progress bar '${name}' already exists.`);
             return null;
         }
 
         const spinner_id = v4();
-        const spinner_data = {
+        const spinner_data: ProgressState = {
             startTime: Date.now(),
             total,
             value: 0,
             name,
             id: spinner_id,
+            hideTaskLogs
         };
 
         this.bars.set(name, spinner_data);
@@ -169,22 +171,24 @@ export class ProgressReport {
         const spinner = this.bars.get(name);
         if (!spinner) return;
 
-        if (this.visible.has(name)) {
+        this.visible.delete(name);
+        this.bars.delete(name);
+
+        if (!spinner.hideTaskLogs) {
             this.spinners.update(spinner.id, this.task_logs(spinner, 1, fail));
             this.spinners.succeed(spinner.id);
-            this.visible.delete(name);
-
-            const next = this.hidden.shift();
-            if (next) {
-                const nextBar = this.bars.get(next);
-                if (nextBar) {
-                    this.spinners.add(nextBar.id, this.task_logs(nextBar));
-                    this.visible.add(next);
-                }
-            }
+        } else {
+            this.spinners.remove(spinner.id); // completely remove from terminal
         }
 
-        this.bars.delete(name);
+        const next = this.hidden.shift();
+        if (next) {
+            const nextBar = this.bars.get(next);
+            if (nextBar) {
+                this.spinners.add(nextBar.id, this.task_logs(nextBar));
+                this.visible.add(next);
+            }
+        }
     }
 
     stopAll(fail = false): void {

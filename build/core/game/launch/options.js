@@ -85,7 +85,7 @@ class LauncherOptionsManager {
         const window = await askWindowConfig(this.data.options.window_size);
         const safe_exit = await promptBoolean('Enable safe exit?', this.data.options.safe_exit);
         const max_sockets = await promptNumber('Set max sockets:', { min: 1, default: this.data.options.max_sockets || 8 });
-        const connections = await promptNumber('Set parallel connections:', { min: 1, default: this.data.options.connections || 5 });
+        const connections = await promptNumber('Set parallel connections:', { min: 8, default: this.data.options.connections || (0, common_1.getSafeConcurrencyLimit)(), max: (0, common_1.getSafeConcurrencyLimit)() });
         const fullscreen = window.fullscreen;
         this.data.options = {
             memory,
@@ -93,7 +93,7 @@ class LauncherOptionsManager {
             fullscreen,
             safe_exit,
             max_sockets,
-            connections
+            connections,
         };
         this.save();
     }
@@ -109,7 +109,7 @@ class LauncherOptionsManager {
             fullscreen: opts.fullscreen ?? false,
             safe_exit: opts.safe_exit ?? false,
             max_sockets: opts.max_sockets ?? 8,
-            connections: opts.connections ?? 8,
+            connections: opts.connections ?? (0, common_1.getSafeConcurrencyLimit)(),
         };
     }
     setOption(key, value) {

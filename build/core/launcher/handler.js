@@ -12,41 +12,27 @@ const chalk_1 = __importDefault(require("chalk"));
 const utils_1 = require("./utils");
 const handler_1 = require("../game/launch/handler");
 const axios_1 = __importDefault(require("axios"));
-const dns_1 = __importDefault(require("dns"));
 const defaults_1 = require("../../config/defaults");
 const https_1 = require("https");
-const EasyDl = require("easydl");
 const p_limit_1 = __importDefault(require("p-limit"));
-const os_1 = require("os");
-const downloadLimiter = (0, p_limit_1.default)(getDownloadConcurrency());
-dns_1.default.setDefaultResultOrder('ipv4first');
-const agent = new https_1.Agent({
-    keepAlive: true,
-    timeout: 50000,
-    maxSockets: 10,
-});
+const common_1 = require("../utils/common");
 let counter = 0;
-function getDownloadConcurrency() {
-    const platform_ = (0, os_1.platform)();
-    switch (platform_) {
-        case 'win32':
-            return 32;
-        case 'darwin':
-            return 16;
-        case 'linux':
-            return 64;
-        default:
-            return 16;
-    }
-}
 class Handler {
     client;
     options;
     version;
+    agent;
+    limit;
     constructor(client) {
         this.version = "MCLC-undefined";
         this.client = client;
         this.options = client.options;
+        this.agent = new https_1.Agent({
+            keepAlive: false,
+            timeout: 50000,
+            maxSockets: this.options?.overrides?.maxSockets || 2,
+        });
+        this.limit = (0, p_limit_1.default)(this.options?.overrides?.connections || (0, common_1.getSafeConcurrencyLimit)());
     }
     checkJava(java) {
         return new Promise(resolve => {
@@ -67,49 +53,67 @@ class Handler {
             });
         });
     }
-    async downloadAsync(url, directory, name = 'Task', retry = true, type = 'Download', maxRetries = 2) {
-        return downloadLimiter(async () => {
-            const targetPath = path_1.default.join(directory, name);
-            let attempt = 0;
-            fs_1.default.mkdirSync(directory, { recursive: true });
-            while (attempt <= maxRetries) {
-                try {
-                    const dl = new EasyDl(url, targetPath, {
-                        connections: this.options?.overrides?.connections || 5,
-                        maxRetry: 50,
-                        httpOptions: {
-                            agent,
-                            headers: { 'User-Agent': defaults_1.ORIGAMi_USER_AGENT },
-                        }
-                    });
-                    dl.on('progress', ({ total, details }) => {
-                        const completed = details.reduce((acc, part) => acc + (part.bytes || 0), 0);
-                        this.client.emit('download-status', {
+    async downloadAsync(url, directory, name = "Task", retry = true, type = "Download", maxRetries = 2) {
+        const targetPath = path_1.default.join(directory, name);
+        (0, common_1.ensureDir)(directory);
+        let attempt = 0;
+        while (attempt <= maxRetries) {
+            try {
+                const response = await (0, axios_1.default)({
+                    url,
+                    method: "GET",
+                    responseType: "stream",
+                    headers: {
+                        "User-Agent": defaults_1.ORIGAMi_USER_AGENT,
+                    },
+                    httpAgent: this.agent,
+                    httpsAgent: this.agent,
+                    timeout: 5000,
+                    maxContentLength: Infinity,
+                    maxBodyLength: Infinity,
+                    validateStatus: (status) => status < 400 // allow redirects
+                });
+                const totalBytes = parseInt(response.headers["content-length"] || "0", 10);
+                let receivedBytes = 0;
+                await new Promise((resolve, reject) => {
+                    const fileStream = fs_1.default.createWriteStream(targetPath);
+                    response.data.on("data", (chunk) => {
+                        receivedBytes += chunk.length;
+                        this.client.emit("download-status", {
                             name,
                             type,
-                            current: completed,
-                            total: total.bytes || 0,
+                            current: receivedBytes,
+                            total: totalBytes,
                         });
                     });
-                    await dl.wait();
-                    this.client.emit('download', name);
-                    return true;
-                }
-                catch (err) {
-                    this.client.emit('debug', `[DOWNLOADER]: Failed to download ${url} to ${targetPath}:\n${err.message}`);
-                    if (fs_1.default.existsSync(targetPath))
-                        fs_1.default.unlinkSync(targetPath);
-                    attempt++;
-                    if (attempt > maxRetries || !retry) {
-                        return { failed: true, asset: null };
-                    }
-                    const wait = 500 * Math.pow(2, attempt - 1);
-                    this.client.emit('debug', `[DOWNLOADER]: Retrying download (${attempt}/${maxRetries})...`);
-                    await new Promise(res => setTimeout(res, wait));
-                }
+                    response.data.pipe(fileStream);
+                    fileStream.on("finish", () => {
+                        this.client.emit("download", name);
+                        resolve();
+                    });
+                    fileStream.on("error", (err) => {
+                        reject(err);
+                    });
+                    response.data.on("error", (err) => {
+                        reject(err);
+                    });
+                });
+                return true;
             }
-            return { failed: true, asset: null };
-        });
+            catch (err) {
+                this.client.emit("debug", `[DOWNLOADER]: Failed to download ${url} to ${targetPath}:\n${err.message}`);
+                if (fs_1.default.existsSync(targetPath))
+                    fs_1.default.unlinkSync(targetPath);
+                attempt++;
+                if (attempt > maxRetries || !retry) {
+                    return { failed: true, asset: null };
+                }
+                const wait = 500 * Math.pow(2, attempt - 1);
+                this.client.emit("debug", `[DOWNLOADER]: Retrying download (${attempt}/${maxRetries}) after ${wait}ms...`);
+                await new Promise(res => setTimeout(res, wait));
+            }
+        }
+        return { failed: true, asset: null };
     }
     checkSum(hash, file) {
         return new Promise((resolve, _) => {
@@ -167,7 +171,7 @@ class Handler {
             task: 0,
             total: Object.keys(index.objects).length
         });
-        await Promise.all(Object.keys(index.objects).map(async (asset) => {
+        await (0, common_1.limitedAll)(Object.keys(index.objects).map(async (asset) => {
             const hash = index.objects[asset].hash;
             const subhash = hash.substring(0, 2);
             const subAsset = path_1.default.join(assetDirectory, 'objects', subhash);
@@ -186,7 +190,7 @@ class Handler {
                 task: counter,
                 total: Object.keys(index.objects).length
             });
-        }));
+        }), this.limit);
         this.client.emit('progress-end', {
             type: 'assets',
             task: counter,
@@ -281,7 +285,7 @@ class Handler {
                 task: 0,
                 total: stat.length
             });
-            await Promise.all(stat.map(async (native) => {
+            await (0, common_1.limitedAll)(stat.map(async (native) => {
                 if (!native)
                     return;
                 const name = native.path.split('/').pop();
@@ -305,7 +309,7 @@ class Handler {
                     task: counter,
                     total: stat.length
                 });
-            }));
+            }), this.limit);
             this.client.emit('progress-end', {
                 type: 'natives',
                 task: counter,
@@ -429,7 +433,7 @@ class Handler {
         }
         else {
             // Modifying legacy library format to play nice with MCLC's downloadToDirectory function.
-            await Promise.all(json.libraries.map(async (library) => {
+            await (0, common_1.limitedAll)(json.libraries.map(async (library) => {
                 const lib = library.name.split(':');
                 if (lib[0] === 'net.minecraftforge' && lib[1].includes('forge'))
                     return;
@@ -456,7 +460,7 @@ class Handler {
                 catch (error) {
                     this.client.emit('debug', `[MCLC]: Failed checking request for ${downloadLink}`);
                 }
-            }));
+            }), this.limit);
         }
         // If a downloads property exists, we modify the inital forge entry to include ${jarEnding} so ForgeWrapper can work properly.
         // If it doesn't, we simply remove it since we're already providing the universal jar.
@@ -488,7 +492,7 @@ class Handler {
     }
     async downloadToDirectory(directory, libraries, eventName) {
         const libs = [];
-        await Promise.all(libraries.map(async (library) => {
+        await (0, common_1.limitedAll)(libraries.map(async (library) => {
             if (!library)
                 return;
             if (this.parseRule(library))
@@ -527,7 +531,7 @@ class Handler {
                 total: libraries.length
             });
             libs.push(`${jarPath}${path_1.default.sep}${name}`);
-        }));
+        }), this.limit);
         this.client.emit('progress-end', {
             type: eventName,
             task: counter,

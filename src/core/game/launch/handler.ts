@@ -28,11 +28,9 @@ export class Handler {
 
     private auth_provider: IAuthProvider | null = null;
 
-    private currentAccount: LauncherAccount | undefined;
+    private currentAccount: LauncherAccount | null = null;
 
-    constructor() {
-        this.currentAccount = this.accounts.getSelectedAccount();
-    }
+    constructor() {}
 
     private jsonParser(str: string) {
         try {
@@ -75,6 +73,8 @@ export class Handler {
     }
 
     public async get_auth(): Promise<{ jvm: string; token: LauncherAccount } | null> {
+        this.currentAccount = await this.accounts.getSelectedAccount();
+
         if (!this.currentAccount) {
             logger.warn("⚠️  No account selected! Please log in first. 🐾");
             return null;
@@ -106,7 +106,7 @@ export class Handler {
 
     public async login(credentials: Credentials, auth_provider: AUTH_PROVIDERS): Promise<LauncherAccount | null> {
         try {
-            if (this.accounts.hasAccount(credentials, auth_provider)) {
+            if (await this.accounts.hasAccount(credentials, auth_provider)) {
                 logger.warn("⚠️  An account with these credentials already exists! Skipping login. 🐾");
                 return null;
             }
@@ -128,9 +128,9 @@ export class Handler {
                 return null;
             }
 
-            this.accounts.addAccount(token);
-            this.accounts.selectAccount(token.id);
-            this.currentAccount = this.accounts.getSelectedAccount();
+            await this.accounts.addAccount(token);
+            await this.accounts.selectAccount(token.id);
+            this.currentAccount = token;
 
             logger.log(`✅ Logged in as ${token.name} [${token.uuid}] via "${auth_provider}" 🎉`);
             return token;
@@ -180,8 +180,17 @@ export class Handler {
             return await new Promise(async(resolve) => {
                 let libraryRoot = path.join(mc_dir, 'libraries')
                 let assetRoot = path.join(mc_dir, 'assets');
+                let loader = this.installers.get(this.installers.list().sort((a, b) => b.length - a.length).find(ld => name.toLowerCase().startsWith(ld) || name.toLowerCase().includes(ld)) || 'vanilla');
 
                 let jvmArgs = `${auth.jvm}`;
+
+                if (loader && loader.metadata.unstable) {
+                    logger.warn(`⚠️ Heads up! ${loader.metadata.name} support is a bit wobbly right now — it might break or misbehave 🧪👀`);
+                }
+
+                if (loader && loader.metadata.jvm) {
+                    jvmArgs = `${loader.metadata.jvm} ${jvmArgs}`;
+                }
 
                 let javaPath = java.path;
 
@@ -249,11 +258,17 @@ export class Handler {
                     progress.updateTo(type, task);
                 });
 
-                /*launcher.on('download-status', (data) => {
+                launcher.on('progress-end', (data) => {
+                    if(progress.has(data.type)) {
+                        progress.stop(data.type);
+                    }
+                });
+
+                launcher.on('download-status', (data) => {
                     let { name, current, total } = data;
                     
                     if(!progress.has(name)) {
-                        progress.create(name, total);
+                        progress.create(name, total, true);
                         progress.start();
                     }
 
@@ -263,12 +278,6 @@ export class Handler {
                 launcher.on('download', (name) => {
                     if(progress.has(name)) {
                         progress.stop(name);
-                    }
-                });*/
-
-                launcher.on('progress-end', (data) => {
-                    if(progress.has(data.type)) {
-                        progress.stop(data.type);
                     }
                 });
 
@@ -336,7 +345,7 @@ export class Handler {
     }
 
     public async remove_account(): Promise<void> {
-        const accounts = this.accounts.listAccounts();
+        const accounts = await this.accounts.listAccounts();
 
         if (accounts.length === 0) {
             logger.warn("⚠️ No accounts available to remove.");
@@ -381,9 +390,9 @@ export class Handler {
         if (removed) {
             logger.success(`🗑️ Removed account "${selectedAccount.name}" successfully!`);
 
-            const selected = this.accounts.getSelectedAccount();
+            const selected = await this.accounts.getSelectedAccount();
             if (!selected) {
-                this.currentAccount = undefined;
+                this.currentAccount = null;
                 logger.warn("⚠️ No account is now selected.");
             } else {
                 this.currentAccount = selected;

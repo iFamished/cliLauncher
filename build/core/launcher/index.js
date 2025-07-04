@@ -65,7 +65,6 @@ class MCLCore extends events_1.default {
             const modifyJson = await this.getModifyJson();
             const args = [];
             let jvm = [
-                "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED",
                 '-XX:-UseAdaptiveSizePolicy',
                 '-XX:-OmitStackTraceInFastThrow',
                 '-Dfml.ignorePatchDiscrepancies=true',

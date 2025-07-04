@@ -1,10 +1,7 @@
 import { ClientJar } from '../../../types/client';
+import { Metadata } from '../../../types/launcher';
 export interface InstallerProvider {
-    metadata: {
-        name: string;
-        description: string;
-        author: string;
-    };
+    metadata: Metadata;
     get(): Promise<ClientJar | null>;
 }
 export declare class InstallerRegistry {

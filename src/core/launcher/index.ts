@@ -75,7 +75,6 @@ export default class MCLCore extends EventEmitter {
             const args: string[] = [];
 
             let jvm = [
-                "--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED",
                 '-XX:-UseAdaptiveSizePolicy',
                 '-XX:-OmitStackTraceInFastThrow',
                 '-Dfml.ignorePatchDiscrepancies=true',

@@ -79,7 +79,7 @@ class ProgressReport {
                 return { text: formatMessage('progress', `Task ${chalk_1.default.grey(`\`${spinner.name}\``)}: ${str}`), color: 'white' };
         }
     }
-    create(name, total) {
+    create(name, total, hideTaskLogs = false) {
         if (this.bars.has(name)) {
             loggers.warn(`Progress bar '${name}' already exists.`);
             return null;
@@ -91,6 +91,7 @@ class ProgressReport {
             value: 0,
             name,
             id: spinner_id,
+            hideTaskLogs
         };
         this.bars.set(name, spinner_data);
         if (this.visible.size < MAX_VISIBLE_BARS) {
@@ -142,20 +143,23 @@ class ProgressReport {
         const spinner = this.bars.get(name);
         if (!spinner)
             return;
-        if (this.visible.has(name)) {
+        this.visible.delete(name);
+        this.bars.delete(name);
+        if (!spinner.hideTaskLogs) {
             this.spinners.update(spinner.id, this.task_logs(spinner, 1, fail));
             this.spinners.succeed(spinner.id);
-            this.visible.delete(name);
-            const next = this.hidden.shift();
-            if (next) {
-                const nextBar = this.bars.get(next);
-                if (nextBar) {
-                    this.spinners.add(nextBar.id, this.task_logs(nextBar));
-                    this.visible.add(next);
-                }
+        }
+        else {
+            this.spinners.remove(spinner.id); // completely remove from terminal
+        }
+        const next = this.hidden.shift();
+        if (next) {
+            const nextBar = this.bars.get(next);
+            if (nextBar) {
+                this.spinners.add(nextBar.id, this.task_logs(nextBar));
+                this.visible.add(next);
             }
         }
-        this.bars.delete(name);
     }
     stopAll(fail = false) {
         for (const name of [...this.bars.keys()]) {

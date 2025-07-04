@@ -12,7 +12,9 @@ import { logger } from '../../launch/handler';
 const metadata = {
     name: 'NeoForge',
     description: 'NeoForge Minecraft client installer',
-    author: 'NeoForged Project'
+    author: 'NeoForged Project',
+    unstable: true,
+    jvm: '--add-opens java.base/java.lang.invoke=ALL-UNNAMED',
 };
 
 const MAVEN_BASE = 'https://maven.neoforged.net/releases/net/neoforged';
