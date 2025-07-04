@@ -51,6 +51,7 @@ const common_1 = require("../../utils/common");
 const fs_extra_1 = require("fs-extra");
 const origami_1 = require("../../../cli/origami");
 const temurin_1 = __importDefault(require("../../tools/temurin"));
+const install_1 = require("../install/packs/install");
 class Runtime {
     handler = new handler_1.Handler();
     version;
@@ -266,6 +267,7 @@ class Runtime {
                         new inquirer_1.default.Separator(),
                         { name: '📂 Choose Profile', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
+                        { name: '🧩 Install Mods / Resources / Shaders', value: 'install_content' },
                         new inquirer_1.default.Separator(),
                         { name: '☕ Install Java', value: 'install_java' },
                         { name: '📌 Select Java', value: 'select_java' },
@@ -301,6 +303,14 @@ class Runtime {
                     break;
                 case 'install_version':
                     await this.handler.install_version();
+                    console.log('\n\n\n');
+                    await this.showHeader();
+                    break;
+                case 'install_content':
+                    const installer = new install_1.ModInstaller(handler_1.logger);
+                    const profile = this.handler.profiles.getSelectedProfile();
+                    if (profile)
+                        await installer.install_modrinth_content(profile);
                     console.log('\n\n\n');
                     await this.showHeader();
                     break;

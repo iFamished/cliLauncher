@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import figlet from 'figlet';
 import * as gradient from 'gradient-string';
-import { Handler } from './handler';
+import { Handler, logger } from './handler';
 import { readFileSync } from 'fs';
 import * as data_manager from "../../tools/data_manager";
 import path from 'path';
@@ -13,6 +13,7 @@ import { localpath, minecraft_dir } from '../../utils/common';
 import { removeSync } from 'fs-extra';
 import { checkForLatestVersion } from '../../../cli/origami';
 import temurin from '../../tools/temurin';
+import { ModInstaller } from '../install/packs/install';
 
 export class Runtime {
     public handler: Handler = new Handler();
@@ -265,6 +266,7 @@ export class Runtime {
                         new inquirer.Separator(),
                         { name: '📂 Choose Profile', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
+                        { name: '🧩 Install Mods / Resources / Shaders', value: 'install_content' },
                         new inquirer.Separator(),
                         { name: '☕ Install Java', value: 'install_java' },
                         { name: '📌 Select Java', value: 'select_java' },
@@ -305,6 +307,14 @@ export class Runtime {
                     break;
                 case 'install_version':
                     await this.handler.install_version();
+                    console.log('\n\n\n');
+                    await this.showHeader();
+
+                    break;
+                case 'install_content':
+                    const installer = new ModInstaller(logger);
+                    const profile = this.handler.profiles.getSelectedProfile();
+                    if (profile) await installer.install_modrinth_content(profile);
                     console.log('\n\n\n');
                     await this.showHeader();
 

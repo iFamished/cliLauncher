@@ -1,17 +1,14 @@
-
 export interface ModrinthLoader {
     icon: string;
     name: string;
     supported_project_types: string[];
 }
-
 export interface ModrinthCategory {
     icon: string;
     name: string;
     project_type: string;
     header: string;
 }
-
 export interface ModrinthVersionFile {
     hashes: Record<string, string>;
     url: string;
@@ -20,39 +17,30 @@ export interface ModrinthVersionFile {
     size: number;
     file_type?: 'required-resource-pack' | 'optional-resource-pack' | null;
 }
-
 export interface ModrinthDependency {
     version_id?: string | null;
     project_id: string;
     dependency_type: 'required' | 'optional' | 'incompatible' | 'embedded';
 }
-
 export interface ModrinthVersion {
     id: string;
     project_id: string;
     author_id: string;
-
     name: string;
     version_number: string;
     changelog?: string | null;
     changelog_url?: string | null;
-
     dependencies: ModrinthDependency[];
-
     game_versions: string[];
     version_type: 'release' | 'beta' | 'alpha';
     loaders: string[];
-
     featured: boolean;
     status: 'listed' | 'archived' | 'draft' | 'unlisted' | 'scheduled' | 'unknown';
     requested_status?: 'listed' | 'archived' | 'draft' | 'unlisted' | null;
-
     date_published: string;
     downloads: number;
-
     files: ModrinthVersionFile[];
 }
-
 export interface ModrinthProject {
     id: string;
     slug: string;
@@ -65,27 +53,11 @@ export interface ModrinthProject {
     additional_categories: string[];
     client_side: 'required' | 'optional' | 'unsupported' | 'unknown';
     server_side: 'required' | 'optional' | 'unsupported' | 'unknown';
-    status:
-        | 'approved'
-        | 'archived'
-        | 'rejected'
-        | 'draft'
-        | 'unlisted'
-        | 'processing'
-        | 'withheld'
-        | 'scheduled'
-        | 'private'
-        | 'unknown';
-    requested_status?:
-        | 'approved'
-        | 'archived'
-        | 'unlisted'
-        | 'private'
-        | 'draft'
-        | null;
+    status: 'approved' | 'archived' | 'rejected' | 'draft' | 'unlisted' | 'processing' | 'withheld' | 'scheduled' | 'private' | 'unknown';
+    requested_status?: 'approved' | 'archived' | 'unlisted' | 'private' | 'draft' | null;
     team: string;
-    published: string; // ISO-8601
-    updated: string;   // ISO-8601
+    published: string;
+    updated: string;
     approved?: string | null;
     queued?: string | null;
     issues_url?: string | null;
@@ -106,15 +78,7 @@ export interface ModrinthProject {
     donation_urls: ModrinthDonationLink[];
     moderator_message?: string;
 }
-
-export type ModrinthSortOption =
-  | 'relevance'
-  | 'downloads'
-  | 'follows'
-  | 'newest'
-  | 'updated'
-
-
+export type ModrinthSortOption = 'relevance' | 'downloads' | 'follows' | 'newest' | 'updated';
 export interface ModrinthSearchParams {
     query?: string;
     limit?: number;
@@ -122,29 +86,25 @@ export interface ModrinthSearchParams {
     index?: ModrinthSortOption;
     facets?: FacetOptions;
 }
-
 export interface ModrinthDonationLink {
-    id: string;        // e.g. "patreon"
-    platform: string;  // e.g. "Patreon"
-    url: string;       // e.g. "https://patreon.com/user"
+    id: string;
+    platform: string;
+    url: string;
 }
-
 export interface ModrinthGalleryImage {
     url: string;
     featured: boolean;
     title: string | null;
     description: string | null;
-    created: string; // ISO-8601
+    created: string;
     ordering: number;
 }
-
 export interface ModrinthSearchResponse {
     hits: ModrinthSearchHit[];
     offset: number;
     limit: number;
     total_hits: number;
 }
-
 export interface ModrinthSearchHit {
     slug: string;
     title: string;
@@ -162,15 +122,14 @@ export interface ModrinthSearchHit {
     monetization_status: 'monetized' | 'demonetized' | 'force-demonetized';
     project_id: string;
     author: string;
-    versions: string[]; // Minecraft versions
+    versions: string[];
     latest_version: string;
-    license: string; // SPDX ID, e.g., "MIT"
-    gallery: string[]; // URLs
+    license: string;
+    gallery: string[];
     featured_gallery: string | null;
-    date_created: string;  // ISO-8601 format
-    date_modified: string; // ISO-8601 format
+    date_created: string;
+    date_modified: string;
 }
-
 export type FacetOptions = {
     categories?: string[];
     versions?: string[];

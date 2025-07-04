@@ -251,7 +251,8 @@ class Handler {
             (0, fs_extra_1.writeFileSync)(minecraft_launcher_profiles, JSON.stringify({ profiles: {} }));
         }
         const choices = availableInstallers.map(installer => ({
-            name: chalk_1.default.green(`[${installer?.metadata.author}] `) +
+            name: (installer?.metadata.unstable ? chalk_1.default.redBright('[UNSTABLE] ') : '') +
+                chalk_1.default.green(`[${installer?.metadata.author}] `) +
                 chalk_1.default.hex("#c4b5fd")(installer?.metadata.name) +
                 chalk_1.default.magenta(" - " + chalk_1.default.yellow(installer?.metadata.description)),
             value: installer

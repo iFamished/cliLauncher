@@ -309,6 +309,7 @@ export class Handler {
 
         const choices = availableInstallers.map(installer => ({
             name:
+                (installer?.metadata.unstable ? chalk.redBright('[UNSTABLE] ') : '') +
                 chalk.green(`[${installer?.metadata.author}] `) +
                 chalk.hex("#c4b5fd")(installer?.metadata.name) +
                 chalk.magenta(" - " + chalk.yellow(installer?.metadata.description)),
