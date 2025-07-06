@@ -188,4 +188,4 @@ origami launch
 ## 📖 Related
 
 * [GitHub Repository](https://github.com/merasugd/origami-launcher)
-* [NPM Page](https://www.npmjs.com/package/origami-minecraft)
+* [NPM Page](https://www.npmjs.com/package/@origami-minecraft/stable)

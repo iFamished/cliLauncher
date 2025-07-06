@@ -1,0 +1,37 @@
+import { Filters, InstalledProfile, ModrinthSortOption } from '../../../../types/modrinth';
+import { LauncherProfile } from '../../../../types/launcher';
+export declare class ModrinthModManager {
+    private filePath;
+    private versionPath;
+    private data;
+    constructor(profile: LauncherProfile);
+    private cleanup_mods;
+    auto_import_mods(): void;
+    private load;
+    private save;
+    reset(): void;
+    addMod(mod: string): void;
+    deleteMod(mod: string): void;
+    addShader(shader: string): void;
+    deleteShader(shader: string): void;
+    addResPack(respack: string): void;
+    deleteResPack(respack: string): void;
+    isModDisabled(mod: string): string | undefined;
+    getDisabledMod(mod: string): string | undefined;
+    disableMod(mod: string): void;
+    enableMod(mod: string): void;
+    getList(): InstalledProfile;
+    getFromType(name: string, type: 'mod' | 'resourcepack' | 'shader'): string | undefined;
+    deleteFromType(name: string, type: 'mod' | 'resourcepack' | 'shader'): void;
+    addFromType(name: string, type: 'mod' | 'resourcepack' | 'shader'): void;
+    getMod(mod: string): string | undefined;
+    getShader(shd: string): string | undefined;
+    getResPack(rp: string): string | undefined;
+    configureFilter(type: 'mod' | 'shader' | 'resourcepack', data: {
+        sort?: ModrinthSortOption;
+        versionFilter?: string[];
+        selectedCategories?: string[];
+    }): void;
+    getDefaultFilters(type: 'mod' | 'shader' | 'resourcepack'): Filters | undefined;
+}
+export default ModrinthModManager;

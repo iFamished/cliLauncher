@@ -7,7 +7,9 @@ import { Logger } from '../../../tools/logger'
 import { LauncherProfile } from '../../../../types/launcher'
 import { ensureDir, minecraft_dir } from '../../../utils/common'
 import { downloader } from '../../../utils/download'
-import { ModrinthSearchHit, ModrinthSearchParams } from '../../../../types/modrinth'
+import { ModData, ModrinthSearchParams, ModrinthSortOption, ModrinthSortOptions, ModrinthVersion, ModrinthVersionFile } from '../../../../types/modrinth'
+import ModrinthModManager from './manager'
+import ora from 'ora'
 
 export class ModInstaller {
     private modrinth: ModrinthProjects;
@@ -17,7 +19,123 @@ export class ModInstaller {
         this.modrinth = new ModrinthProjects(logger);
     }
 
+    public async configure_filters(project_type: string, version: string, loader: string, manager: ModrinthModManager, defaults?: {
+        sort?: ModrinthSortOption;
+        versionMatch?: 'strict' | 'match' | 'none';
+        selectedCategories?: string[];
+    }): Promise<{
+        sort: ModrinthSortOption;
+        versionFilter: string[] | undefined;
+        categories: string[] | undefined;
+    }> {
+        const all_categories = (await this.modrinth.tags.getCategories(project_type)) || [];
+        const categoryOptions = all_categories
+            .filter(cat => project_type === 'mod' ? cat.name.toLowerCase() !== loader.toLowerCase() : true)
+            .map(cat => ({ name: cat.name, value: cat.name }));
+
+        const { sort } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'sort',
+                message: '📊 Sort results by:',
+                choices: ModrinthSortOptions.map(opt => ({
+                    name: opt.charAt(0).toUpperCase() + opt.slice(1),
+                    value: opt,
+                })),
+                default: defaults?.sort ?? 'relevance'
+            }
+        ]);
+
+        const { versionMatch } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'versionMatch',
+                message: '🎯 Minecraft version match strategy:',
+                choices: [
+                    { name: 'Strict (exact version match)', value: 'strict' },
+                    { name: 'Match (minor version match)', value: 'match' },
+                    { name: 'None (ignore version)', value: 'none' }
+                ],
+                default: defaults?.versionMatch ?? 'strict'
+            }
+        ]);
+
+        let versionFilter: string[] | undefined = undefined;        
+        if(versionMatch === 'strict') {
+            versionFilter = [];
+
+            versionFilter.push(version);
+        } else if(versionMatch === 'match') {
+            versionFilter = [];
+
+            const matchedVersion = await this.modrinth.fetchAllMatchVersions(version);
+            versionFilter.push(version);
+
+            matchedVersion.forEach(ver => {
+                if(!versionFilter?.find(v => v === ver)) {
+                    versionFilter?.push(ver);
+                }
+            });
+        }
+
+        let categories: string[] | undefined = defaults?.selectedCategories;
+        if (categoryOptions.length > 0) {
+            const { selectedCategories } = await inquirer.prompt([
+                {
+                    type: 'checkbox',
+                    name: 'selectedCategories',
+                    message: '🧩 Select categories to filter by:',
+                    choices: categoryOptions,
+                    default: defaults?.selectedCategories ?? [],
+                }
+            ]);
+            categories = selectedCategories.length > 0 ? selectedCategories : undefined;
+        }
+
+        if(project_type === 'mod') {
+            if(!categories?.find(v => v.toLowerCase() !== loader.toLowerCase() )) {
+                categories?.push(loader.toLowerCase());
+            }
+        }
+
+        manager.configureFilter(project_type as 'mod' | 'shader' | 'resourcepack', {
+            sort,
+            versionFilter,
+            selectedCategories: categories
+        });
+
+        return { sort, versionFilter, categories };
+    }
+
+    public async ask_confirmation(message: string, _applyToAll: boolean = false, _default: string | undefined = undefined): Promise<{choice: 'keep' | 'replace'; applyToAll: boolean; }> {
+        const { choice } = _default ? { choice: _default } : await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'choice',
+                message,
+                choices: [
+                    { name: 'Keep existing file', value: 'keep' },
+                    { name: 'Replace with new file', value: 'replace' }
+                ],
+                default: _default ?? 'keep',
+            }
+        ]);
+
+        const { applyToAll } = _applyToAll ? { applyToAll: _applyToAll } : await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'applyToAll',
+                message: 'Apply this choice to all remaining items?',
+                default: false
+            }
+        ]);
+
+        return { choice, applyToAll };
+    }
+
     public async install_modrinth_content(profile: LauncherProfile): Promise<void> {
+        const manager = new ModrinthModManager(profile);
+
         const { type } = await inquirer.prompt({
             type: 'list',
             name: 'type',
@@ -35,29 +153,37 @@ export class ModInstaller {
         const mcVersion = profile.lastVersionId;
         const loader = profile.origami.metadata.name.toLowerCase();
 
+        let defaults_p = manager.getDefaultFilters(type);
+
+        let sort_p: ModrinthSortOption = defaults_p?.sort ?? 'relevance';
+        let versions_p: string[] | undefined = defaults_p?.versionFilter ?? (type === 'mod' ? [profile.lastVersionId] : []);
+        let categories_p: string[] | undefined = defaults_p?.selectedCategories ?? (type === 'mod' ? [loader] : []);
+
         const version_folder = path.join(minecraft_dir(true), 'instances', profile.origami.path);
         const folder = { mod: 'mods', resourcepack: 'resourcepacks', shader: 'shaderpacks' }[type as string] || 'mods';
         const dest = path.join(version_folder, folder);
         ensureDir(dest);
-        const installedFiles = new Set(fs.readdirSync(dest));
 
         while (true) {
             console.clear();
             console.log(chalk.bold(`📦 ${mode === 'home' ? 'Featured' : 'Search'} ${type}s (MC ${mcVersion}) — Page ${page + 1}\n`));
+ 
+            const spinner = ora('🐾 Warming up the search engine...').start();
 
             let searchResults;
             const commonQuery: ModrinthSearchParams = {
                 query: mode === 'search' ? (query || '*') : '*',
                 limit: this.pageSize,
                 offset: page * this.pageSize,
-                index: 'relevance',
+                index: sort_p,
                 facets: {
                     project_type: type,
-                    versions: type === "mod" ? [mcVersion] : undefined,
-                    categories: type === "mod" ? [loader] : undefined,
+                    versions: versions_p,
+                    categories: categories_p,
                 }
             };
 
+            spinner.text = '🔍 Looking through Modrinth...';
             searchResults = await this.modrinth.searchProject(commonQuery);
 
             const hits = searchResults?.hits ?? [];
@@ -65,12 +191,31 @@ export class ModInstaller {
 
             const choices: any[] = [];
             choices.push({ name: '[🔍 Search]', value: '__search' });
+            choices.push({ name: '[🛠️  Configure Filters]', value: '__configure_filters' });
+
+            let versions_data: ModData[] = [];
+
+            spinner.text = `🎀 Gathering ${type} files...`;
+            spinner.color = 'yellow';
 
             for (const hit of hits) {
-                const isInstalled = installedFiles.has(`${hit.project_id}-${hit.title}-${hit.slug}.jar`)
+                const versions = await this.modrinth.versions.fetchVersions(
+                    hit.project_id,
+                    type === 'mod' ? [loader] : undefined,
+                    versions_p
+                );
+
+                const isInstalled = versions?.find(v => v.files.find(f => manager.getFromType(f.filename, type)));
+                const file = isInstalled ? isInstalled.files.find(f => manager.getFromType(f.filename, type)) : undefined
+
+                if (versions) {
+                    versions_data.push({ hit: hit.project_id, is_installed: isInstalled, specific: file, versions });
+                } else {
+                    versions_data.push({ hit: hit.project_id, is_installed: undefined, specific: undefined, versions: [] });
+                }
 
                 const displayName = isInstalled
-                    ? chalk.italic(`${hit.title} — ⬇ ${hit.downloads.toLocaleString()} / ⭐ ${hit.follows.toLocaleString()}`)
+                    ? chalk.italic.underline(`${hit.title} — ⬇ ${hit.downloads.toLocaleString()} / ⭐ ${hit.follows.toLocaleString()}`)
                     : `${hit.title} — ⬇ ${hit.downloads.toLocaleString()} / ⭐ ${hit.follows.toLocaleString()}`;
 
                 choices.push({ name: displayName, value: hit.project_id });
@@ -79,6 +224,8 @@ export class ModInstaller {
             if (page > 0) choices.push({ name: '⬅ Previous page', value: '__prev' });
             if ((page + 1) * this.pageSize < total) choices.push({ name: '➡ Next page', value: '__next' });
             choices.push({ name: '🔙 Back', value: '__back' });
+
+            spinner.succeed('Done');
 
             const { selected } = await inquirer.prompt({
                 type: 'list',
@@ -103,31 +250,38 @@ export class ModInstaller {
                 page = 0;
                 continue;
             }
+            if (selected === '__configure_filters') {
+                let results = await this.configure_filters(type, profile.lastVersionId, loader, manager, {
+                    sort: sort_p,
+                    versionMatch: (versions_p?.length || 0) < 1 ? 'none' : versions_p?.length === 1 ? 'strict' : 'match',
+                    selectedCategories: categories_p
+                });
 
-            let data = hits.find(v => v.project_id === selected) || hits[0];
-            await this.handleProjectInstall(selected, type, mcVersion, profile, dest, data);
+                versions_p = results.versionFilter;
+                sort_p = results.sort;
+                categories_p = results.categories;
+                continue;
+            }
+
+            let version_data = versions_data.find(v => v.hit === selected);
+            await this.handleProjectInstall(version_data?.versions, type, profile, dest, version_data, manager);
             break;
         }
     }
 
     private async handleProjectInstall(
-        projectId: string,
+        versions_raw: ModrinthVersion[] | undefined,
         type: 'mod' | 'resourcepack' | 'shader',
-        mcVersion: string,
         profile: LauncherProfile,
         dest: string,
-        data: ModrinthSearchHit
+        data: ModData | undefined,
+        manager: ModrinthModManager,
     ) {
         console.clear();
         console.log(chalk.bold('🔄 Fetching versions...'));
 
-        const versions = await this.modrinth.versions.fetchVersions(
-            projectId,
-            type === 'mod' ? [profile.origami.metadata.name.toLowerCase()] : undefined,
-            type === 'mod' ? [mcVersion] : undefined,
-            type === 'mod' ? true : undefined
-        );
-
+        const versions = versions_raw;
+    
         if (!versions?.length) {
             console.log(chalk.red('❌ No compatible versions found.'));
             return;
@@ -151,20 +305,43 @@ export class ModInstaller {
             console.log(chalk.red('❌ No downloadable file found.'));
             return;
         }
+        
+        let main_apply_to_all = false;
+        let main_default: string | undefined = undefined;
 
-        const filename = type === 'mod' ? `${data.project_id}-${data.title}-${data.slug}.jar` : file.filename;
-        const outPath = path.join(dest, filename);
+        if (data?.is_installed && data?.specific && fs.existsSync(path.join(dest, data.specific.filename))) {
+            const confirm = await this.ask_confirmation(`You've already installed mod version '${data.specific.filename}'. What do you want to do?`, main_apply_to_all, main_default);
 
-        const filesInFolder = fs.readdirSync(dest);
-        if (filesInFolder.find(v => v === filename)) {
-            const fullPath = path.join(dest, filename);
-            fs.unlinkSync(fullPath);
-            this.logger.log(chalk.yellow(`🗑 Removed old version: ${filename}`));
-        }
+            if(confirm.applyToAll) {
+                main_apply_to_all = confirm.applyToAll;
+                main_default = confirm.choice;
+            };
 
-        this.logger.log(chalk.green(`📥 Downloading ${filename}...`));
-        await downloader(file.url, outPath);
-        this.logger.log(chalk.green(`✅ Installed ${filename} to ${type}s folder.`));
+            if(confirm.choice === 'replace') {
+                const fullPath = path.join(dest, data.specific.filename);
+                fs.unlinkSync(fullPath);
+                this.logger.log(chalk.yellow(`🗑 Removed old version: ${data.specific.filename}`));
+                manager.deleteFromType(data.specific.filename, type);
+
+                await downloadMod(file, this.logger, type);
+            }
+        } else await downloadMod(file, this.logger, type);
+
+        async function downloadMod(file: ModrinthVersionFile, logger: Logger, type: 'mod' | 'resourcepack' | 'shader') {
+            const filename = file.filename;
+            const outPath = path.join(dest, filename);
+
+            if (fs.existsSync(outPath)) fs.unlinkSync(outPath);
+
+            logger.log(chalk.green(`📥 Downloading ${filename}...`));
+            await downloader(file.url, outPath);
+            logger.log(chalk.green(`✅ Installed ${filename} to ${type}s folder.`));
+        
+            manager.addFromType(filename, type);
+        };
+
+        let deps_apply_to_all = false;
+        let deps_default: string | undefined = undefined;
 
         for (const dep of selectedVersion.dependencies) {
             if (dep.dependency_type !== 'required') continue;
@@ -179,9 +356,8 @@ export class ModInstaller {
             
             const depVersions = await this.modrinth.versions.fetchVersions(
                 dep.project_id,
-                [profile.origami.metadata.name.toLowerCase()],
-                [mcVersion],
-                true
+                type === 'mod' ? [profile.origami.metadata.name.toLowerCase()] : undefined,
+                selectedVersion.game_versions
             );
 
             if (!depVersions?.length) {
@@ -195,14 +371,26 @@ export class ModInstaller {
                 continue;
             }
 
-            const depFilename = `${depProject.id}-${depProject.title}-${depProject.slug}.jar`;
-            const depPath = path.join(dest, depFilename);
+            const isInstalled = depVersions?.find(v => v.files.find(f => manager.getFromType(f.filename, type)));
+            const file = isInstalled ? isInstalled.files.find(f => manager.getFromType(f.filename, type)) : undefined
 
-            if (fs.existsSync(depPath)) fs.unlinkSync(depPath);
+            if (isInstalled && file && fs.existsSync(path.join(dest, file.filename))) {
+                const confirm = await this.ask_confirmation(`You've already installed mod version '${file.filename}'. What do you want to do?`, deps_apply_to_all, deps_default);
 
-            this.logger.log(chalk.green(`📥 Downloading dependency ${depFile.filename}...`));
-            await downloader(depFile.url, depPath);
-            this.logger.log(chalk.green(`✅ Installed dependency: ${depFile.filename}`));
+                if(confirm.applyToAll) {
+                    deps_apply_to_all = confirm.applyToAll;
+                    deps_default = confirm.choice;
+                };
+
+                if(confirm.choice === 'replace') {
+                    const fullPath = path.join(dest, file.filename);
+                    fs.unlinkSync(fullPath);
+                    this.logger.log(chalk.yellow(`🗑 Removed old version: ${file.filename}`));
+                    manager.deleteFromType(file.filename, type);
+
+                    await downloadMod(depFile, this.logger, type);
+                }
+            } else await downloadMod(depFile, this.logger, type);
         }
     }
 }

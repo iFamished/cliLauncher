@@ -3,34 +3,90 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ModrinthProjects = exports.ModrinthVersions = exports.ModrinthTags = void 0;
+exports.ModrinthProjects = exports.ModrinthVersions = exports.ModrinthTags = exports.RequestQueue = void 0;
 const axios_1 = __importDefault(require("axios"));
 const defaults_1 = require("../../../../config/defaults");
 const minecraft_versions_1 = require("../../../utils/minecraft_versions");
+class RequestQueue {
+    delay;
+    concurrency;
+    queue = [];
+    isProcessing = false;
+    constructor(delay = 250, concurrency = 2) {
+        this.delay = delay;
+        this.concurrency = concurrency;
+    }
+    async sleep(ms) {
+        return new Promise(res => setTimeout(res, ms));
+    }
+    async enqueue(fn) {
+        return new Promise((resolve, reject) => {
+            this.queue.push(async () => {
+                try {
+                    const result = await fn();
+                    resolve(result);
+                }
+                catch (err) {
+                    reject(err);
+                }
+            });
+            if (!this.isProcessing)
+                this.processQueue();
+        });
+    }
+    async processQueue() {
+        this.isProcessing = true;
+        const running = [];
+        while (this.queue.length > 0) {
+            while (running.length < this.concurrency && this.queue.length > 0) {
+                const task = this.queue.shift();
+                if (!task)
+                    break;
+                const runner = (async () => {
+                    await task();
+                    await this.sleep(this.delay);
+                })();
+                running.push(runner);
+                runner.finally(() => {
+                    const index = running.indexOf(runner);
+                    if (index !== -1)
+                        running.splice(index, 1);
+                });
+            }
+            await Promise.race(running);
+        }
+        await Promise.allSettled(running);
+        this.isProcessing = false;
+    }
+}
+exports.RequestQueue = RequestQueue;
 class ModrinthTags {
     logger;
+    queue = new RequestQueue(300, 3);
     constructor(logger) {
         this.logger = logger;
     }
     async api(endpoint, query) {
-        try {
-            const url = new URL(`https://api.modrinth.com/v2/${endpoint}`);
-            if (query) {
-                for (const [key, value] of Object.entries(query)) {
-                    url.searchParams.append(key, value);
+        return this.queue.enqueue(async () => {
+            try {
+                const url = new URL(`https://api.modrinth.com/v2/${endpoint}`);
+                if (query) {
+                    for (const [key, value] of Object.entries(query)) {
+                        url.searchParams.append(key, value);
+                    }
                 }
+                const response = await axios_1.default.get(url.toString(), {
+                    headers: {
+                        'User-Agent': defaults_1.ORIGAMi_USER_AGENT
+                    }
+                });
+                return response.data;
             }
-            const response = await axios_1.default.get(url.toString(), {
-                headers: {
-                    'User-Agent': defaults_1.ORIGAMi_USER_AGENT
-                }
-            });
-            return response.data;
-        }
-        catch (err) {
-            this.logger.error(`❌ Modrinth API error (${endpoint}):`, JSON.stringify(err.response?.data) || err.message);
-            return null;
-        }
+            catch (err) {
+                this.logger.error(`❌ Modrinth API error (${endpoint}):`, JSON.stringify(err.response?.data) || err.message);
+                return null;
+            }
+        });
     }
     getLoaders() {
         return this.api('tag/loader');
@@ -38,7 +94,7 @@ class ModrinthTags {
     async getCategories(project_type) {
         let result = await this.api('tag/category');
         if (project_type && result) {
-            result = result.filter((v) => v.project_type === project_type);
+            result = result.filter((v) => v.project_type == (project_type.trim().toLowerCase()));
         }
         return result;
     }
@@ -68,7 +124,7 @@ class ModrinthVersions {
         if (loaders)
             query['loaders'] = JSON.stringify(loaders);
         if (versions)
-            query['versions'] = JSON.stringify(versions);
+            query['game_versions'] = JSON.stringify(versions);
         if (typeof featured === 'boolean')
             query['featured'] = `${featured}`;
         return this.tags.api(`project/${id}/version`, query);
@@ -87,7 +143,7 @@ class ModrinthProjects {
     }
     async fetchAllMatchVersions(id) {
         const manifest = await (0, minecraft_versions_1.fetchMinecraftVersionManifest)();
-        const targetPrefix = id.split('.').slice(0, 2).join('.') + '.';
+        const targetPrefix = id.split('.').slice(0, 2).join('.');
         return manifest.versions
             .map(v => v.id)
             .filter(v => v.startsWith(targetPrefix));
@@ -111,7 +167,7 @@ class ModrinthProjects {
             query: search.query || '*',
             facets: JSON.stringify(this.generateModrinthFacets(search.facets || {})),
             index: search.index || 'relevance',
-            offset: search.offset ? `${search.offset}` : `0`,
+            offset: `${search.offset || 0}`,
             limit: `${search.limit || 20}`,
         });
     }

@@ -16,4 +16,6 @@ export declare class Runtime {
     resetOrigami(): Promise<void>;
     private launch;
     private exit;
+    private manageInstallationsMenu;
+    private manageInstalledItem;
 }

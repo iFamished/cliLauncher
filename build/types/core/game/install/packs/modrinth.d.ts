@@ -1,7 +1,18 @@
 import { Logger } from "../../../tools/logger";
 import { ModrinthCategory, ModrinthLoader, ModrinthProject, ModrinthSearchParams, ModrinthSearchResponse, ModrinthVersion } from "../../../../types/modrinth";
+export declare class RequestQueue {
+    private readonly delay;
+    private readonly concurrency;
+    private queue;
+    private isProcessing;
+    constructor(delay?: number, concurrency?: number);
+    private sleep;
+    enqueue<T>(fn: () => Promise<T>): Promise<T>;
+    private processQueue;
+}
 export declare class ModrinthTags {
     private logger;
+    private queue;
     constructor(logger: Logger);
     api<T = any>(endpoint: string, query?: Record<string, string>): Promise<T | null>;
     getLoaders(): Promise<ModrinthLoader[] | null>;

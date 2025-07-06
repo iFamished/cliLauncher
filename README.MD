@@ -37,9 +37,11 @@ npm install -g @origami-minecraft/devbuilds
 
 ## 🗒️ Changelog
 
-See what's new in dev and stable builds in the [CHANGELOG.md](https://github.com/merasugd/origami-launcher/blob/main/wiki/CHANGELOG.MD).
+See what's new in stable builds in the [Changelog](https://github.com/merasugd/origami-launcher/blob/main/wiki/CHANGELOG.MD).
 
-⚠️ Dev builds are listed at the top — use them at your own risk!
+⚠️ Dev builds are expermental — use them at your own risk!
+
+⚠️ Check out the latest dev build updates on the [GitHub Actions page.](https://github.com/merasugd/origami-launcher/actions)
 
 ---
 
@@ -72,8 +74,7 @@ Navigate using your keyboard to log in, manage accounts, install versions, or la
 
 ### 📘 CLI Documentation
 
-See the full CLI documentation here:  
-📖 [`CLI.md`](https://github.com/merasugd/origami-launcher/blob/main/wiki/CLI.MD)
+See the full CLI documentation here: [`📖 CLI.md`](https://github.com/merasugd/origami-launcher/blob/main/wiki/CLI.MD)
 
 ---
 
@@ -111,7 +112,7 @@ npm run origami
 ## 🌐 Links
 
 - 📁 GitHub: [github.com/merasugd/origami-launcher](https://github.com/merasugd/origami-launcher)
-- 📦 NPM: [npmjs.com/package/origami-minecraft](https://www.npmjs.com/package/@origami-minecraft/stable)
+- 📦 NPM Stable: [npmjs.com/package/@origami-minecraft/stable](https://www.npmjs.com/package/@origami-minecraft/stable)
 
 ---
 

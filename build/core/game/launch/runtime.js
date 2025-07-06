@@ -52,6 +52,7 @@ const fs_extra_1 = require("fs-extra");
 const origami_1 = require("../../../cli/origami");
 const temurin_1 = __importDefault(require("../../tools/temurin"));
 const install_1 = require("../install/packs/install");
+const manager_1 = __importDefault(require("../install/packs/manager"));
 class Runtime {
     handler = new handler_1.Handler();
     version;
@@ -267,7 +268,9 @@ class Runtime {
                         new inquirer_1.default.Separator(),
                         { name: '📂 Choose Profile', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
+                        new inquirer_1.default.Separator(),
                         { name: '🧩 Install Mods / Resources / Shaders', value: 'install_content' },
+                        { name: '🧰 Manage Installations', value: 'manage_installations' },
                         new inquirer_1.default.Separator(),
                         { name: '☕ Install Java', value: 'install_java' },
                         { name: '📌 Select Java', value: 'select_java' },
@@ -313,6 +316,11 @@ class Runtime {
                         await installer.install_modrinth_content(profile);
                     console.log('\n\n\n');
                     await this.showHeader();
+                    break;
+                case 'manage_installations':
+                    const _profile = this.handler.profiles.getSelectedProfile();
+                    if (_profile)
+                        await this.manageInstallationsMenu(_profile);
                     break;
                 case 'install_java':
                     await temurin_1.default.download();
@@ -402,6 +410,77 @@ class Runtime {
     exit() {
         console.log(chalk_1.default.gray('\n👋 Thanks for using Origami! Happy crafting!'));
         process.exit(0);
+    }
+    async manageInstallationsMenu(profile) {
+        const manager = new manager_1.default(profile);
+        while (true) {
+            const list = manager.getList();
+            const choices = [];
+            const addGroup = (title, items, type) => {
+                if (items.length > 0) {
+                    choices.push(new inquirer_1.default.Separator(`📁 ${title}`));
+                    for (const item of items) {
+                        const isDisabled = type === 'mod' && manager.isModDisabled(item);
+                        choices.push({
+                            name: `${item}${isDisabled ? chalk_1.default.gray(' (disabled)') : ''}`,
+                            value: { name: item, type }
+                        });
+                    }
+                }
+            };
+            addGroup('Mods', list.mods, 'mod');
+            addGroup('Shaders', list.shaders, 'shader');
+            addGroup('Resource Packs', list.resourcepacks, 'resourcepack');
+            choices.push(new inquirer_1.default.Separator());
+            choices.push({ name: '🔙 Back', value: '__back' });
+            const { selected } = await inquirer_1.default.prompt({
+                type: 'list',
+                name: 'selected',
+                message: 'Select an installed item to manage:',
+                choices,
+                pageSize: 20
+            });
+            if (selected === '__back')
+                break;
+            await this.manageInstalledItem(manager, selected.name, selected.type);
+        }
+    }
+    async manageInstalledItem(manager, name, type) {
+        const isDisabled = type === 'mod' ? manager.isModDisabled(name) : false;
+        const actions = [
+            { name: '🗑 Delete', value: 'delete' }
+        ];
+        if (type === 'mod') {
+            actions.push({
+                name: isDisabled ? '✅ Enable' : '🚫 Disable',
+                value: isDisabled ? 'enable' : 'disable'
+            });
+        }
+        actions.push({ name: '🔙 Back', value: 'back' });
+        const { action } = await inquirer_1.default.prompt({
+            type: 'list',
+            name: 'action',
+            message: `What do you want to do with "${name}"?`,
+            choices: actions
+        });
+        switch (action) {
+            case 'delete':
+                manager.deleteFromType(name, type);
+                console.log(chalk_1.default.redBright(`🗑 Deleted ${name} from ${type}s.`));
+                break;
+            case 'disable':
+                manager.disableMod(name);
+                console.log(chalk_1.default.yellow(`🚫 Disabled ${name}.`));
+                break;
+            case 'enable':
+                manager.enableMod(name);
+                console.log(chalk_1.default.green(`✅ Enabled ${name}.`));
+                break;
+            case 'back':
+            default:
+                return;
+        }
+        await new Promise(res => setTimeout(res, 1500));
     }
 }
 exports.Runtime = Runtime;

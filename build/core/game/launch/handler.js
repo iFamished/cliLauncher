@@ -19,6 +19,7 @@ const launcher_2 = __importDefault(require("../../launcher"));
 const registry_1 = require("../install/registry");
 const inquirer_1 = __importDefault(require("inquirer"));
 const fs_extra_1 = require("fs-extra");
+const manager_1 = __importDefault(require("../install/packs/manager"));
 exports.logger = new logger_1.Logger();
 exports.progress = exports.logger.progress();
 class Handler {
@@ -127,8 +128,9 @@ class Handler {
         let mc_dir = (0, common_1.minecraft_dir)();
         let version_dir = path_1.default.join(mc_dir, 'versions');
         let cache_dir = path_1.default.join(mc_dir, '.cache');
-        let name = this.profiles.getSelectedProfile()?.name || _name;
-        if (!name) {
+        let selected_profile = this.profiles.getSelectedProfile();
+        let name = selected_profile?.name || _name;
+        if (!_name && (!selected_profile || !name) || !name) {
             console.log(chalk_1.default.bgHex('#f87171').hex('#fff')(' 💔 No profile selected! ') + chalk_1.default.hex('#fca5a5')('Please pick a profile before launching the game.'));
             return null;
         }
@@ -157,6 +159,19 @@ class Handler {
                     jvmArgs = `${loader.metadata.jvm} ${jvmArgs}`;
                 }
                 let javaPath = java.path;
+                if (selected_profile) {
+                    const mod_manager = new manager_1.default(selected_profile);
+                    const installed = mod_manager.getList().mods;
+                    if (installed.length === 0) {
+                        exports.logger.log(chalk_1.default.yellow('✨ No mods installed for this profile.'));
+                    }
+                    else {
+                        exports.logger.log(chalk_1.default.green.bold('\n📦 Installed:\n'));
+                        installed.forEach((mod, index) => {
+                            exports.logger.log(chalk_1.default.cyan(`  ${index + 1}. ${mod}`));
+                        });
+                    }
+                }
                 let auth_token = auth.token;
                 let version = this.getVersion(version_json);
                 let settings = this.settings.getFixedOptions();

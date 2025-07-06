@@ -78,7 +78,8 @@ export interface ModrinthProject {
     donation_urls: ModrinthDonationLink[];
     moderator_message?: string;
 }
-export type ModrinthSortOption = 'relevance' | 'downloads' | 'follows' | 'newest' | 'updated';
+export declare const ModrinthSortOptions: readonly ["relevance", "downloads", "follows", "newest", "updated"];
+export type ModrinthSortOption = typeof ModrinthSortOptions[number];
 export interface ModrinthSearchParams {
     query?: string;
     limit?: number;
@@ -137,3 +138,29 @@ export type FacetOptions = {
     client_side?: ('required' | 'optional' | 'unsupported')[];
     server_side?: ('required' | 'optional' | 'unsupported')[];
 };
+export interface InstalledProfile {
+    mods: string[];
+    shaders: string[];
+    resourcepacks: string[];
+}
+export interface Filters {
+    sort?: ModrinthSortOption;
+    versionFilter?: string[];
+    selectedCategories?: string[];
+}
+export interface ModProfile {
+    version: string;
+    filters?: {
+        mod?: Filters;
+        shader?: Filters;
+        resourcepack?: Filters;
+    };
+    installed: InstalledProfile;
+    disabled: string[];
+}
+export interface ModData {
+    hit: string;
+    is_installed: ModrinthVersion | undefined;
+    specific: ModrinthVersionFile | undefined;
+    versions: ModrinthVersion[];
+}

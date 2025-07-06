@@ -16,6 +16,7 @@ import { ILauncherOptions, IUser } from "../../launcher/types";
 import { InstallerRegistry } from "../install/registry";
 import inquirer from "inquirer";
 import { existsSync, writeFileSync, readFileSync } from "fs-extra";
+import ModrinthModManager from "../install/packs/manager";
 
 export const logger = new Logger();
 export const progress = logger.progress();
@@ -152,10 +153,11 @@ export class Handler {
         let mc_dir = minecraft_dir();
         let version_dir = path.join(mc_dir, 'versions');
         let cache_dir = path.join(mc_dir, '.cache');
+        let selected_profile = this.profiles.getSelectedProfile();
 
-        let name = this.profiles.getSelectedProfile()?.name || _name;
+        let name = selected_profile?.name || _name;
 
-        if(!name) {
+        if (!_name && (!selected_profile || !name) || !name) {
             console.log(chalk.bgHex('#f87171').hex('#fff')(' 💔 No profile selected! ') + chalk.hex('#fca5a5')('Please pick a profile before launching the game.'));
             return null;
         }
@@ -193,6 +195,20 @@ export class Handler {
                 }
 
                 let javaPath = java.path;
+                
+                if (selected_profile) {
+                    const mod_manager = new ModrinthModManager(selected_profile);
+                    const installed = mod_manager.getList().mods;
+
+                    if (installed.length === 0) {
+                        logger.log(chalk.yellow('✨ No mods installed for this profile.'));
+                    } else {
+                        logger.log(chalk.green.bold('\n📦 Installed:\n'));
+                        installed.forEach((mod, index) => {
+                            logger.log(chalk.cyan(`  ${index + 1}. ${mod}`));
+                        });
+                    }
+                }
 
                 let auth_token = auth.token;
                 let version = this.getVersion(version_json);

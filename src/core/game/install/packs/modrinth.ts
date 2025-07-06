@@ -4,34 +4,95 @@ import { FacetOptions, ModrinthCategory, ModrinthLoader, ModrinthProject, Modrin
 import { ORIGAMi_USER_AGENT } from "../../../../config/defaults";
 import { fetchMinecraftVersionManifest } from "../../../utils/minecraft_versions";
 
+export class RequestQueue {
+    private queue: (() => void)[] = [];
+    private isProcessing = false;
+
+    constructor(
+        private readonly delay = 250,
+        private readonly concurrency = 2
+    ) {}
+
+    private async sleep(ms: number): Promise<void> {
+        return new Promise(res => setTimeout(res, ms));
+    }
+
+    public async enqueue<T>(fn: () => Promise<T>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.queue.push(async () => {
+                try {
+                    const result = await fn();
+                    resolve(result);
+                } catch (err) {
+                    reject(err);
+                }
+            });
+
+            if (!this.isProcessing) this.processQueue();
+        });
+    }
+
+    private async processQueue() {
+        this.isProcessing = true;
+        const running: Promise<void>[] = [];
+
+        while (this.queue.length > 0) {
+            while (running.length < this.concurrency && this.queue.length > 0) {
+                const task = this.queue.shift();
+                if (!task) break;
+
+                const runner = (async () => {
+                    await task();
+                    await this.sleep(this.delay);
+                })();
+
+                running.push(runner);
+
+                runner.finally(() => {
+                    const index = running.indexOf(runner);
+                    if (index !== -1) running.splice(index, 1);
+                });
+            }
+
+            await Promise.race(running);
+        }
+
+        await Promise.allSettled(running);
+        this.isProcessing = false;
+    }
+}
+
 export class ModrinthTags {
     private logger: Logger;
+    private queue = new RequestQueue(300, 3);
 
     constructor(logger: Logger) {
         this.logger = logger;
     }
 
     public async api<T = any>(endpoint: string, query?: Record<string, string>): Promise<T | null> {
-        try {
-            const url = new URL(`https://api.modrinth.com/v2/${endpoint}`);
+        return this.queue.enqueue(async () => {
+            try {
+                const url = new URL(`https://api.modrinth.com/v2/${endpoint}`);
 
-            if (query) {
-                for (const [key, value] of Object.entries(query)) {
-                    url.searchParams.append(key, value);
+                if (query) {
+                    for (const [key, value] of Object.entries(query)) {
+                        url.searchParams.append(key, value);
+                    }
                 }
+
+                const response = await axios.get<T>(url.toString(), {
+                    headers: {
+                        'User-Agent': ORIGAMi_USER_AGENT
+                    }
+                });
+
+                return response.data;
+            } catch (err: any) {
+                this.logger.error(`❌ Modrinth API error (${endpoint}):`, JSON.stringify(err.response?.data) || err.message);
+                return null;
             }
-
-            const response = await axios.get<T>(url.toString(), {
-                headers: {
-                    'User-Agent': ORIGAMi_USER_AGENT
-                }
-            });
-
-            return response.data;
-        } catch (err: any) {
-            this.logger.error(`❌ Modrinth API error (${endpoint}):`, JSON.stringify(err.response?.data) || err.message);
-            return null;
-        }
+        });
     }
 
     public getLoaders(): Promise<ModrinthLoader[] | null> {
@@ -42,7 +103,7 @@ export class ModrinthTags {
         let result = await this.api('tag/category');
 
         if(project_type && result) {
-            result = result.filter((v: ModrinthCategory) => v.project_type === project_type);
+            result = result.filter((v: ModrinthCategory) => v.project_type == (project_type.trim().toLowerCase()));
         } 
 
         return result;
@@ -72,7 +133,7 @@ export class ModrinthVersions {
         let query: Record<string, string> = {};
 
         if(loaders) query['loaders'] = JSON.stringify(loaders);
-        if(versions) query['versions'] = JSON.stringify(versions);
+        if(versions) query['game_versions'] = JSON.stringify(versions);
 
         if(typeof featured === 'boolean') query['featured'] = `${featured}`;
         
@@ -95,7 +156,7 @@ export class ModrinthProjects {
 
     public async fetchAllMatchVersions(id: string): Promise<string[]> {
         const manifest = await fetchMinecraftVersionManifest();
-        const targetPrefix = id.split('.').slice(0, 2).join('.') + '.';
+        const targetPrefix = id.split('.').slice(0, 2).join('.');
 
         return manifest.versions
             .map(v => v.id)
@@ -128,7 +189,7 @@ export class ModrinthProjects {
             query: search.query || '*',
             facets: JSON.stringify(this.generateModrinthFacets(search.facets || {})),
             index: search.index || 'relevance',
-            offset: search.offset ? `${search.offset}` : `0`,
+            offset: `${search.offset || 0}`,
             limit: `${search.limit || 20}`,
         });
     }

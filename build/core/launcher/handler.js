@@ -68,7 +68,7 @@ class Handler {
                     },
                     httpAgent: this.agent,
                     httpsAgent: this.agent,
-                    timeout: 5000,
+                    timeout: 50000,
                     maxContentLength: Infinity,
                     maxBodyLength: Infinity,
                     validateStatus: (status) => status < 400 // allow redirects

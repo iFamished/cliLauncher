@@ -25,11 +25,12 @@ jobs:
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
-      
+
       - name: Install dependencies
         run: npm ci
 
       - name: Patch version and rename to devbuilds
+        id: bump_version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -39,7 +40,8 @@ jobs:
           echo "Current version: $CURRENT_VERSION"
           NEW_VERSION=$(npm version prerelease --preid=dev --no-git-tag-version)
           echo "Bumped version: $NEW_VERSION"
-          # Rename unscoped package to the devbuilds scope
+          echo "version_tag=$NEW_VERSION" >> $GITHUB_OUTPUT
+
           jq '.name = "@origami-minecraft/devbuilds"' package.json > tmp.json && mv tmp.json package.json
           git add package.json
           git commit -m "chore: bump to $NEW_VERSION"
@@ -49,3 +51,14 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.bump_version.outputs.version_tag }}
+          name: "Dev Build ${{ steps.bump_version.outputs.version_tag }}"
+          body: |
+            This is an automated dev build released from main branch.
+            Version: ${{ steps.bump_version.outputs.version_tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
