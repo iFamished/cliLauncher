@@ -21,7 +21,7 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### \[2.0.1] - 2025-06-25
+### \[2.0.1-2.0.2] - 2025-06-25
 
 * 🐛 Fixed `origami_installs.json` not found.
 
