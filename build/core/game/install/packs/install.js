@@ -83,6 +83,24 @@ class ModInstaller {
         if (project_type === 'mod' && !categories?.some(v => v.toLowerCase() === loader.toLowerCase())) {
             categories = [...(categories ?? []), loader.toLowerCase()];
         }
+        const { page_limit } = await inquirer_1.default.prompt([
+            {
+                type: 'input',
+                name: 'page_limit',
+                message: '📄 How many results per page?',
+                default: `${manager.getPageLimit()}`,
+                filter: input => parseInt(input, 10),
+                validate: input => {
+                    const num = parseInt(input, 10);
+                    if (isNaN(num) || num <= 0)
+                        return 'Page limit must be a positive number';
+                    if (num > 100)
+                        return 'Maximum allowed is 100';
+                    return true;
+                }
+            }
+        ]);
+        manager.currentPageLimit(typeof page_limit === 'string' ? parseInt(page_limit) : page_limit);
         manager.configureFilter(project_type, {
             sort,
             versionFilter,
@@ -125,15 +143,15 @@ class ModInstaller {
                 { name: 'Shaders', value: 'shader' }
             ]
         });
-        let page = 0;
+        let page = manager.getPage();
         let mode = 'home';
         let query = '';
         const mcVersion = profile.lastVersionId;
         const loader = profile.origami.metadata.name.toLowerCase();
         let defaults_p = manager.getDefaultFilters(type);
         let sort_p = defaults_p?.sort ?? 'relevance';
-        let versions_p = defaults_p?.versionFilter ?? (type === 'mod' ? [profile.lastVersionId] : []);
-        let categories_p = defaults_p?.selectedCategories ?? (type === 'mod' ? [loader] : []);
+        let versions_p = defaults_p?.versionFilter ?? (type === 'mod' ? [profile.lastVersionId] : undefined);
+        let categories_p = defaults_p?.selectedCategories ?? (type === 'mod' ? [loader] : undefined);
         const version_folder = path_1.default.join((0, common_1.minecraft_dir)(true), 'instances', profile.origami.path);
         const folder = { mod: 'mods', resourcepack: 'resourcepacks', shader: 'shaderpacks' }[type] || 'mods';
         const dest = path_1.default.join(version_folder, folder);
@@ -142,6 +160,7 @@ class ModInstaller {
             console.clear();
             console.log(chalk_1.default.bold(`📦 ${mode === 'home' ? 'Featured' : 'Search'} ${type}s (MC ${mcVersion}) — Page ${page + 1}\n`));
             const spinner = (0, ora_1.default)('🐾 Warming up the search engine...').start();
+            this.pageSize = manager.getPageLimit();
             let searchResults;
             const commonQuery = {
                 query: mode === 'search' ? (query || '*') : '*',
@@ -196,10 +215,12 @@ class ModInstaller {
                 break;
             if (selected === '__next') {
                 page++;
+                manager.currentPage(page);
                 continue;
             }
             if (selected === '__prev') {
                 page--;
+                manager.currentPage(page);
                 continue;
             }
             if (selected === '__search') {
@@ -270,6 +291,9 @@ class ModInstaller {
                 manager.deleteFromType(data.specific.filename, type);
                 await downloadMod(file, this.logger, type);
             }
+            else if (confirm.choice === 'keep') {
+                this.logger.log(chalk_1.default.gray(`⏭️ Skipped: ${data.specific.filename} (already installed)`));
+            }
         }
         else
             await downloadMod(file, this.logger, type);
@@ -320,6 +344,9 @@ class ModInstaller {
                     this.logger.log(chalk_1.default.yellow(`🗑 Removed old version: ${file.filename}`));
                     manager.deleteFromType(file.filename, type);
                     await downloadMod(depFile, this.logger, type);
+                }
+                else if (confirm.choice === 'keep') {
+                    this.logger.log(chalk_1.default.gray(`⏭️ Skipped: ${file.filename} (already installed)`));
                 }
             }
             else

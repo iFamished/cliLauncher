@@ -21,7 +21,19 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### \[2.0.1-2.0.3] - 2025-06-25
+### \[2.0.4] - 2025-07-06
+
+* ✨ Added support for configurable page limit during Modrinth content browsing
+* ✨ Added `nvm`-based Node.js installation instructions in the README and Node.js setup guide
+* 🐛 Fixed type errors and improved prompt validation for numeric inputs (e.g., page size)
+* 🔄 Refined dependency installation log output
+
+  * ➕ Skips verbose logs when keeping already-installed mods
+* ⚠️ Minor improvements to Modrinth filter persistence and prompt defaults
+
+---
+
+### \[2.0.1-2.0.3] - 2025-07-06
 
 * 🐛 Fixed `origami_installs.json` not found.
 

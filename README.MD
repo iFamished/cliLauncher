@@ -10,6 +10,89 @@ Origami is a terminal-first Minecraft launcher that supports authentication, ins
 
 ---
 
+## 📥 Install Node.js
+
+Before installing Origami, you need [Node.js](https://nodejs.org/) and [npm](https://www.npmjs.com/) (Node's package manager) installed.
+
+### 🪟 Windows
+
+1. Download the **LTS version** of Node.js from the [official website](https://nodejs.org/en/download).
+2. Run the installer and follow the setup instructions.
+3. Open **Command Prompt** and verify installation:
+
+   ```bash
+   node -v
+   npm -v
+   ```
+
+### 🍎 macOS
+
+You can use [Homebrew](https://brew.sh/):
+
+```bash
+brew install node
+```
+
+Or download the LTS installer from [nodejs.org](https://nodejs.org/en/download).
+
+Verify installation:
+
+```bash
+node -v
+npm -v
+```
+
+### 🐧 Linux (Ubuntu/Debian)
+
+```bash
+sudo apt update
+sudo apt install nodejs npm
+```
+
+Alternatively, for newer versions:
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+Then check versions:
+
+```bash
+node -v
+npm -v
+```
+
+### 📦 Alternative: Using NVM (Node Version Manager)
+
+NVM allows you to easily switch between Node.js versions:
+
+#### macOS/Linux:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.nvm/nvm.sh
+nvm install --lts
+```
+
+#### Windows:
+
+Use [nvm-windows](https://github.com/coreybutler/nvm-windows):
+
+1. Download the latest `nvm-setup.exe` from the [releases](https://github.com/coreybutler/nvm-windows/releases) page.
+2. Install and open Command Prompt:
+
+   ```bash
+   nvm install lts
+   nvm use lts
+   node -v
+   npm -v
+   ```
+
+> ✅ Make sure you're using **Node.js v18 or higher** for best compatibility.
+
+---
+
 ## 🚀 Installation
 
 ### 🔒 Stable (Recommended)

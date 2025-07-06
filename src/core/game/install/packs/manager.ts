@@ -20,8 +20,6 @@ export class ModrinthModManager {
 
         this.data = { version: this.versionPath, installed: { mods: [], shaders: [], resourcepacks: [] }, disabled: [] };
 
-        if(!fs.existsSync(this.filePath)) this.save();
-
         this.load();
         this.cleanup_mods(); 
         this.auto_import_mods();
@@ -318,6 +316,46 @@ export class ModrinthModManager {
         }
 
         return undefined;
+    }
+
+    currentPage(pg: number) {
+        this.load();
+
+        if(!this.data.page_options) this.data.page_options = {}
+
+        this.data.page_options.current = pg;
+
+        this.save();
+    }
+
+    currentPageLimit(pg: number) {
+        this.load();
+
+        if(!this.data.page_options) this.data.page_options = {}
+
+        this.data.page_options.limit = pg;
+
+        this.save();
+    }
+
+    getPage() {
+        this.load();
+
+        if(this.data.page_options) {
+            return this.data.page_options.current || 0;
+        }
+
+        return 0;
+    }
+
+    getPageLimit() {
+        this.load();
+
+        if(this.data.page_options) {
+            return this.data.page_options.limit || 10;
+        }
+
+        return 10;
     }
 }
 

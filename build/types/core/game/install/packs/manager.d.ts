@@ -33,5 +33,9 @@ export declare class ModrinthModManager {
         selectedCategories?: string[];
     }): void;
     getDefaultFilters(type: 'mod' | 'shader' | 'resourcepack'): Filters | undefined;
+    currentPage(pg: number): void;
+    currentPageLimit(pg: number): void;
+    getPage(): number;
+    getPageLimit(): number;
 }
 export default ModrinthModManager;

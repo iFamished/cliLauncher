@@ -156,6 +156,10 @@ export interface ModProfile {
         resourcepack?: Filters;
     };
     installed: InstalledProfile;
+    page_options?: {
+        current?: number;
+        limit?: number;
+    };
     disabled: string[];
 }
 export interface ModData {
