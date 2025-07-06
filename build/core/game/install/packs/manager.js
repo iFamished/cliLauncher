@@ -51,9 +51,9 @@ class ModrinthModManager {
         this.filePath = path.join(this.versionPath, 'origami_installs.json');
         if (!fs.existsSync(this.versionPath))
             fs.mkdirSync(this.versionPath, { recursive: true });
-        if (!fs.existsSync(this.filePath))
-            fs.writeFileSync(this.filePath, '{}');
         this.data = { version: this.versionPath, installed: { mods: [], shaders: [], resourcepacks: [] }, disabled: [] };
+        if (!fs.existsSync(this.filePath))
+            this.save();
         this.load();
         this.cleanup_mods();
         this.auto_import_mods();
