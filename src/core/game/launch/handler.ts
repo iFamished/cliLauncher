@@ -5,7 +5,7 @@ import { ensureDir, minecraft_dir, printVersion } from "../../utils/common";
 import { getAuthProvider } from "../account";
 import LauncherAccountManager from "../account/account";
 import path from "path";
-import temurin from "../../tools/temurin";
+import temurin from "../../../java";
 import parseArgsStringToArgv from "string-argv";
 import LauncherOptionsManager from "./options";
 import { Logger } from "../../tools/logger";

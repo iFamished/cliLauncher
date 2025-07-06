@@ -12,7 +12,7 @@ import { AUTH_PROVIDERS } from '../../../types/account';
 import { localpath, minecraft_dir } from '../../utils/common';
 import { removeSync } from 'fs-extra';
 import { checkForLatestVersion } from '../../../cli/origami';
-import temurin from '../../tools/temurin';
+import temurin from '../../../java';
 import { ModInstaller } from '../install/packs/install';
 import { LauncherProfile } from '../../../types/launcher';
 import ModrinthModManager from '../install/packs/manager';
@@ -274,6 +274,7 @@ export class Runtime {
                         new inquirer.Separator(),
                         { name: '☕ Install Java', value: 'install_java' },
                         { name: '📌 Select Java', value: 'select_java' },
+                        { name: '🗑️  Delete Java', value: 'delete_java' },
                         new inquirer.Separator(),
                         { name: '🧹 Reset Minecraft', value: 'reset_minecraft' },
                         { name: '🧹 Reset Origami', value: 'reset_origami' },
@@ -335,6 +336,11 @@ export class Runtime {
                     break;
                 case 'select_java':
                     await temurin.select(true);
+                    console.log('\n\n\n');
+
+                    break;
+                case 'delete_java':
+                    await temurin.delete();
                     console.log('\n\n\n');
 
                     break;
@@ -432,7 +438,7 @@ export class Runtime {
         process.exit(0);
     }
 
-    private async manageInstallationsMenu(profile: LauncherProfile) {
+    public async manageInstallationsMenu(profile: LauncherProfile) {
         const manager = new ModrinthModManager(profile);
 
         while (true) {

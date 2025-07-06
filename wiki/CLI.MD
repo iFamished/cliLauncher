@@ -1,7 +1,7 @@
 # 🌸 Origami CLI — Documentation
 
-> ✨ **Lightweight Minecraft CLI Launcher**
-> Supports profiles, authentication, version installation, and launching — scriptable & interactive.
+> ✨ **Lightweight Minecraft CLI Launcher**  
+> Supports profiles, authentication, version installation, Java management, mod installation, and launching — both scriptable & interactive.
 
 ---
 
@@ -11,7 +11,7 @@
 
 ```bash
 npm install -g @origami-minecraft/stable
-```
+````
 
 ### Development Build (Unstable, bleeding-edge)
 
@@ -101,18 +101,40 @@ origami auth --choose
 
 ### `java`
 
-Install or select a Java runtime (Temurin).
+Manage Java runtimes (Temurin).
 
 #### Options:
 
 * `-i, --install` — Download and install a Temurin JDK
 * `-s, --select` — Choose a JDK installed via Origami
+* `-d, --delete` — Delete installed Java
 
 #### Examples:
 
 ```bash
 origami java --install
 origami java --select
+origami java --delete
+```
+
+---
+
+### `modrinth`
+
+Install mods, shaders, or resource packs from Modrinth (requires selected profile).
+
+```bash
+origami modrinth
+```
+
+---
+
+### `manage`
+
+Manage installed content for the selected profile — enables/disables mods and removes items.
+
+```bash
+origami manage
 ```
 
 ---
@@ -152,12 +174,8 @@ You can log in using:
 
 * You **must select a profile** before launching Minecraft.
 * Development builds (`-devX`) may contain experimental or incomplete features.
-* You can install and select Java via `origami java`.
-* To see all available profiles:
-
-  ```bash
-  origami profile --list
-  ```
+* You can install, select, and delete Java via `origami java`, `origami java:delete`.
+* You can manage mods and content via `origami modrinth` and `origami manage`.
 
 ---
 
@@ -165,7 +183,7 @@ You can log in using:
 
 ```bash
 origami --version
-# 1.0.1 or 1.0.1-dev2
+# 1.0.6 or 1.0.6-dev3
 ```
 
 ---
@@ -175,11 +193,12 @@ origami --version
 ```bash
 #!/bin/bash
 
-# Script to set up Java, log in, and launch Minecraft
+# Script to set up Java, log in, install mods, and launch Minecraft
 origami java --install
 origami java --select
 origami auth --login microsoft
 origami profile --select myProfile
+origami modrinth
 origami launch
 ```
 

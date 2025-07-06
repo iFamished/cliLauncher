@@ -8,13 +8,13 @@ const child_process_1 = require("child_process");
 const fs_1 = __importDefault(require("fs"));
 const chalk_1 = __importDefault(require("chalk"));
 const path_1 = __importDefault(require("path"));
-const temurin_1 = __importDefault(require("../tools/temurin"));
+const java_1 = __importDefault(require("../../java"));
 async function run(jarPath, args = []) {
     if (!fs_1.default.existsSync(jarPath)) {
         console.error(`🚫 JAR not found: ${jarPath}`);
         process.exit(1);
     }
-    const javaPath = await temurin_1.default.select();
+    const javaPath = await java_1.default.select();
     console.log(`🚀 Launching JAR with: ${chalk_1.default.cyan(javaPath.version)}\n`);
     return new Promise((resolve, reject) => {
         const javaProcess = (0, child_process_1.spawn)(javaPath.path, ['-jar', jarPath, ...args], {

@@ -9,7 +9,7 @@ const common_1 = require("../../utils/common");
 const account_1 = require("../account");
 const account_2 = __importDefault(require("../account/account"));
 const path_1 = __importDefault(require("path"));
-const temurin_1 = __importDefault(require("../../tools/temurin"));
+const java_1 = __importDefault(require("../../../java"));
 const string_argv_1 = __importDefault(require("string-argv"));
 const options_1 = __importDefault(require("./options"));
 const logger_1 = require("../../tools/logger");
@@ -143,7 +143,7 @@ class Handler {
         let origami_data = path_1.default.join(origami_dir, 'instances', name);
         (0, common_1.ensureDir)(origami_data);
         try {
-            let java = await temurin_1.default.select();
+            let java = await java_1.default.select();
             let auth = await this.get_auth();
             if (!java || !auth)
                 return null;

@@ -1,4 +1,5 @@
 import { Handler } from './handler';
+import { LauncherProfile } from '../../../types/launcher';
 export declare class Runtime {
     handler: Handler;
     version: string;
@@ -16,6 +17,6 @@ export declare class Runtime {
     resetOrigami(): Promise<void>;
     private launch;
     private exit;
-    private manageInstallationsMenu;
+    manageInstallationsMenu(profile: LauncherProfile): Promise<void>;
     private manageInstalledItem;
 }

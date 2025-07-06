@@ -21,6 +21,39 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### \[2.0.5] - 2025-07-06
+
+* ✨ **GraalVM Runtime Support**
+
+  * Added support for downloading and selecting **GraalVM CE** as a Java runtime
+  * Automatically fetches the latest stable releases from GitHub
+  * Smart OS/architecture detection and binary resolution
+  * Seamless integration into Java selection UI and CLI (`origami java --install`)
+
+* ✨ **Zulu OpenJDK Support**
+
+  * Added automated installation for **Zulu OpenJDK** via Azul’s public API
+  * Supports multiple major versions with proper SemVer sorting
+  * Covers Linux, macOS, and Windows platforms with `.tar.gz` and `.zip` binaries
+
+* 🔄 **Java Runtime Installer Enhancements**
+
+  * Improved sorting and detection of version tags (SemVer-aware)
+  * Unified installation logic across Temurin, GraalVM, Zulu (Corretto coming soon)
+  * Robust binary resolution pattern for common OS/arch combos
+
+* ✨ **Java Binary Deletion Feature**
+
+  * Added interactive method to list and delete installed Java binaries
+  * Integrated directly into the Java binary management system
+  * Prevents clutter and simplifies cleanup of unused JDKs
+
+* 🐛 **Fixes**
+
+  * Fixed pattern mismatch in GraalVM asset matching for Windows `.zip` files
+
+---
+
 ### \[2.0.4] - 2025-07-06
 
 * ✨ Added support for configurable page limit during Modrinth content browsing

@@ -8,7 +8,9 @@ import inquirer from 'inquirer';
 import { Credentials, AUTH_PROVIDERS } from '../types/account';
 import { providers } from '../core/game/account';
 import fetch from 'node-fetch';
-import temurin from '../core/tools/temurin';
+import temurin from '../java';
+import { ModInstaller } from '../core/game/install/packs/install';
+import { logger } from '../core/game/launch/handler';
 
 const program = new Command();
 const runtime = new Runtime();
@@ -26,10 +28,27 @@ program
     });
 
 program
+    .command('modrinth')
+    .description('Install mods, shaders, and resource packs from Modrinth')
+    .action(async () => {
+        const profile = runtime.handler.profiles.getSelectedProfile();
+        if (!profile) {
+            console.log(chalk.red('❌ No profile selected.'));
+            process.exit(1);
+        }
+
+        const installer = new ModInstaller(logger);
+        await installer.install_modrinth_content(profile);
+        process.exit(0);
+    });
+
+
+program
     .command('java')
     .description('Download or select a Temurin JDK')
     .option('-i, --install', 'Download and install a Temurin JDK')
     .option('-s, --select', 'Choose and set the current JDK')
+    .option('-d, --delete', 'Delete installed Java')
     .action(async (options) => {
         if (options.install && options.select) {
             console.error('❌ Please choose either --install or --select, not both.');
@@ -40,8 +59,10 @@ program
             if (options.install) {
                 await temurin.download();
             } else if (options.select) {
-                const java = await temurin.select(true); // force selection
+                const java = await temurin.select(true);
                 console.log('✅ Java set to:', java.version, java.path);
+            } else if (options.delete) {
+                await temurin.delete();
             } else {
                 program.commands.find(c => c.name() === 'java')!.help();
             }
@@ -50,6 +71,21 @@ program
             process.exit(1);
         }
     });
+
+program
+    .command('manage')
+    .description('Manage installed mods, shaders, and resource packs')
+    .action(async () => {
+        const profile = runtime.handler.profiles.getSelectedProfile();
+        if (!profile) {
+            console.log(chalk.red('❌ No profile selected.'));
+            process.exit(1);
+        }
+
+        await runtime['manageInstallationsMenu'](profile);
+        process.exit(0);
+    });
+
 
 program
     .command('launch')

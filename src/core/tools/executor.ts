@@ -2,7 +2,7 @@ import { spawn } from 'child_process';
 import fs from "fs";
 import chalk from "chalk";
 import path from "path";
-import temurin from "../tools/temurin";
+import temurin from "../../java";
 
 async function run(jarPath: string, args: string[] = []): Promise<number> {
     if (!fs.existsSync(jarPath)) {

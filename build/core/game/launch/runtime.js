@@ -50,7 +50,7 @@ const readline_1 = __importDefault(require("readline"));
 const common_1 = require("../../utils/common");
 const fs_extra_1 = require("fs-extra");
 const origami_1 = require("../../../cli/origami");
-const temurin_1 = __importDefault(require("../../tools/temurin"));
+const java_1 = __importDefault(require("../../../java"));
 const install_1 = require("../install/packs/install");
 const manager_1 = __importDefault(require("../install/packs/manager"));
 class Runtime {
@@ -274,6 +274,7 @@ class Runtime {
                         new inquirer_1.default.Separator(),
                         { name: '☕ Install Java', value: 'install_java' },
                         { name: '📌 Select Java', value: 'select_java' },
+                        { name: '🗑️  Delete Java', value: 'delete_java' },
                         new inquirer_1.default.Separator(),
                         { name: '🧹 Reset Minecraft', value: 'reset_minecraft' },
                         { name: '🧹 Reset Origami', value: 'reset_origami' },
@@ -323,11 +324,15 @@ class Runtime {
                         await this.manageInstallationsMenu(_profile);
                     break;
                 case 'install_java':
-                    await temurin_1.default.download();
+                    await java_1.default.download();
                     console.log('\n\n\n');
                     break;
                 case 'select_java':
-                    await temurin_1.default.select(true);
+                    await java_1.default.select(true);
+                    console.log('\n\n\n');
+                    break;
+                case 'delete_java':
+                    await java_1.default.delete();
                     console.log('\n\n\n');
                     break;
                 case 'reset_minecraft':
@@ -398,7 +403,7 @@ class Runtime {
         await new Promise(res => setTimeout(res, 2000));
     }
     async launch() {
-        await temurin_1.default.select();
+        await java_1.default.select();
         const code = await this.handler.run_minecraft();
         if (code === 200) {
             console.log(chalk_1.default.green('✅ Minecraft exited successfully!'));

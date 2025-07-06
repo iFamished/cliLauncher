@@ -1,5 +1,5 @@
 import inquirer from 'inquirer';
-import axios from 'axios';
+//import axios from 'axios';
 import ora from 'ora';
 import chalk from 'chalk';
 import * as fs from 'fs';
@@ -7,11 +7,11 @@ import * as path from 'path';
 import * as os from 'os';
 import * as tar from 'tar';
 import AdmZip from 'adm-zip';
-import { downloader } from '../utils/download';
-import { cleanDir, ensureDir, localpath } from '../utils/common';
-import * as data_manager from "./data_manager";
+import { downloader } from '../core/utils/download';
+import { cleanDir, ensureDir, localpath } from '../core/utils/common';
+import * as data_manager from "../core/tools/data_manager";
 
-const API_BASE = 'https://api.adoptium.net/v3';
+//const API_BASE = 'https://api.adoptium.net/v3';
 
 function detectOS(): string {
     const platform = os.platform();
@@ -32,7 +32,7 @@ function detectArch(): string {
     }
 }
 
-async function getAvailableVersions(): Promise<string[]> {
+/*async function getAvailableVersions(): Promise<string[]> {
     const res = await axios.get(`${API_BASE}/info/available_releases`);
     return res.data.available_lts_releases.map((v: number) => `Temurin ${v} ✨`).reverse();
 }
@@ -54,7 +54,7 @@ async function getBinary(version: string, os: string, arch: string, imageType: s
     if (!binaries.length) throw new Error('Oh no! No binary found for your selection 😢');
 
     return binaries[0].binary ? binaries[0].binary.package : binaries[0].binaries[0].package;
-}
+}*/
 
 async function extractArchive(filePath: string, outputDir: string) {
     const isZip = filePath.endsWith('.zip');
@@ -77,35 +77,56 @@ async function extractArchive(filePath: string, outputDir: string) {
     }
 }
 
+interface JavaProvider {
+    name: string;
+    withJre: boolean;
+    listVersions(): Promise<string[]>;
+    getBinary(version: string, os: string, arch: string, imageType: string): Promise<{
+        name: string;
+        link: string;
+    }>;
+}
+
+import { temurinProvider } from './providers/temurin';
+import { graalvmProvider } from './providers/graalvm';
+import { zuluProvider } from './providers/zulu';
+
+const providers: JavaProvider[] = [temurinProvider, graalvmProvider, zuluProvider]
+
 async function main() {
+    const { providerName } = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'providerName',
+            message: '🌐 Select your Java distribution source:',
+            choices: providers.map(p => p.name)
+        }
+    ]);
+    const provider = providers.find(p => p.name === providerName)!;
+
     const osDetected = detectOS();
     const archDetected = detectArch();
-    console.log(`🐧 Detected OS: ${osDetected} 💻`);
-    console.log(`🦾 Detected Architecture: ${archDetected} 🎉`);
-
-    const spinner = ora('🌟 Fetching available versions... please wait... 🌟').start();
-    const versions = await getAvailableVersions();
-    spinner.succeed('🌈 Versions loaded! Ready for you! 🌈');
+    const versions = await provider.listVersions();
 
     const { version, imageType } = await inquirer.prompt([
         {
             type: 'list',
             name: 'version',
-            message: '🌸 Pick your Temurin JDK version, pretty please:',
+            message: '🌸 Pick your version:',
             choices: versions
         },
         {
             type: 'list',
             name: 'imageType',
             message: '🌼 Choose your image type:',
-            choices: ['jdk', 'jre']
+            choices: provider.withJre ? ['jdk', 'jre'] : ['jdk']
         }
     ]);
 
     const downloadSpinner = ora('🔍 Fetching your binary info... hold tight...').start();
     let pkg;
     try {
-        pkg = await getBinary(version, osDetected, archDetected, imageType);
+        pkg = await provider.getBinary(version, osDetected, archDetected, imageType);
         downloadSpinner.succeed('✨ Got your binary info! Let\'s proceed! ✨');
     } catch (err: any) {
         downloadSpinner.fail('😿 Failed to get the binary info, sorry!');
@@ -255,4 +276,50 @@ function extractJavaVersion(folderName: string): string | undefined {
     return undefined;
 }
 
-export default { download: main, select: selectJavaBinary };
+async function deleteJavaBinary(): Promise<void> {
+    console.log(BANNER);
+
+    const basePath = localpath();
+    const extractPath = path.join(basePath, 'binaries');
+    const javaInstallations = findJavaInstallations(extractPath);
+
+    if (javaInstallations.length === 0) {
+        console.log(chalk.yellow('⚠️ No Java installations found to delete.'));
+        return;
+    }
+
+    const { binariesToDelete } = await inquirer.prompt([
+        {
+            type: 'checkbox',
+            name: 'binariesToDelete',
+            message: chalk.redBright('🗑️ Select Java versions to delete:'),
+            choices: javaInstallations.map(java => ({
+                name: `${chalk.cyan(java.version || 'Unknown')} ${chalk.gray(`(${java.path})`)}`,
+                value: java.path
+            })),
+            pageSize: Math.min(10, javaInstallations.length),
+            loop: false
+        }
+    ]);
+
+    if (binariesToDelete.length === 0) {
+        console.log(chalk.yellow('❎ No selections made. Aborting deletion.'));
+        return;
+    }
+
+    for (const javaPath of binariesToDelete) {
+        const installDir = path.resolve(javaPath, '..', '..');
+        if (fs.existsSync(installDir)) {
+            try {
+                await fs.promises.rm(installDir, { recursive: true, force: true });
+                console.log(chalk.green(`✅ Deleted: ${chalk.gray(installDir)}`));
+            } catch (err: any) {
+                console.error(chalk.red(`❌ Failed to delete ${installDir}: ${err.message}`));
+            }
+        }
+    }
+
+    console.log(chalk.blueBright('\n🧹 Cleanup complete.'));
+}
+
+export default { download: main, select: selectJavaBinary, delete: deleteJavaBinary };
