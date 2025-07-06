@@ -21,6 +21,12 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### \[2.0.1] - 2025-06-25
+
+* 🐛 Fixed `origami_installs.json` not found.
+
+---
+
 ### \[2.0.0] - 2025-07-06
 
 > 🚀 **Major Mod Installer Update**
