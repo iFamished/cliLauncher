@@ -1,0 +1,79 @@
+name: 🐛 Bug Report
+description: Report an issue or unexpected behavior in Origami CLI
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug with **Origami**! Please fill out the form below as accurately as possible so we can help you faster.
+
+  - type: input
+    id: version
+    attributes:
+      label: Origami Version
+      description: Run `origami --version` and paste the result.
+      placeholder: e.g., 2.0.6 or 2.0.6-dev2
+    validations:
+      required: true
+
+  - type: input
+    id: node_version
+    attributes:
+      label: Node.js Version
+      description: Run `node -v` and paste the output.
+      placeholder: e.g., v18.17.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other (please specify in description)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: What happened? What did you expect to happen instead?
+      placeholder: Tell us what went wrong...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Be specific and include terminal commands if possible.
+      placeholder: |
+        1. Run `origami profile --select ...`
+        2. Run `origami launch`
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or error output
+      description: Paste any error messages from the console or logs.
+      render: shell
+
+  - type: input
+    id: java_version
+    attributes:
+      label: Java Version
+      description: Optional — run `java -version` and include your JDK version.
+
+  - type: textarea
+    id: additional_info
+    attributes:
+      label: Additional Context
+      description: Anything else we should know? Custom configs, mods, profiles?

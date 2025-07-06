@@ -1,0 +1,44 @@
+name: 💡 Enhancement / Feedback
+description: Suggest usability improvements, polish ideas, or leave general feedback
+title: "[Feedback]: "
+labels: [feedback, enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us improve **Origami**! Use this form to suggest UX improvements, small enhancements, or share general feedback.
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: What would you like to improve?
+      description: Describe what part of the launcher could be better, cleaner, or easier to use.
+      placeholder: e.g., “Prompt for JVM flags during profile creation would be nice.”
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefit
+    attributes:
+      label: Why would this help?
+      description: Tell us how this change improves your experience as a player or developer.
+      placeholder: e.g., “It would save time tweaking the config manually.”
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: How important is this?
+      options:
+        - Nice to have
+        - Would be very helpful
+        - Feels essential
+        - Minor polish / cosmetic
+      default: 0
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Any extra context or screenshots?
+      description: Paste links, screenshots, or notes to help explain your idea.
