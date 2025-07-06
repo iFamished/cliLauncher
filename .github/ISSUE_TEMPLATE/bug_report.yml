@@ -1,5 +1,5 @@
 name: 🐛 Bug Report
-description: Report an issue or unexpected behavior in Origami CLI
+description: Report an issue or unexpected behavior in Origami
 title: "[Bug]: "
 labels: [bug]
 body:
@@ -65,12 +65,6 @@ body:
       label: Relevant logs or error output
       description: Paste any error messages from the console or logs.
       render: shell
-
-  - type: input
-    id: java_version
-    attributes:
-      label: Java Version
-      description: Optional — run `java -version` and include your JDK version.
 
   - type: textarea
     id: additional_info
