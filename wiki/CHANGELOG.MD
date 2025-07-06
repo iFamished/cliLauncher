@@ -21,7 +21,7 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### \[1.0.6] - 2025-07-06
+### \[2.0.0] - 2025-07-06
 
 > 🚀 **Major Mod Installer Update**
 
