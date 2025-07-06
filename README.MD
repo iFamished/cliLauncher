@@ -205,4 +205,14 @@ Found a bug or want to suggest a feature? [Open an issue](https://github.com/mer
 
 ---
 
+## 🤝 Contributing
+
+We welcome contributions of all kinds — from bug fixes and documentation to new features.
+
+- 📖 See our [CONTRIBUTING.md](https://github.com/merasugd/origami-launcher/blob/main/wiki/CONTRIBUTING.md) guide to get started.
+- 📜 Please review our [Code of Conduct](https://github.com/merasugd/origami-launcher/blob/main/wiki/CODE_OF_CONDUCT.md) before participating in discussions or contributing.
+
+---
+
+
 _Enjoy the terminal. Happy crafting :D_ 🧵

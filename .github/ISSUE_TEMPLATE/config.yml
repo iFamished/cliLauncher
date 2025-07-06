@@ -7,7 +7,7 @@ contact_links:
 
 issue_templates:
   - name: 🐛 Bug Report
-    description: Report a problem with Origami CLI
+    description: Report a problem with Origami
     labels: [bug]
     file: .github/ISSUE_TEMPLATE/bug_report.yml
 
