@@ -1,0 +1,22 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: 💬 Ask a Question
+    url: https://github.com/merasugd/origami-launcher/discussions
+    about: Please use GitHub Discussions for questions, help, or general chat
+
+issue_templates:
+  - name: 🐛 Bug Report
+    description: Report a problem with Origami CLI
+    labels: [bug]
+    file: .github/ISSUE_TEMPLATE/bug_report.yml
+
+  - name: ✨ Feature Request
+    description: Suggest a new feature or improvement
+    labels: [enhancement]
+    file: .github/ISSUE_TEMPLATE/feature_request.yml
+
+  - name: 💡 Enhancement / Feedback
+    description: Suggest polish, usability improvements, or general feedback
+    labels: [feedback, enhancement]
+    file: .github/ISSUE_TEMPLATE/enhancement_feedback.yml
