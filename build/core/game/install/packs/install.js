@@ -80,10 +80,8 @@ class ModInstaller {
             ]);
             categories = selectedCategories.length > 0 ? selectedCategories : undefined;
         }
-        if (project_type === 'mod') {
-            if (!categories?.find(v => v.toLowerCase() !== loader.toLowerCase())) {
-                categories?.push(loader.toLowerCase());
-            }
+        if (project_type === 'mod' && !categories?.some(v => v.toLowerCase() === loader.toLowerCase())) {
+            categories = [...(categories ?? []), loader.toLowerCase()];
         }
         manager.configureFilter(project_type, {
             sort,

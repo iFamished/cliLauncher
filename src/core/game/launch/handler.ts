@@ -205,7 +205,9 @@ export class Handler {
                     } else {
                         logger.log(chalk.green.bold('\n📦 Installed:\n'));
                         installed.forEach((mod, index) => {
-                            logger.log(chalk.cyan(`  ${index + 1}. ${mod}`));
+                            let isDisabled = mod_manager.isModDisabled(mod);
+
+                            logger.log(chalk.cyan(`  ${isDisabled ? `${chalk.gray('(disabled)')} ` : ''}${index + 1}. ${mod}`));
                         });
                     }
                 }

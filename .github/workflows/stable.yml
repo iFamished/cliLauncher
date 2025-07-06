@@ -1,0 +1,82 @@
+name: Stable Publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish-stable:
+    name: Publish Stable to NPM
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version and rename to stable
+        id: bump_version
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Use input or fallback to patch
+          RELEASE_TYPE="${{ github.event.inputs.release_type || 'patch' }}"
+
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $CURRENT_VERSION"
+
+          # Bump version
+          NEW_VERSION=$(npm version "$RELEASE_TYPE" --no-git-tag-version)
+          echo "Bumped version: $NEW_VERSION"
+          echo "version_tag=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+          # Rename to stable package
+          jq '.name = "@origami-minecraft/stable"' package.json > tmp.json && mv tmp.json package.json
+
+          git add package.json package-lock.json
+          git commit -m "chore(release): stable $NEW_VERSION"
+          git tag "$NEW_VERSION"
+          git push origin HEAD:main --tags
+
+      - name: Publish to NPM
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.bump_version.outputs.version_tag }}
+          name: "Stable Release ${{ steps.bump_version.outputs.version_tag }}"
+          body: |
+            🧵 Stable release published from main.
+            📦 Version: ${{ steps.bump_version.outputs.version_tag }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

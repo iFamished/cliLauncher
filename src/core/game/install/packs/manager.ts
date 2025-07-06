@@ -83,7 +83,7 @@ export class ModrinthModManager {
 
         for (const respack of respacks) {
             if (!this.getResPack(respack)) {
-                this.addResPack(resPackDir);
+                this.addResPack(respack);
                 console.log(chalk.gray(`✔ Imported resource pack: ${respack}`));
             }
         }
