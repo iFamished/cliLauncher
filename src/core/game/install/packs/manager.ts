@@ -15,6 +15,9 @@ export class ModrinthModManager {
     constructor(profile: LauncherProfile) {
         this.versionPath = path.join(mcDir, 'instances', profile.origami.path);
         this.filePath = path.join(this.versionPath, 'origami_installs.json');
+
+        if(!fs.existsSync(this.filePath)) fs.writeFileSync(this.filePath, '{}');
+        
         this.data = { version: this.versionPath, installed: { mods: [], shaders: [], resourcepacks: [] }, disabled: [] };
         this.load();
         this.cleanup_mods(); 
