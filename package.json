@@ -1,6 +1,6 @@
 {
   "name": "@origami-minecraft/stable",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Origami is a terminal-first Minecraft launcher that supports authentication, installation, and launching of Minecraft versions — with built-in support for Microsoft accounts, mod loaders, profile management, and more. Designed for power users, modders, and anyone who loves minimalism and productivity.",
   "keywords": [
     "Minecraft",
