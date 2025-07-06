@@ -152,8 +152,13 @@ class Handler {
                 let assetRoot = path_1.default.join(mc_dir, 'assets');
                 let loader = this.installers.get(this.installers.list().sort((a, b) => b.length - a.length).find(ld => name.toLowerCase().startsWith(ld) || name.toLowerCase().includes(ld)) || 'vanilla');
                 let jvmArgs = `${auth.jvm}`;
+                let additional_jvm = this.profiles.getJvm(selected_profile?.origami.version || '');
+                if (additional_jvm !== '') {
+                    exports.logger.log(`⚠️  Additional JVM Flags: ${additional_jvm}`);
+                    jvmArgs = `${jvmArgs} ${additional_jvm}`;
+                }
                 if (loader && loader.metadata.unstable) {
-                    exports.logger.warn(`⚠️ Heads up! ${loader.metadata.name} support is a bit wobbly right now — it might break or misbehave 🧪👀`);
+                    exports.logger.warn(`⚠️  Heads up! ${loader.metadata.name} support is a bit wobbly right now — it might break or misbehave 🧪👀`);
                 }
                 if (loader && loader.metadata.jvm) {
                     jvmArgs = `${loader.metadata.jvm} ${jvmArgs}`;
@@ -251,7 +256,7 @@ class Handler {
         }
     }
     configure_settings() {
-        return this.settings.configureOptions();
+        return this.settings.configureOptions(this.profiles.getSelectedProfile());
     }
     async install_version() {
         const installers = this.installers;

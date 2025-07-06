@@ -21,6 +21,21 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### \[2.0.6] - 2025-07-06
+
+* ✨ **Launcher Options Selector**
+
+  * Added an interactive prompt to **choose which options to configure** (memory, window size, JVM args, etc.)
+  * No longer forces reconfiguration of all options when modifying just one
+  * Improves UX for fine-tuning launcher behavior without overwriting existing settings
+
+* ⚠️ **User Feedback Enhancements**
+
+  * Warns user when trying to edit JVM args with no loaded profile
+  * Clearer messages and validation around memory, resolution, and connection settings
+
+---
+
 ### \[2.0.5] - 2025-07-06
 
 * ✨ **GraalVM Runtime Support**

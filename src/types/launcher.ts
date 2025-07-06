@@ -13,6 +13,7 @@ export interface LauncherProfile {
         metadata: Metadata;
         version: string;
         path: string;
+        jvm: string;
     }
 }
 

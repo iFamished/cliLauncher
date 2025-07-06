@@ -186,8 +186,14 @@ export class Handler {
 
                 let jvmArgs = `${auth.jvm}`;
 
+                let additional_jvm = this.profiles.getJvm(selected_profile?.origami.version || '');
+                if (additional_jvm !== '') {
+                    logger.log(`⚠️  Additional JVM Flags: ${additional_jvm}`);
+                    jvmArgs = `${jvmArgs} ${additional_jvm}`
+                }
+
                 if (loader && loader.metadata.unstable) {
-                    logger.warn(`⚠️ Heads up! ${loader.metadata.name} support is a bit wobbly right now — it might break or misbehave 🧪👀`);
+                    logger.warn(`⚠️  Heads up! ${loader.metadata.name} support is a bit wobbly right now — it might break or misbehave 🧪👀`);
                 }
 
                 if (loader && loader.metadata.jvm) {
@@ -306,7 +312,7 @@ export class Handler {
     }
 
     public configure_settings(): Promise<void> {
-        return this.settings.configureOptions();
+        return this.settings.configureOptions(this.profiles.getSelectedProfile());
     }
 
     public async install_version(): Promise<void> {

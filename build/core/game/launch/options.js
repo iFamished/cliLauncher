@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LauncherOptionsManager = void 0;
 exports.promptNumber = promptNumber;
 exports.promptString = promptString;
+exports.promptEditor = promptEditor;
 exports.promptBoolean = promptBoolean;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
@@ -46,6 +47,8 @@ const common_1 = require("../../utils/common");
 const prompts_1 = require("@inquirer/prompts");
 const chalk_1 = __importDefault(require("chalk"));
 const os_1 = __importDefault(require("os"));
+const inquirer_1 = __importDefault(require("inquirer"));
+const launcher_1 = __importDefault(require("../../tools/launcher"));
 const mcDir = (0, common_1.minecraft_dir)(true);
 const launcherProfilesPath = path.join(mcDir, 'settings.json');
 class LauncherOptionsManager {
@@ -80,21 +83,67 @@ class LauncherOptionsManager {
     reset() {
         fs.writeFileSync(this.filePath, JSON.stringify({ options: {} }, null, 2));
     }
-    async configureOptions() {
-        const memory = await askMemoryLimits(this.data.options.memory);
-        const window = await askWindowConfig(this.data.options.window_size);
-        const safe_exit = await promptBoolean('Enable safe exit?', this.data.options.safe_exit);
-        const max_sockets = await promptNumber('Set max sockets:', { min: 1, default: this.data.options.max_sockets || 8 });
-        const connections = await promptNumber('Set parallel connections:', { min: 8, default: this.data.options.connections || (0, common_1.getSafeConcurrencyLimit)(), max: (0, common_1.getSafeConcurrencyLimit)() });
-        const fullscreen = window.fullscreen;
-        this.data.options = {
-            memory,
-            window_size: fullscreen ? undefined : window,
-            fullscreen,
-            safe_exit,
-            max_sockets,
-            connections,
-        };
+    async configureOptions(profile) {
+        const configChoices = await inquirer_1.default.prompt([
+            {
+                type: 'checkbox',
+                name: 'optionsToConfigure',
+                message: 'Select which options to configure:',
+                choices: [
+                    { name: 'Memory Settings', value: 'memory' },
+                    { name: 'Window Size', value: 'window' },
+                    { name: 'Fullscreen Mode', value: 'fullscreen' },
+                    { name: 'Safe Exit', value: 'safe_exit' },
+                    { name: 'Max Sockets', value: 'max_sockets' },
+                    { name: 'Parallel Connections', value: 'connections' },
+                    { name: 'JVM Arguments (per profile)', value: 'jvm' },
+                ],
+                loop: false,
+                pageSize: 10
+            }
+        ]);
+        const opts = this.data.options;
+        for (const item of configChoices.optionsToConfigure) {
+            switch (item) {
+                case 'memory':
+                    opts.memory = await askMemoryLimits(opts.memory);
+                    break;
+                case 'window':
+                    const window = await askWindowConfig(opts.window_size);
+                    opts.window_size = window.fullscreen ? undefined : window;
+                    opts.fullscreen = window.fullscreen;
+                    break;
+                case 'fullscreen':
+                    opts.fullscreen = await promptBoolean('Enable fullscreen?', opts.fullscreen ?? false);
+                    break;
+                case 'safe_exit':
+                    opts.safe_exit = await promptBoolean('Enable safe exit?', opts.safe_exit ?? false);
+                    break;
+                case 'max_sockets':
+                    opts.max_sockets = await promptNumber('Set max sockets:', {
+                        min: 1,
+                        default: opts.max_sockets || 8
+                    });
+                    break;
+                case 'connections':
+                    opts.connections = await promptNumber('Set parallel connections:', {
+                        min: 8,
+                        default: opts.connections || (0, common_1.getSafeConcurrencyLimit)(),
+                        max: (0, common_1.getSafeConcurrencyLimit)()
+                    });
+                    break;
+                case 'jvm':
+                    if (!profile) {
+                        console.error(chalk_1.default.red('❌ Cannot configure JVM arguments — no profile loaded.'));
+                        break;
+                    }
+                    const jvm = await promptEditor('Edit JVM arguments (opens your $EDITOR):', {
+                        default: profile.origami.jvm
+                    });
+                    new launcher_1.default().editJvm(profile.origami.version, jvm);
+                    break;
+            }
+        }
         this.save();
     }
     getFixedOptions() {
@@ -199,6 +248,18 @@ async function promptNumber(message, opts) {
 async function promptString(message, opts) {
     const { default: def } = opts ?? {};
     return (await (0, prompts_1.input)({ message, default: def })) || def || "";
+}
+async function promptEditor(message, opts) {
+    const { default: def } = opts ?? {};
+    let editor = await inquirer_1.default.prompt([
+        {
+            type: 'editor',
+            name: 'jvmArgs',
+            message: message,
+            default: def,
+        }
+    ]);
+    return editor.jvmArgs;
 }
 async function promptBoolean(message, defaultValue = false) {
     return await (0, prompts_1.confirm)({ message, default: defaultValue });

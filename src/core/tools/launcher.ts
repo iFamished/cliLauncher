@@ -117,6 +117,23 @@ export class LauncherProfileManager {
         fs.writeFileSync(this.filePath, JSON.stringify({ origami_profiles: {} }, null, 2));
     }
 
+    getJvm(id: string) {
+        let profile = this.getProfile(id);
+        if(!profile) return '';
+
+        return profile.origami.jvm;
+    }
+
+    editJvm(id: string, jvm: string) {
+        let profile = this.getProfile(id);
+        if(!profile) return '';
+
+        this.data.origami_profiles[id].origami.jvm = jvm;
+        this.save();
+
+        return jvm;
+    }
+
     addProfile(id: string, versionId: string, version_path: string, metadata: Metadata, name?: string, icon?: string, donot_auto_add?: boolean) {
         this.load();
 
@@ -131,7 +148,8 @@ export class LauncherProfileManager {
             origami: {
                 metadata,
                 version: id,
-                path: version_path
+                path: version_path,
+                jvm: ''
             }
         };
 

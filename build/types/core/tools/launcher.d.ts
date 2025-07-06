@@ -12,6 +12,8 @@ export declare class LauncherProfileManager {
     private load;
     private save;
     reset(): void;
+    getJvm(id: string): string;
+    editJvm(id: string, jvm: string): string;
     addProfile(id: string, versionId: string, version_path: string, metadata: Metadata, name?: string, icon?: string, donot_auto_add?: boolean): void;
     deleteProfile(id: string): void;
     selectProfile(id: string): void;
