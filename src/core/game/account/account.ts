@@ -20,6 +20,8 @@ const HMAC_ALGO = 'sha256';
 const mcDir = minecraft_dir(true);
 const launcherProfilesPath = path.join(mcDir, 'accounts.dat');
 
+const old_launcherProfilesPath = path.join(mcDir, 'launcher_profiles.json');
+
 async function getOrGenerateKey(): Promise<Buffer> {
     const stored = await keytar.getPassword(SERVICE, ACCOUNT);
 
@@ -58,6 +60,33 @@ function decryptWithKey(text: string, key: Buffer): string {
 
 async function migrateLegacyFormat(filePath: string, currentKey: Buffer): Promise<LauncherAccounts | null> {
     try {
+        const old = fs.existsSync(old_launcherProfilesPath) ? fs.readFileSync(old_launcherProfilesPath, 'utf-8') : '{}';
+
+        // Case 1: Plain JSON file (unencrypted)
+        try {
+            const parsed = JSON.parse(old);
+            if (parsed.accounts) {
+                logger.warn('⚠️ Detected old launcher_profiles accounts. Migrating to encrypted format...');
+                const newData = parsed as LauncherAccounts;
+
+                const plaintext = JSON.stringify(newData);
+                const encrypted = encryptWithKey(plaintext, currentKey);
+                const hmac = computeHMAC(encrypted, currentKey);
+
+                const wrapped = { encrypted, hmac };
+                fs.writeFileSync(filePath, JSON.stringify(wrapped, null, 2));
+
+                if(fs.existsSync(old_launcherProfilesPath)) {
+                    delete parsed.accounts;
+                    fs.writeFileSync(old_launcherProfilesPath, JSON.stringify(parsed, null, 2));
+                };
+
+                return newData;
+            }
+        } catch (_) {
+            // Not valid JSON, fall through to next check
+        }
+
         const raw = fs.readFileSync(filePath, 'utf-8');
 
         // Case 1: Plain JSON file (unencrypted)
