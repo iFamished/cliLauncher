@@ -21,7 +21,7 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### [2.0.7] - 2025-07-07
+### \[2.0.7] - 2025-07-07
 
 * ✨ **Zulu OpenJDK Metadata API v1 Integration**
 
