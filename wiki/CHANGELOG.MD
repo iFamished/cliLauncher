@@ -33,7 +33,7 @@ Some features introduced in these builds may never make it into stable releases.
 
     * Added support for **Amazon Corretto** as a Java JDK provider
     * Implements metadata scraping using Corretto's CDN and latest-download endpoints
-    * Automatically detects available JDK/JRE builds for various platforms
+    * Automatically detects available JDK builds for various platforms
 
 * 🏷️ Java Installations Now Track Provider Info
     * Each extracted Java runtime is tagged with a `.provider` file inside its folder
