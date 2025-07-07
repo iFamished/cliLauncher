@@ -21,6 +21,26 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### [2.0.7] - 2025-07-07
+
+* ✨ **Zulu OpenJDK Metadata API v1 Integration**
+
+    * Migrated Zulu provider to use **Azul’s new `metadata/v1/zulu/packages` API**
+    * Greatly improves accuracy, performance, and long-term stability of version listing and binary resolution
+    * Proper support for `jdk` vs `jre`, OS/arch mapping, and bundle filtering via query params
+
+* ✨ **Amazon Corretto Provider Added**
+
+    * Added support for **Amazon Corretto** as a Java JDK provider
+    * Implements metadata scraping using Corretto's CDN and latest-download endpoints
+    * Automatically detects available JDK/JRE builds for various platforms
+
+* 🏷️ Java Installations Now Track Provider Info
+    * Each extracted Java runtime is tagged with a `.provider` file inside its folder
+    * Enables better provider-aware selection and management of installations
+
+---
+
 ### \[2.0.6] - 2025-07-06
 
 * ✨ **Launcher Options Selector**

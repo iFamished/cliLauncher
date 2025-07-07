@@ -2,7 +2,7 @@ import axios from 'axios';
 import { ORIGAMi_USER_AGENT } from '../../config/defaults';
 
 export const graalvmProvider = {
-    name: 'GraalVM',
+    name: 'GraalVM CE',
     withJre: false,
 
     async listVersions(): Promise<string[]> {

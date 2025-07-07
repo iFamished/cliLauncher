@@ -8,7 +8,7 @@ import * as os from 'os';
 import * as tar from 'tar';
 import AdmZip from 'adm-zip';
 import { downloader } from '../core/utils/download';
-import { cleanDir, ensureDir, localpath } from '../core/utils/common';
+import { ensureDir, localpath } from '../core/utils/common';
 import * as data_manager from "../core/tools/data_manager";
 
 //const API_BASE = 'https://api.adoptium.net/v3';
@@ -90,8 +90,9 @@ interface JavaProvider {
 import { temurinProvider } from './providers/temurin';
 import { graalvmProvider } from './providers/graalvm';
 import { zuluProvider } from './providers/zulu';
+import { correttoProvider } from './providers/corretto';
 
-const providers: JavaProvider[] = [temurinProvider, graalvmProvider, zuluProvider]
+const providers: JavaProvider[] = [temurinProvider, graalvmProvider, zuluProvider, correttoProvider]
 
 async function main() {
     const { providerName } = await inquirer.prompt([
@@ -137,8 +138,10 @@ async function main() {
     const fileName = pkg.name;
     const downloadPath = path.join(localpath(true), fileName);
     const LOCAL_PATH = localpath();
-    const extractPath = path.join(LOCAL_PATH, 'binaries');
+    const binariesPath = path.join(LOCAL_PATH, 'binaries');
+    const extractPath = path.join(binariesPath, fileName);
 
+    ensureDir(binariesPath);
     ensureDir(extractPath);
     ensureDir(localpath(true));
 
@@ -155,6 +158,10 @@ async function main() {
     try {
         await extractArchive(downloadPath, extractPath);
         await fs.promises.rm(downloadPath, { recursive: true, force: true });
+
+        const providerTagPath = path.join(extractPath, '.provider');
+        await fs.promises.writeFile(providerTagPath, provider.name, 'utf-8');
+
         extractSpinner.succeed('🎉 Extraction complete! Your JDK is ready to use! 🎉');
     } catch (err: any) {
         extractSpinner.fail('😿 Extraction failed. Something went wrong!');
@@ -175,6 +182,7 @@ const BANNER = `
 interface JavaBinary {
     path: string;
     version?: string;
+    provider?: string;
 }
 
 async function selectJavaBinary(use_new: boolean = false): Promise<JavaBinary> {
@@ -198,11 +206,14 @@ async function selectJavaBinary(use_new: boolean = false): Promise<JavaBinary> {
 
         spinner.succeed(chalk.green(`Found ${javaInstallations.length} Java installations!`));
 
+        function logUse(java: JavaBinary) {
+            console.log(chalk.green(`\n✅ Selected: ${chalk.cyan(java.version || 'Java')} ${chalk.gray(`from ${chalk.yellow(java.provider || 'Unknown')}`)}`));
+            console.log(chalk.gray(`📁 Path: ${java.path}\n`));
+        }
+
         if(javaInstallations.length === 1) {
             let selectedJava = javaInstallations[0];
-
-            console.log(chalk.green(`\n✅ Selected: ${chalk.cyan(selectedJava.version || 'Java')}`));
-            console.log(chalk.gray(`📁 Path: ${selectedJava.path}\n`));
+            logUse(selectedJava);
 
             data_manager.set('use:temurin', selectedJava);
             return selectedJava;
@@ -210,8 +221,7 @@ async function selectJavaBinary(use_new: boolean = false): Promise<JavaBinary> {
 
         let use_temurin = data_manager.get('use:temurin');
         if(use_temurin && !use_new && fs.existsSync(use_temurin.path)) {
-            console.log(chalk.green(`\n✅ Selected: ${chalk.cyan(use_temurin.version || 'Java')}`));
-            console.log(chalk.gray(`📁 Path: ${use_temurin.path}\n`));
+            logUse(use_temurin);
 
             return use_temurin;
         }
@@ -222,7 +232,7 @@ async function selectJavaBinary(use_new: boolean = false): Promise<JavaBinary> {
                 name: 'selectedJava',
                 message: chalk.hex('#FFA500')('✨ Which Java version would you like to use?'),
                 choices: javaInstallations.map(java => ({
-                    name: `${chalk.cyan(java.version || 'Unknown version')} ${chalk.gray(`(${java.path})`)}`,
+                    name: `${chalk.cyan(java.version || 'Unknown Version')} ${chalk.gray(`from ${chalk.yellow(java.provider || 'Unknown')}, ${java.path}`)}`,
                     value: java
                 })),
                 pageSize: Math.min(10, javaInstallations.length),
@@ -230,8 +240,7 @@ async function selectJavaBinary(use_new: boolean = false): Promise<JavaBinary> {
             }
         ]);
 
-        console.log(chalk.green(`\n✅ Selected: ${chalk.cyan(selectedJava.version || 'Java')}`));
-        console.log(chalk.gray(`📁 Path: ${selectedJava.path}\n`));
+        logUse(selectedJava);
 
         data_manager.set('use:temurin', selectedJava);
         return selectedJava;
@@ -243,25 +252,51 @@ async function selectJavaBinary(use_new: boolean = false): Promise<JavaBinary> {
 
 function findJavaInstallations(basePath: string): JavaBinary[] {
     if (!fs.existsSync(basePath)) return [];
-    
-    const items = fs.readdirSync(basePath);
+
+    const entries = fs.readdirSync(basePath, { withFileTypes: true });
     const installations: JavaBinary[] = [];
 
-    for (const item of items) {
-        const fullPath = path.join(basePath, item);
-        if (!fs.statSync(fullPath).isDirectory()) continue;
+    for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const outerDir = path.join(basePath, entry.name);
 
-        const binPath = path.join(fullPath, 'bin');
-        if (!fs.existsSync(binPath)) continue;
+        const binDir = path.join(outerDir, 'bin');
+        const javaExe = process.platform === 'win32' ? 'java.exe' : 'java';
+        const javaPath = path.join(binDir, javaExe);
 
-        const javaExecutable = process.platform === 'win32' ? 'java.exe' : 'java';
-        const javaPath = path.join(binPath, javaExecutable);
+        const providerPath = path.join(outerDir, '.provider');
+        const provider = fs.existsSync(providerPath)
+            ? fs.readFileSync(providerPath, 'utf-8').trim()
+            : undefined;
 
         if (fs.existsSync(javaPath)) {
             installations.push({
                 path: javaPath,
-                version: extractJavaVersion(item)
+                version: extractJavaVersion(entry.name),
+                provider
             });
+            continue;
+        }
+
+        const innerEntries = fs.readdirSync(outerDir, { withFileTypes: true });
+        for (const inner of innerEntries) {
+            if (!inner.isDirectory()) continue;
+            const innerDir = path.join(outerDir, inner.name);
+            const innerBin = path.join(innerDir, 'bin');
+            const innerJava = path.join(innerBin, javaExe);
+
+            const innerProviderPath = path.join(outerDir, '.provider');
+            const innerProvider = fs.existsSync(innerProviderPath)
+                ? fs.readFileSync(innerProviderPath, 'utf-8').trim()
+                : undefined;
+
+            if (fs.existsSync(innerJava)) {
+                installations.push({
+                    path: innerJava,
+                    version: extractJavaVersion(inner.name),
+                    provider: innerProvider
+                });
+            }
         }
     }
 
@@ -294,7 +329,7 @@ async function deleteJavaBinary(): Promise<void> {
             name: 'binariesToDelete',
             message: chalk.redBright('🗑️ Select Java versions to delete:'),
             choices: javaInstallations.map(java => ({
-                name: `${chalk.cyan(java.version || 'Unknown')} ${chalk.gray(`(${java.path})`)}`,
+                name: `${chalk.cyan(java.version || 'Unknown')} ${chalk.gray(`from ${chalk.yellow(java.provider || 'Unknown')}, ${java.path}`)}`,
                 value: java.path
             })),
             pageSize: Math.min(10, javaInstallations.length),
@@ -308,13 +343,17 @@ async function deleteJavaBinary(): Promise<void> {
     }
 
     for (const javaPath of binariesToDelete) {
-        const installDir = path.resolve(javaPath, '..', '..');
-        if (fs.existsSync(installDir)) {
+        const maybeLegacy = path.resolve(javaPath, '..', '..');
+        const maybeModern = path.resolve(javaPath, '..', '..', '..');
+
+        const deletePath = fs.existsSync(path.join(maybeLegacy, 'bin')) ? maybeLegacy : maybeModern;
+
+        if (fs.existsSync(deletePath)) {
             try {
-                await fs.promises.rm(installDir, { recursive: true, force: true });
-                console.log(chalk.green(`✅ Deleted: ${chalk.gray(installDir)}`));
+                await fs.promises.rm(deletePath, { recursive: true, force: true });
+                console.log(chalk.green(`✅ Deleted: ${chalk.gray(deletePath)}`));
             } catch (err: any) {
-                console.error(chalk.red(`❌ Failed to delete ${installDir}: ${err.message}`));
+                console.error(chalk.red(`❌ Failed to delete ${deletePath}: ${err.message}`));
             }
         }
     }

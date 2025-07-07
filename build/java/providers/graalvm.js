@@ -7,7 +7,7 @@ exports.graalvmProvider = void 0;
 const axios_1 = __importDefault(require("axios"));
 const defaults_1 = require("../../config/defaults");
 exports.graalvmProvider = {
-    name: 'GraalVM',
+    name: 'GraalVM CE',
     withJre: false,
     async listVersions() {
         const res = await axios_1.default.get('https://api.github.com/repos/graalvm/graalvm-ce-builds/releases', {

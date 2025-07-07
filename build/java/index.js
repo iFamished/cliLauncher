@@ -112,7 +112,8 @@ async function extractArchive(filePath, outputDir) {
 const temurin_1 = require("./providers/temurin");
 const graalvm_1 = require("./providers/graalvm");
 const zulu_1 = require("./providers/zulu");
-const providers = [temurin_1.temurinProvider, graalvm_1.graalvmProvider, zulu_1.zuluProvider];
+const corretto_1 = require("./providers/corretto");
+const providers = [temurin_1.temurinProvider, graalvm_1.graalvmProvider, zulu_1.zuluProvider, corretto_1.correttoProvider];
 async function main() {
     const { providerName } = await inquirer_1.default.prompt([
         {
@@ -154,7 +155,9 @@ async function main() {
     const fileName = pkg.name;
     const downloadPath = path.join((0, common_1.localpath)(true), fileName);
     const LOCAL_PATH = (0, common_1.localpath)();
-    const extractPath = path.join(LOCAL_PATH, 'binaries');
+    const binariesPath = path.join(LOCAL_PATH, 'binaries');
+    const extractPath = path.join(binariesPath, fileName);
+    (0, common_1.ensureDir)(binariesPath);
     (0, common_1.ensureDir)(extractPath);
     (0, common_1.ensureDir)((0, common_1.localpath)(true));
     console.log(`\n🌟 Downloading ${fileName} with love... 🌟\n`);
@@ -170,6 +173,8 @@ async function main() {
     try {
         await extractArchive(downloadPath, extractPath);
         await fs.promises.rm(downloadPath, { recursive: true, force: true });
+        const providerTagPath = path.join(extractPath, '.provider');
+        await fs.promises.writeFile(providerTagPath, provider.name, 'utf-8');
         extractSpinner.succeed('🎉 Extraction complete! Your JDK is ready to use! 🎉');
     }
     catch (err) {
@@ -201,17 +206,19 @@ async function selectJavaBinary(use_new = false) {
             throw new Error('No Java folders found in binaries directory');
         }
         spinner.succeed(chalk_1.default.green(`Found ${javaInstallations.length} Java installations!`));
+        function logUse(java) {
+            console.log(chalk_1.default.green(`\n✅ Selected: ${chalk_1.default.cyan(java.version || 'Java')} ${chalk_1.default.gray(`from ${chalk_1.default.yellow(java.provider || 'Unknown')}`)}`));
+            console.log(chalk_1.default.gray(`📁 Path: ${java.path}\n`));
+        }
         if (javaInstallations.length === 1) {
             let selectedJava = javaInstallations[0];
-            console.log(chalk_1.default.green(`\n✅ Selected: ${chalk_1.default.cyan(selectedJava.version || 'Java')}`));
-            console.log(chalk_1.default.gray(`📁 Path: ${selectedJava.path}\n`));
+            logUse(selectedJava);
             data_manager.set('use:temurin', selectedJava);
             return selectedJava;
         }
         let use_temurin = data_manager.get('use:temurin');
         if (use_temurin && !use_new && fs.existsSync(use_temurin.path)) {
-            console.log(chalk_1.default.green(`\n✅ Selected: ${chalk_1.default.cyan(use_temurin.version || 'Java')}`));
-            console.log(chalk_1.default.gray(`📁 Path: ${use_temurin.path}\n`));
+            logUse(use_temurin);
             return use_temurin;
         }
         const { selectedJava } = await inquirer_1.default.prompt([
@@ -220,15 +227,14 @@ async function selectJavaBinary(use_new = false) {
                 name: 'selectedJava',
                 message: chalk_1.default.hex('#FFA500')('✨ Which Java version would you like to use?'),
                 choices: javaInstallations.map(java => ({
-                    name: `${chalk_1.default.cyan(java.version || 'Unknown version')} ${chalk_1.default.gray(`(${java.path})`)}`,
+                    name: `${chalk_1.default.cyan(java.version || 'Unknown Version')} ${chalk_1.default.gray(`from ${chalk_1.default.yellow(java.provider || 'Unknown')}, ${java.path}`)}`,
                     value: java
                 })),
                 pageSize: Math.min(10, javaInstallations.length),
                 loop: false
             }
         ]);
-        console.log(chalk_1.default.green(`\n✅ Selected: ${chalk_1.default.cyan(selectedJava.version || 'Java')}`));
-        console.log(chalk_1.default.gray(`📁 Path: ${selectedJava.path}\n`));
+        logUse(selectedJava);
         data_manager.set('use:temurin', selectedJava);
         return selectedJava;
     }
@@ -240,22 +246,45 @@ async function selectJavaBinary(use_new = false) {
 function findJavaInstallations(basePath) {
     if (!fs.existsSync(basePath))
         return [];
-    const items = fs.readdirSync(basePath);
+    const entries = fs.readdirSync(basePath, { withFileTypes: true });
     const installations = [];
-    for (const item of items) {
-        const fullPath = path.join(basePath, item);
-        if (!fs.statSync(fullPath).isDirectory())
+    for (const entry of entries) {
+        if (!entry.isDirectory())
             continue;
-        const binPath = path.join(fullPath, 'bin');
-        if (!fs.existsSync(binPath))
-            continue;
-        const javaExecutable = process.platform === 'win32' ? 'java.exe' : 'java';
-        const javaPath = path.join(binPath, javaExecutable);
+        const outerDir = path.join(basePath, entry.name);
+        const binDir = path.join(outerDir, 'bin');
+        const javaExe = process.platform === 'win32' ? 'java.exe' : 'java';
+        const javaPath = path.join(binDir, javaExe);
+        const providerPath = path.join(outerDir, '.provider');
+        const provider = fs.existsSync(providerPath)
+            ? fs.readFileSync(providerPath, 'utf-8').trim()
+            : undefined;
         if (fs.existsSync(javaPath)) {
             installations.push({
                 path: javaPath,
-                version: extractJavaVersion(item)
+                version: extractJavaVersion(entry.name),
+                provider
             });
+            continue;
+        }
+        const innerEntries = fs.readdirSync(outerDir, { withFileTypes: true });
+        for (const inner of innerEntries) {
+            if (!inner.isDirectory())
+                continue;
+            const innerDir = path.join(outerDir, inner.name);
+            const innerBin = path.join(innerDir, 'bin');
+            const innerJava = path.join(innerBin, javaExe);
+            const innerProviderPath = path.join(outerDir, '.provider');
+            const innerProvider = fs.existsSync(innerProviderPath)
+                ? fs.readFileSync(innerProviderPath, 'utf-8').trim()
+                : undefined;
+            if (fs.existsSync(innerJava)) {
+                installations.push({
+                    path: innerJava,
+                    version: extractJavaVersion(inner.name),
+                    provider: innerProvider
+                });
+            }
         }
     }
     return installations;
@@ -282,7 +311,7 @@ async function deleteJavaBinary() {
             name: 'binariesToDelete',
             message: chalk_1.default.redBright('🗑️ Select Java versions to delete:'),
             choices: javaInstallations.map(java => ({
-                name: `${chalk_1.default.cyan(java.version || 'Unknown')} ${chalk_1.default.gray(`(${java.path})`)}`,
+                name: `${chalk_1.default.cyan(java.version || 'Unknown')} ${chalk_1.default.gray(`from ${chalk_1.default.yellow(java.provider || 'Unknown')}, ${java.path}`)}`,
                 value: java.path
             })),
             pageSize: Math.min(10, javaInstallations.length),
@@ -294,14 +323,16 @@ async function deleteJavaBinary() {
         return;
     }
     for (const javaPath of binariesToDelete) {
-        const installDir = path.resolve(javaPath, '..', '..');
-        if (fs.existsSync(installDir)) {
+        const maybeLegacy = path.resolve(javaPath, '..', '..');
+        const maybeModern = path.resolve(javaPath, '..', '..', '..');
+        const deletePath = fs.existsSync(path.join(maybeLegacy, 'bin')) ? maybeLegacy : maybeModern;
+        if (fs.existsSync(deletePath)) {
             try {
-                await fs.promises.rm(installDir, { recursive: true, force: true });
-                console.log(chalk_1.default.green(`✅ Deleted: ${chalk_1.default.gray(installDir)}`));
+                await fs.promises.rm(deletePath, { recursive: true, force: true });
+                console.log(chalk_1.default.green(`✅ Deleted: ${chalk_1.default.gray(deletePath)}`));
             }
             catch (err) {
-                console.error(chalk_1.default.red(`❌ Failed to delete ${installDir}: ${err.message}`));
+                console.error(chalk_1.default.red(`❌ Failed to delete ${deletePath}: ${err.message}`));
             }
         }
     }

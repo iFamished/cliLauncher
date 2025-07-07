@@ -69,7 +69,9 @@ function moveFileSync(oldPath, newPath) {
     (0, fs_1.unlinkSync)(oldPath);
 }
 function localpath(isCache = false) {
-    return isCache ? (0, envs_1.default)('Origami-Cache').temp : (0, envs_1.default)('Origami-Data').data;
+    let folder = isCache ? (0, envs_1.default)('Origami-Cache').temp : (0, envs_1.default)('Origami-Data').data;
+    ensureDir(folder);
+    return folder;
 }
 ;
 function minecraft_dir(origami_data) {

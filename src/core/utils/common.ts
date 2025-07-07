@@ -24,7 +24,11 @@ export function moveFileSync(oldPath: string, newPath: string) {
 }
 
 export function localpath(isCache: boolean = false) {
-    return isCache ? envPaths('Origami-Cache').temp : envPaths('Origami-Data').data;
+    let folder = isCache ? envPaths('Origami-Cache').temp : envPaths('Origami-Data').data;
+
+    ensureDir(folder);
+     
+    return folder;
 };
 
 export function minecraft_dir(origami_data?: boolean) {

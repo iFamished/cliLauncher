@@ -2,7 +2,7 @@ import axios from 'axios';
 const API_BASE = 'https://api.adoptium.net/v3';
 
 export const temurinProvider = {
-    name: 'Temurin',
+    name: 'Adoptium Temurin',
     withJre: true,
     async listVersions() {
         const res = await axios.get(`${API_BASE}/info/available_releases`);
