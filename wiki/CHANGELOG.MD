@@ -23,6 +23,12 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### \[2.0.10] - 2025-07-08
+
+* 🐛 **Fixed current bugs with Authlib JAR and Global/Profile Settings**
+
+---
+
 ### \[2.0.9] - 2025-07-08
 
 * ✨ **Per-Profile Java Runtime Selection**

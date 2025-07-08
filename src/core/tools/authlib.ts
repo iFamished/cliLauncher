@@ -64,7 +64,7 @@ async function get_authlib(server: string): Promise<string> {
             await fs.writeJson(releaseInfoPath, { tag }, { spaces: 2 });
 
             spinner.succeed(`AuthLib: Downloaded and saved ${tag}`);
-            return AUTHLIB_ARGS.replaceAll('$AUTH', `"${jarPath}"`).replaceAll('$SERVER', server);
+            return AUTHLIB_ARGS.replaceAll('$AUTH', `${jarPath}`).replaceAll('$SERVER', server);
         }
 
         spinner.fail('AuthLib: No suitable authlib-injector jar found in any release.');

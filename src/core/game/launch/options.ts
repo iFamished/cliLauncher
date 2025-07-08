@@ -159,6 +159,11 @@ export class LauncherOptionsManager {
             }
         }
 
+        if(this.currentProfile) {
+            this.currentProfile = void 0;
+            this.filePath = this.default_filePath;
+        }
+        
         this.save();
     }
 

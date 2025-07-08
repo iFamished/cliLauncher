@@ -48,7 +48,7 @@ async function get_authlib(server) {
             await (0, download_1.downloader)(matchingAsset.browser_download_url, jarPath);
             await fs_extra_1.default.writeJson(releaseInfoPath, { tag }, { spaces: 2 });
             spinner.succeed(`AuthLib: Downloaded and saved ${tag}`);
-            return defaults_1.AUTHLIB_ARGS.replaceAll('$AUTH', `"${jarPath}"`).replaceAll('$SERVER', server);
+            return defaults_1.AUTHLIB_ARGS.replaceAll('$AUTH', `${jarPath}`).replaceAll('$SERVER', server);
         }
         spinner.fail('AuthLib: No suitable authlib-injector jar found in any release.');
         return '';

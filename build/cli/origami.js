@@ -261,13 +261,13 @@ async function checkForLatestVersion(currentVersion) {
         const cmpStable = compare_versions_1.default.compareVersions(latestStable, currentVersion);
         const cmpDev = compare_versions_1.default.compareVersions(latestDev, currentVersion);
         if (!isCurrentDev && cmpStable > 0) {
-            console.log(chalk_1.default.yellow(`⚠️ A new stable version is available: ${latestStable}\nRun:`), chalk_1.default.cyan(`npm install -g @origami-minecraft/stable`));
+            console.log(chalk_1.default.yellow(`⚠️ A new stable version is available: ${latestStable}\nRun:`), chalk_1.default.cyan(`npm install -g @origami-minecraft/stable@${latestStable}`));
         }
         else if (isCurrentDev && cmpStable > 0) {
-            console.log(chalk_1.default.yellow(`⚠️ You're on a dev build (${currentVersion}), but a new stable version is available: ${latestStable}\nRun:`), chalk_1.default.cyan(`npm install -g @origami-minecraft/stable`));
+            console.log(chalk_1.default.yellow(`⚠️ You're on a dev build (${currentVersion}), but a new stable version is available: ${latestStable}\nRun:`), chalk_1.default.cyan(`npm install -g @origami-minecraft/stable@${latestStable}`));
         }
         else if (isCurrentDev && cmpDev > 0) {
-            console.log(chalk_1.default.yellow(`⚠️ A new dev build is available: ${latestDev}\nRun:`), chalk_1.default.cyan(`npm install -g @origami-minecraft/devbuilds`));
+            console.log(chalk_1.default.yellow(`⚠️ A new dev build is available: ${latestDev}\nRun:`), chalk_1.default.cyan(`npm install -g @origami-minecraft/devbuilds@${latestDev}`));
         }
     }
     catch {
