@@ -266,7 +266,7 @@ class Runtime {
                         { name: '🔐 Authenticator', value: 'authenticator' },
                         { name: '🛠  Configure Settings', value: 'configure_settings' },
                         new inquirer_1.default.Separator(),
-                        { name: '📂 Choose Profile', value: 'choose_profile' },
+                        { name: '📂 All Profiles', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
                         { name: '🗑️  Delete Profile/Instance', value: 'delete_profile' },
                         new inquirer_1.default.Separator(),

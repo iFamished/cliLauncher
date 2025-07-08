@@ -16,9 +16,14 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### \[2.0.8-dev] - 2025-07-08 *(Dev Build)*
+## ✅ Stable Releases
 
-> ⚠️ This is a **dev build** currently in active testing. Features listed here are experimental and may be changed or refined before inclusion in a stable release.
+> These builds are published to the **npm registry**:
+> `npm install -g @origami-minecraft/stable`
+
+---
+
+### \[2.0.8] - 2025-07-08
 
 * ✨ **Per-Profile Java Runtime Selection**
 
@@ -51,13 +56,6 @@ Some features introduced in these builds may never make it into stable releases.
 
   * Fixes an issue where deleting a manual Java path from database would abort the rest of the deletion loop
   * Ensures cleanup continues even after manual binaries are removed
-
----
-
-## ✅ Stable Releases
-
-> These builds are published to the **npm registry**:
-> `npm install -g @origami-minecraft/stable`
 
 ---
 

@@ -65,6 +65,7 @@ Manage Minecraft profiles.
 
 * `-s, --select <profile>` — Select a specific profile
 * `-i, --install` — Install a Minecraft version
+* `-d, --delete` — Opens the Profile Deletion Menu
 * `-l, --list` — List all available profiles
 
 #### Examples:
