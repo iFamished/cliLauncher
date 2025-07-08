@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { getSafeConcurrencyLimit, minecraft_dir } from '../../utils/common';
+import { ensureDir, getSafeConcurrencyLimit, minecraft_dir } from '../../utils/common';
 import { LauncherOptions, LauncherProfile } from '../../../types/launcher';
-import { confirm, input, number, select } from '@inquirer/prompts';
+import { confirm, input, number, select, Separator } from '@inquirer/prompts';
 import chalk from "chalk";
 import os from 'os';
 import {
@@ -14,17 +14,39 @@ import {
 } from '../../../types/launcher_options';
 import inquirer from 'inquirer';
 import LauncherProfileManager from '../../tools/launcher';
+import temurin from '../../../java';
 
 const mcDir = minecraft_dir(true);
 const launcherProfilesPath = path.join(mcDir, 'settings.json');
 
 export class LauncherOptionsManager {
     private filePath: string;
+    private default_filePath: string;
     private data: LauncherOptions;
+
+    private currentProfile?: LauncherProfile;
 
     constructor(filePath: string = launcherProfilesPath) {
         this.filePath = filePath;
+        this.default_filePath = filePath;
         this.data = { options: {} };
+        this.load();
+    }
+
+    setProfile(profile?: LauncherProfile) {
+        if(!profile) this.filePath = this.default_filePath;
+        else {
+            let instance_path = path.join(mcDir, 'instances', profile.origami.path);
+            ensureDir(instance_path);
+
+            this.filePath = path.join(instance_path, 'origami_options.json');
+            this.currentProfile = profile;
+        };
+
+        if(!fs.existsSync(this.filePath)) {
+            this.save();
+        }
+
         this.load();
     }
 
@@ -54,27 +76,39 @@ export class LauncherOptionsManager {
         fs.writeFileSync(this.filePath, JSON.stringify({ options: {} }, null, 2));
     }
 
-    public async configureOptions(profile?: LauncherProfile) {
+    public async configureOptions() {
+        const choices: any[] = [];
+
+        if(this.currentProfile) {
+            choices.push(new Separator(`-- Selected Profile Settings --`));
+            choices.push({ name: 'JVM Arguments (per profile)', value: 'jvm' });
+            choices.push({ name: 'Java Runtime (per profile)', value: 'java' });
+        } else {
+            choices.push(new Separator(`-- Global --`));
+        };
+
+        const global_options: any[] = [
+            { name: 'Memory Settings', value: 'memory' },
+            { name: 'Window Size', value: 'window' },
+            { name: 'Fullscreen Mode', value: 'fullscreen' },
+            { name: 'Safe Exit', value: 'safe_exit' },
+            { name: 'Max Sockets', value: 'max_sockets' },
+            { name: 'Parallel Connections', value: 'connections' },
+        ];
+
         const configChoices = await inquirer.prompt([
             {
                 type: 'checkbox',
                 name: 'optionsToConfigure',
                 message: 'Select which options to configure:',
-                choices: [
-                    { name: 'Memory Settings', value: 'memory' },
-                    { name: 'Window Size', value: 'window' },
-                    { name: 'Fullscreen Mode', value: 'fullscreen' },
-                    { name: 'Safe Exit', value: 'safe_exit' },
-                    { name: 'Max Sockets', value: 'max_sockets' },
-                    { name: 'Parallel Connections', value: 'connections' },
-                    { name: 'JVM Arguments (per profile)', value: 'jvm' },
-                ],
+                choices: choices.concat(global_options),
                 loop: false,
                 pageSize: 10
             }
         ]);
 
         const opts = this.data.options;
+        const profile = this.currentProfile;
 
         for (const item of configChoices.optionsToConfigure) {
             switch (item) {
@@ -107,13 +141,20 @@ export class LauncherOptionsManager {
                     break;
                 case 'jvm':
                     if (!profile) {
-                        console.error(chalk.red('❌ Cannot configure JVM arguments — no profile loaded.'));
+                        console.error(chalk.red('❌ Cannot configure JVM arguments — no selected profile loaded.'));
                         break;
                     }
                     const jvm = await promptEditor('Edit JVM arguments (opens your $EDITOR):', {
                         default: profile.origami.jvm
                     });
                     new LauncherProfileManager().editJvm(profile.origami.version, jvm);
+                    break;
+                case 'java':
+                    if (!profile) {
+                        console.error(chalk.red('❌ Cannot configure Java Runtime — no selected profile loaded.'));
+                        break;
+                    }
+                    await temurin.select(true, profile.origami.version);
                     break;
             }
         }

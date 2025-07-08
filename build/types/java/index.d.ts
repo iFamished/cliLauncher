@@ -4,7 +4,7 @@ interface JavaBinary {
     version?: string;
     provider?: string;
 }
-declare function selectJavaBinary(use_new?: boolean): Promise<JavaBinary>;
+declare function selectJavaBinary(use_new: boolean, profileName?: string): Promise<JavaBinary>;
 declare function deleteJavaBinary(): Promise<void>;
 declare const _default: {
     download: typeof main;

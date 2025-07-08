@@ -2,7 +2,7 @@ import axios from 'axios';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import path from 'path';
-import { fetchMinecraftVersionManifest } from '../../../utils/minecraft_versions';
+import { askForVersion, fetchMinecraftVersionManifest } from '../../../utils/minecraft_versions';
 import { downloader } from '../../../utils/download';
 import { ensureDir, cleanDir, localpath, minecraft_dir, waitForFolder } from '../../../utils/common';
 import { run as executeJar } from '../../../tools/executor';
@@ -40,20 +40,11 @@ export async function installFabricViaExecutor(): Promise<ClientJar | null> {
 
     try {
         const manifest = await fetchMinecraftVersionManifest();
-        const mcVersions = manifest.versions.filter(v => v.id).map(v => v.id);
         const latestMC = manifest.latest.release;
 
         spinner.stop()
 
-        const { minecraftVersion } = await inquirer.prompt([
-            {
-                type: 'list',
-                name: 'minecraftVersion',
-                message: '🎮 Select Minecraft version:',
-                choices: mcVersions,
-                default: latestMC
-            }
-        ]);
+        const minecraftVersion = await askForVersion(manifest.versions, latestMC);
 
         const loaderVersions = await getAvailableLoaders();
         const { loaderVersion } = await inquirer.prompt([

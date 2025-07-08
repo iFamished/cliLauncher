@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import path from 'path';
 import fs from 'fs';
-import { fetchMinecraftVersionManifest } from '../../utils/minecraft_versions';
+import { askForVersion, fetchMinecraftVersionManifest } from '../../utils/minecraft_versions';
 import { downloader } from '../../utils/download';
 import { cleanDir, ensureDir, minecraft_dir } from '../../utils/common';
 import { ClientJar } from '../../../types/client';
@@ -21,20 +21,11 @@ export async function installVanillaViaExecutor(): Promise<ClientJar | null> {
 
     try {
         const manifest = await fetchMinecraftVersionManifest();
-        const mcVersions = manifest.versions.filter(v => v.id).map(v => v.id);
         const latestMC = manifest.latest.release;
 
         spinner.stop();
 
-        const { minecraftVersion } = await inquirer.prompt([
-            {
-                type: 'list',
-                name: 'minecraftVersion',
-                message: '🎮 Select Minecraft version:',
-                choices: mcVersions,
-                default: latestMC
-            }
-        ]);
+        const minecraftVersion = await askForVersion(manifest.versions, latestMC);
 
         const versionMeta = manifest.versions.find(v => v.id === minecraftVersion);
         if (!versionMeta) throw new Error('Version metadata not found.');

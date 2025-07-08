@@ -2,12 +2,15 @@ import { LauncherProfile } from '../../../types/launcher';
 import { FIXED_Options, Options } from '../../../types/launcher_options';
 export declare class LauncherOptionsManager {
     private filePath;
+    private default_filePath;
     private data;
+    private currentProfile?;
     constructor(filePath?: string);
+    setProfile(profile?: LauncherProfile): void;
     private load;
     private save;
     reset(): void;
-    configureOptions(profile?: LauncherProfile): Promise<void>;
+    configureOptions(): Promise<void>;
     getFixedOptions(): FIXED_Options;
     setOption<K extends keyof Options>(key: K, value: Options[K]): void;
 }

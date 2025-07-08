@@ -12,6 +12,46 @@ Development builds are experimental and **not completely tested**.
 They may contain bugs, incomplete features, or unstable behavior.
 Some features introduced in these builds may never make it into stable releases.
 
+🙏 Thanks for testing! If you'd like to help shape the future of Origami, feel free to try out dev builds and report bugs or feedback — your input helps make stable releases better for everyone!
+
+---
+
+### \[2.0.8-dev] - 2025-07-08 *(Dev Build)*
+
+> ⚠️ This is a **dev build** currently in active testing. Features listed here are experimental and may be changed or refined before inclusion in a stable release.
+
+* ✨ **Per-Profile Java Runtime Selection**
+
+  * Selecting Java Runtime per profile now supported via choose profile then configure settings.
+  * Custom Java paths are now properly remembered and validated
+
+* 🔄 🗂 Menu Refactor: “Choose Profile” → “All Profiles”
+
+  * Renamed main menu option from “Choose Profile” to just “All Profiles”
+  * Reflects expanded features: not just selection, but also profile-specific actions
+
+* ✨ **Per-Profile JVM Argument and Java Runtime Config**
+
+  * now fully supports per-profile settings for:
+    * JVM Arguments
+    * Java binary selection
+  * Clean fallback to global/default if not a profile settings configuration
+
+* ✨ **Improved Java Path Validator for Custom Input**
+
+  * Verifies that the path exists, is a directory, and contains a valid `bin/java` binary
+  * More helpful error messages and validation output
+
+* ✨ **Automatic Java Path Prompt Fallback**
+
+  * If `JAVA_HOME` is not set or invalid, user is prompted once to enter a valid Java directory
+  * Resolved executable path is saved to the profile or global context
+
+* 🐛 **Java Installer Cleanup Fix**
+
+  * Fixes an issue where deleting a manual Java path from database would abort the rest of the deletion loop
+  * Ensures cleanup continues even after manual binaries are removed
+
 ---
 
 ## ✅ Stable Releases

@@ -12,6 +12,8 @@ import neoforge from '../game/install/mod_loaders/neo_forge';
 import fabric from '../game/install/mod_loaders/fabric';
 import quilt from '../game/install/mod_loaders/quilt';
 import vanilla from '../game/install/vanilla';
+import { confirm } from '@inquirer/prompts';
+import LauncherOptionsManager from '../game/launch/options';
 
 const mcDir = minecraft_dir(true);
 const launcherProfilesPath = path.join(mcDir, 'profiles.json');
@@ -165,11 +167,11 @@ export class LauncherProfileManager {
         if (this.data.origami_profiles[id]) {
             delete this.data.origami_profiles[id];
 
-        if (this.data.selectedProfile === id) {
-            this.data.selectedProfile = undefined;
-        }
+            if (this.data.selectedProfile === id) {
+                this.data.selectedProfile = undefined;
+            }
 
-        this.save();
+            this.save();
         }
     }
 
@@ -189,7 +191,6 @@ export class LauncherProfileManager {
         this.load();
 
         const profileIds = Object.keys(this.data.origami_profiles);
-
         if (profileIds.length === 0) {
             console.log(chalk.red("❌ No profiles available."));
             return null;
@@ -221,12 +222,42 @@ export class LauncherProfileManager {
         ]);
 
         const selectedProfile = this.getProfile(selectedId);
-        if (selectedProfile) {
-            this.selectProfile(selectedId);
-            console.log(chalk.green(`✨ Selected profile: ${selectedProfile.name}`));
+        if (!selectedProfile) {
+            console.log(chalk.red("❌ Invalid profile selected."));
+            return null;
         }
 
-        return selectedProfile ?? null;
+        const { action } = await inquirer.prompt([
+            {
+                type: "list",
+                name: "action",
+                message: chalk.cyanBright(`📦 What would you like to do with "${selectedProfile.name}"?`),
+                choices: [
+                    { name: '✅ Select as current profile', value: 'select' },
+                    { name: '⚙️  Configure profile', value: 'configure' },
+                    new inquirer.Separator(),
+                    { name: '❌ Cancel', value: 'cancel' }
+                ]
+            }
+        ]);
+
+        switch (action) {
+            case 'select':
+                this.selectProfile(selectedId);
+                console.log(chalk.green(`✨ Selected profile: ${selectedProfile.name}`));
+                return selectedProfile;
+
+            case 'configure':
+                const optionsManager = new LauncherOptionsManager();
+                optionsManager.setProfile(selectedProfile);
+                await optionsManager.configureOptions();
+                return selectedProfile;
+
+            case 'cancel':
+            default:
+                console.log(chalk.yellow('🚫 Cancelled.'));
+                return null;
+        }
     }
 
     listProfiles(): string[] {

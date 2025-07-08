@@ -141,7 +141,7 @@ export class Runtime {
 
     private getAllLicense(): any {
         try {
-            const lcnPath = path.join(__dirname, '../../../licences.json');
+            const lcnPath = path.join(__dirname, '../../../../licences.json');
             const lcn = JSON.parse(readFileSync(lcnPath, 'utf-8'));
             return lcn;
         } catch (_) {
@@ -266,8 +266,9 @@ export class Runtime {
                         { name: '🔐 Authenticator', value: 'authenticator' },
                         { name: '🛠  Configure Settings', value: 'configure_settings' },
                         new inquirer.Separator(),
-                        { name: '📂 Choose Profile', value: 'choose_profile' },
+                        { name: '📂 All Profiles', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
+                        { name: '🗑️  Delete Profile/Instance', value: 'delete_profile' },
                         new inquirer.Separator(),
                         { name: '🧩 Install Mods / Resources / Shaders', value: 'install_content' },
                         { name: '🧰 Manage Installations', value: 'manage_installations' },
@@ -294,6 +295,12 @@ export class Runtime {
                     break;
                 case 'choose_profile':
                     await this.handler.choose_profile();
+                    console.log('\n\n\n');
+                    await this.showHeader();
+
+                    break;
+                case 'delete_profile':
+                    await this.handler.delete_profile();
                     console.log('\n\n\n');
                     await this.showHeader();
 
@@ -423,8 +430,6 @@ export class Runtime {
     }
 
     private async launch() {
-        await temurin.select();
-        
         const code = await this.handler.run_minecraft();
         if (code === 200) {
             console.log(chalk.green('✅ Minecraft exited successfully!'));

@@ -190,7 +190,7 @@ const BANNER = `
 ║                                    ║
 ╚════════════════════════════════════╝
 `;
-async function selectJavaBinary(use_new = false) {
+async function selectJavaBinary(use_new, profileName) {
     console.log(BANNER);
     const basePath = (0, common_1.localpath)();
     const spinner = (0, ora_1.default)({
@@ -198,56 +198,106 @@ async function selectJavaBinary(use_new = false) {
         spinner: 'dots',
         color: 'cyan'
     }).start();
-    try {
-        const extractPath = path.join(basePath, 'binaries');
-        const javaInstallations = findJavaInstallations(extractPath);
-        if (javaInstallations.length === 0) {
-            spinner.fail(chalk_1.default.red('No Java installations found!'));
-            throw new Error('No Java folders found in binaries directory');
-        }
-        spinner.succeed(chalk_1.default.green(`Found ${javaInstallations.length} Java installations!`));
-        function logUse(java) {
-            console.log(chalk_1.default.green(`\n✅ Selected: ${chalk_1.default.cyan(java.version || 'Java')} ${chalk_1.default.gray(`from ${chalk_1.default.yellow(java.provider || 'Unknown')}`)}`));
-            console.log(chalk_1.default.gray(`📁 Path: ${java.path}\n`));
-        }
-        if (javaInstallations.length === 1) {
-            let selectedJava = javaInstallations[0];
-            logUse(selectedJava);
-            data_manager.set('use:temurin', selectedJava);
-            return selectedJava;
-        }
-        let use_temurin = data_manager.get('use:temurin');
-        if (use_temurin && !use_new && fs.existsSync(use_temurin.path)) {
-            logUse(use_temurin);
-            return use_temurin;
-        }
-        const { selectedJava } = await inquirer_1.default.prompt([
-            {
-                type: 'list',
-                name: 'selectedJava',
-                message: chalk_1.default.hex('#FFA500')('✨ Which Java version would you like to use?'),
-                choices: javaInstallations.map(java => ({
-                    name: `${chalk_1.default.cyan(java.version || 'Unknown Version')} ${chalk_1.default.gray(`from ${chalk_1.default.yellow(java.provider || 'Unknown')}, ${java.path}`)}`,
+    const extractPath = path.join(basePath, 'binaries');
+    const javaInstallations = findJavaInstallations(extractPath);
+    spinner.stop();
+    const profileKey = profileName ? `profile:${profileName}:java` : 'use:temurin';
+    let savedJava = data_manager.get(profileKey);
+    if (!savedJava && profileName) {
+        savedJava = data_manager.get('use:temurin');
+    }
+    if (!data_manager.get(profileKey) && profileName && savedJava) {
+        console.log(chalk_1.default.yellow(`⚠️  No specific Java selected for "${profileName}". Using global Java.`));
+    }
+    function logUse(java) {
+        console.log(chalk_1.default.green(`\n✅ Selected: ${chalk_1.default.cyan(java.version || 'Java')} ${chalk_1.default.gray(`from ${chalk_1.default.yellow(java.provider || 'Unknown')}`)}`));
+        console.log(chalk_1.default.gray(`📁 Path: ${java.path}\n`));
+    }
+    if (savedJava && !use_new && fs.existsSync(savedJava.path)) {
+        logUse(savedJava);
+        return savedJava;
+    }
+    if (javaInstallations.length === 0) {
+        console.log(chalk_1.default.yellow('⚠️ No managed Java installations found. You can still use a custom path or JAVA_HOME.\n'));
+    }
+    const { selectedJava } = await inquirer_1.default.prompt([
+        {
+            type: 'list',
+            name: 'selectedJava',
+            message: chalk_1.default.hex('#FFA500')(`✨ Select Java binary${profileName ? ` for profile "${profileName}"` : ''}:`),
+            choices: [
+                ...javaInstallations.map(java => ({
+                    name: `${chalk_1.default.cyan(java.version || 'Unknown')} ${chalk_1.default.gray(`from ${chalk_1.default.yellow(java.provider || 'Unknown')}, ${java.path}`)}`,
                     value: java
                 })),
-                pageSize: Math.min(10, javaInstallations.length),
-                loop: false
-            }
-        ]);
-        logUse(selectedJava);
-        data_manager.set('use:temurin', selectedJava);
-        return selectedJava;
+                new inquirer_1.default.Separator(),
+                {
+                    name: chalk_1.default.magenta('🔧 Use JAVA_HOME or enter custom Java path...'),
+                    value: 'custom'
+                }
+            ],
+            pageSize: Math.min(10, javaInstallations.length + 2),
+            loop: false
+        }
+    ]);
+    let selected;
+    if (selectedJava === 'custom') {
+        let customPath = process.env.JAVA_HOME
+            ? path.join(process.env.JAVA_HOME, 'bin', process.platform === 'win32' ? 'java.exe' : 'java')
+            : '';
+        if (!customPath || !fs.existsSync(customPath)) {
+            const { javaPath } = await inquirer_1.default.prompt([
+                {
+                    type: 'input',
+                    name: 'javaPath',
+                    message: chalk_1.default.cyan('📍 JAVA_HOME not set. Enter the full path to your Java installation:'),
+                    validate: (input) => {
+                        const trimmed = input.trim().replace(/^['"]|['"]$/g, '');
+                        const binJava = path.join(trimmed, 'bin', process.platform === 'win32' ? 'java.exe' : 'java');
+                        if (!fs.existsSync(trimmed)) {
+                            return '❌ That path does not exist.';
+                        }
+                        if (!fs.statSync(trimmed).isDirectory()) {
+                            return '❌ That path is not a directory.';
+                        }
+                        if (!fs.existsSync(binJava)) {
+                            return `❌ No Java executable found at: ${chalk_1.default.gray(binJava)}`;
+                        }
+                        return true;
+                    },
+                    filter: (input) => input.trim().replace(/^['"]|['"]$/g, '')
+                }
+            ]);
+            customPath = path.join(javaPath, 'bin', process.platform === 'win32' ? 'java.exe' : 'java');
+        }
+        selected = {
+            path: customPath,
+            version: 'Custom',
+            provider: 'manual'
+        };
+        let custom_installations = !Array.isArray(data_manager.get('custom:java')) ? [] : data_manager.get('custom:java');
+        custom_installations.push(selected);
+        data_manager.set('custom:java', custom_installations);
     }
-    catch (error) {
-        spinner.fail(chalk_1.default.red('Error scanning Java installations!'));
-        throw error;
+    else {
+        selected = selectedJava;
     }
+    logUse(selected);
+    data_manager.set(profileName ? `profile:${profileName}:java` : 'use:temurin', selected);
+    data_manager.set(`use:temurin`, selected);
+    return selected;
 }
 function findJavaInstallations(basePath) {
     if (!fs.existsSync(basePath))
         return [];
     const entries = fs.readdirSync(basePath, { withFileTypes: true });
     const installations = [];
+    const custom_installations = data_manager.get('custom:java');
+    if (Array.isArray(custom_installations)) {
+        for (const entry of custom_installations) {
+            installations.push(entry);
+        }
+    }
     for (const entry of entries) {
         if (!entry.isDirectory())
             continue;
@@ -312,7 +362,7 @@ async function deleteJavaBinary() {
             message: chalk_1.default.redBright('🗑️ Select Java versions to delete:'),
             choices: javaInstallations.map(java => ({
                 name: `${chalk_1.default.cyan(java.version || 'Unknown')} ${chalk_1.default.gray(`from ${chalk_1.default.yellow(java.provider || 'Unknown')}, ${java.path}`)}`,
-                value: java.path
+                value: java
             })),
             pageSize: Math.min(10, javaInstallations.length),
             loop: false
@@ -322,9 +372,17 @@ async function deleteJavaBinary() {
         console.log(chalk_1.default.yellow('❎ No selections made. Aborting deletion.'));
         return;
     }
-    for (const javaPath of binariesToDelete) {
-        const maybeLegacy = path.resolve(javaPath, '..', '..');
-        const maybeModern = path.resolve(javaPath, '..', '..', '..');
+    for (const java of binariesToDelete) {
+        if (java.provider === 'manual') {
+            let custom_installations = Array.isArray(data_manager.get('custom:java')) ? data_manager.get('custom:java') : [];
+            custom_installations = custom_installations.filter((v) => v.path !== java.path);
+            data_manager.set('custom:java', custom_installations);
+            console.log(chalk_1.default.green(`✅ Deleted from Database: ${chalk_1.default.gray(java.path)}`));
+            return;
+        }
+        ;
+        const maybeLegacy = path.resolve(java.path, '..', '..');
+        const maybeModern = path.resolve(java.path, '..', '..', '..');
         const deletePath = fs.existsSync(path.join(maybeLegacy, 'bin')) ? maybeLegacy : maybeModern;
         if (fs.existsSync(deletePath)) {
             try {

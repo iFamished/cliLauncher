@@ -1,5 +1,5 @@
 import { AUTH_PROVIDERS, Credentials, IAuthProvider } from "../../../types/account";
-import { LauncherAccount } from "../../../types/launcher";
+import { LauncherAccount, LauncherProfile } from "../../../types/launcher";
 import LauncherProfileManager from "../../tools/launcher";
 import { ensureDir, minecraft_dir, printVersion } from "../../utils/common";
 import { getAuthProvider } from "../account";
@@ -15,7 +15,7 @@ import MCLCore from "../../launcher";
 import { ILauncherOptions, IUser } from "../../launcher/types";
 import { InstallerRegistry } from "../install/registry";
 import inquirer from "inquirer";
-import { existsSync, writeFileSync, readFileSync } from "fs-extra";
+import { existsSync, writeFileSync, readFileSync, remove } from "fs-extra";
 import ModrinthModManager from "../install/packs/manager";
 
 export const logger = new Logger();
@@ -162,6 +162,9 @@ export class Handler {
             return null;
         }
 
+        if(selected_profile) this.settings.setProfile(selected_profile)
+        else this.settings.setProfile();
+
         let version_path = path.join(version_dir, name);
         let version_json = path.join(version_path, `${name}.json`);
 
@@ -174,7 +177,7 @@ export class Handler {
         ensureDir(origami_data);
 
         try {
-            let java = await temurin.select();
+            let java = await temurin.select(false, selected_profile?.origami.version);
             let auth = await this.get_auth();
 
             if(!java || !auth) return null;
@@ -312,7 +315,7 @@ export class Handler {
     }
 
     public configure_settings(): Promise<void> {
-        return this.settings.configureOptions(this.profiles.getSelectedProfile());
+        return this.settings.configureOptions();
     }
 
     public async install_version(): Promise<void> {
@@ -424,6 +427,58 @@ export class Handler {
             }
         } else {
             logger.error("❌ Failed to remove the account.");
+        }
+    }
+
+    public async delete_profile(): Promise<void> {
+        const profiles = this.profiles.listProfiles().map(id => this.profiles.getProfile(id)).filter(v => typeof v !== 'undefined');
+
+        if (profiles.length === 0) {
+            logger.warn("⚠️ No profiles to delete.");
+            return;
+        }
+
+        const { selected } = await inquirer.prompt([
+            {
+                type: "list",
+                name: "selected",
+                message: chalk.hex("#f87171")("🗑️ Select a profile/instance to delete:"),
+                choices: profiles.map(p => ({
+                    name: `${p.name} (${p.origami.version || "unknown"})`,
+                    value: p
+                }))
+            }
+        ]);
+        const profile = selected as LauncherProfile;
+
+        const { confirm } = await inquirer.prompt([
+            {
+                type: "confirm",
+                name: "confirm",
+                message: chalk.red(`Are you sure you want to delete the "${profile.name}" profile and all associated data?`),
+                default: false
+            }
+        ]);
+
+        if (!confirm) {
+            logger.log("❌ Deletion cancelled.");
+            return;
+        }
+
+        try {
+            const mc_dir = minecraft_dir();
+            const origami_dir = minecraft_dir(true);
+
+            const version_path = path.join(mc_dir, "versions", profile.origami.path);
+            const instance_path = path.join(origami_dir, "instances", profile.origami.path);
+
+            if (existsSync(version_path)) await remove(version_path);
+            if (existsSync(instance_path)) await remove(instance_path);
+
+            this.profiles.deleteProfile(profile.origami.version);
+            logger.success(`🗑️ Successfully deleted profile "${profile.name}" and its data.`);
+        } catch (err) {
+            logger.error(`💥 Failed to delete profile "${profile.name}":`, (err as Error).message);
         }
     }
 

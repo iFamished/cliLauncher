@@ -158,7 +158,7 @@ class Runtime {
     }
     getAllLicense() {
         try {
-            const lcnPath = path_1.default.join(__dirname, '../../../licences.json');
+            const lcnPath = path_1.default.join(__dirname, '../../../../licences.json');
             const lcn = JSON.parse((0, fs_1.readFileSync)(lcnPath, 'utf-8'));
             return lcn;
         }
@@ -268,6 +268,7 @@ class Runtime {
                         new inquirer_1.default.Separator(),
                         { name: '📂 Choose Profile', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
+                        { name: '🗑️  Delete Profile/Instance', value: 'delete_profile' },
                         new inquirer_1.default.Separator(),
                         { name: '🧩 Install Mods / Resources / Shaders', value: 'install_content' },
                         { name: '🧰 Manage Installations', value: 'manage_installations' },
@@ -292,6 +293,11 @@ class Runtime {
                     break;
                 case 'choose_profile':
                     await this.handler.choose_profile();
+                    console.log('\n\n\n');
+                    await this.showHeader();
+                    break;
+                case 'delete_profile':
+                    await this.handler.delete_profile();
                     console.log('\n\n\n');
                     await this.showHeader();
                     break;
@@ -403,7 +409,6 @@ class Runtime {
         await new Promise(res => setTimeout(res, 2000));
     }
     async launch() {
-        await java_1.default.select();
         const code = await this.handler.run_minecraft();
         if (code === 200) {
             console.log(chalk_1.default.green('✅ Minecraft exited successfully!'));

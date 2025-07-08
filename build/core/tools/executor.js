@@ -14,7 +14,7 @@ async function run(jarPath, args = []) {
         console.error(`🚫 JAR not found: ${jarPath}`);
         process.exit(1);
     }
-    const javaPath = await java_1.default.select();
+    const javaPath = await java_1.default.select(false);
     console.log(`🚀 Launching JAR with: ${chalk_1.default.cyan(javaPath.version)}\n`);
     return new Promise((resolve, reject) => {
         const javaProcess = (0, child_process_1.spawn)(javaPath.path, ['-jar', jarPath, ...args], {

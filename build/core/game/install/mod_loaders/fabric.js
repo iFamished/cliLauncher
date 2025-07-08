@@ -38,18 +38,9 @@ async function installFabricViaExecutor() {
     const spinner = (0, ora_1.default)('🧵 Preparing Fabric installation...').start();
     try {
         const manifest = await (0, minecraft_versions_1.fetchMinecraftVersionManifest)();
-        const mcVersions = manifest.versions.filter(v => v.id).map(v => v.id);
         const latestMC = manifest.latest.release;
         spinner.stop();
-        const { minecraftVersion } = await inquirer_1.default.prompt([
-            {
-                type: 'list',
-                name: 'minecraftVersion',
-                message: '🎮 Select Minecraft version:',
-                choices: mcVersions,
-                default: latestMC
-            }
-        ]);
+        const minecraftVersion = await (0, minecraft_versions_1.askForVersion)(manifest.versions, latestMC);
         const loaderVersions = await getAvailableLoaders();
         const { loaderVersion } = await inquirer_1.default.prompt([
             {

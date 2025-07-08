@@ -134,6 +134,10 @@ class Handler {
             console.log(chalk_1.default.bgHex('#f87171').hex('#fff')(' 💔 No profile selected! ') + chalk_1.default.hex('#fca5a5')('Please pick a profile before launching the game.'));
             return null;
         }
+        if (selected_profile)
+            this.settings.setProfile(selected_profile);
+        else
+            this.settings.setProfile();
         let version_path = path_1.default.join(version_dir, name);
         let version_json = path_1.default.join(version_path, `${name}.json`);
         if (!(0, fs_extra_1.existsSync)(version_path) || !(0, fs_extra_1.existsSync)(version_json)) {
@@ -143,7 +147,7 @@ class Handler {
         let origami_data = path_1.default.join(origami_dir, 'instances', name);
         (0, common_1.ensureDir)(origami_data);
         try {
-            let java = await java_1.default.select();
+            let java = await java_1.default.select(false, selected_profile?.origami.version);
             let auth = await this.get_auth();
             if (!java || !auth)
                 return null;
@@ -256,7 +260,7 @@ class Handler {
         }
     }
     configure_settings() {
-        return this.settings.configureOptions(this.profiles.getSelectedProfile());
+        return this.settings.configureOptions();
     }
     async install_version() {
         const installers = this.installers;
@@ -350,6 +354,52 @@ class Handler {
         }
         else {
             exports.logger.error("❌ Failed to remove the account.");
+        }
+    }
+    async delete_profile() {
+        const profiles = this.profiles.listProfiles().map(id => this.profiles.getProfile(id)).filter(v => typeof v !== 'undefined');
+        if (profiles.length === 0) {
+            exports.logger.warn("⚠️ No profiles to delete.");
+            return;
+        }
+        const { selected } = await inquirer_1.default.prompt([
+            {
+                type: "list",
+                name: "selected",
+                message: chalk_1.default.hex("#f87171")("🗑️ Select a profile/instance to delete:"),
+                choices: profiles.map(p => ({
+                    name: `${p.name} (${p.origami.version || "unknown"})`,
+                    value: p
+                }))
+            }
+        ]);
+        const profile = selected;
+        const { confirm } = await inquirer_1.default.prompt([
+            {
+                type: "confirm",
+                name: "confirm",
+                message: chalk_1.default.red(`Are you sure you want to delete the "${profile.name}" profile and all associated data?`),
+                default: false
+            }
+        ]);
+        if (!confirm) {
+            exports.logger.log("❌ Deletion cancelled.");
+            return;
+        }
+        try {
+            const mc_dir = (0, common_1.minecraft_dir)();
+            const origami_dir = (0, common_1.minecraft_dir)(true);
+            const version_path = path_1.default.join(mc_dir, "versions", profile.origami.path);
+            const instance_path = path_1.default.join(origami_dir, "instances", profile.origami.path);
+            if ((0, fs_extra_1.existsSync)(version_path))
+                await (0, fs_extra_1.remove)(version_path);
+            if ((0, fs_extra_1.existsSync)(instance_path))
+                await (0, fs_extra_1.remove)(instance_path);
+            this.profiles.deleteProfile(profile.origami.version);
+            exports.logger.success(`🗑️ Successfully deleted profile "${profile.name}" and its data.`);
+        }
+        catch (err) {
+            exports.logger.error(`💥 Failed to delete profile "${profile.name}":`, err.message);
         }
     }
 }

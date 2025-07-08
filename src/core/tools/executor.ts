@@ -10,7 +10,7 @@ async function run(jarPath: string, args: string[] = []): Promise<number> {
         process.exit(1);
     }
 
-    const javaPath = await temurin.select();
+    const javaPath = await temurin.select(false);
 
     console.log(`🚀 Launching JAR with: ${chalk.cyan(javaPath.version)}\n`);
 

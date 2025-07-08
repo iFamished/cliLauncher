@@ -49,6 +49,7 @@ const neo_forge_1 = __importDefault(require("../game/install/mod_loaders/neo_for
 const fabric_1 = __importDefault(require("../game/install/mod_loaders/fabric"));
 const quilt_1 = __importDefault(require("../game/install/mod_loaders/quilt"));
 const vanilla_1 = __importDefault(require("../game/install/vanilla"));
+const options_1 = __importDefault(require("../game/launch/options"));
 const mcDir = (0, common_1.minecraft_dir)(true);
 const launcherProfilesPath = path.join(mcDir, 'profiles.json');
 class LauncherProfileManager {
@@ -230,11 +231,38 @@ class LauncherProfileManager {
             }
         ]);
         const selectedProfile = this.getProfile(selectedId);
-        if (selectedProfile) {
-            this.selectProfile(selectedId);
-            console.log(chalk_1.default.green(`✨ Selected profile: ${selectedProfile.name}`));
+        if (!selectedProfile) {
+            console.log(chalk_1.default.red("❌ Invalid profile selected."));
+            return null;
         }
-        return selectedProfile ?? null;
+        const { action } = await inquirer_1.default.prompt([
+            {
+                type: "list",
+                name: "action",
+                message: chalk_1.default.cyanBright(`📦 What would you like to do with "${selectedProfile.name}"?`),
+                choices: [
+                    { name: '✅ Select as current profile', value: 'select' },
+                    { name: '⚙️  Configure profile', value: 'configure' },
+                    new inquirer_1.default.Separator(),
+                    { name: '❌ Cancel', value: 'cancel' }
+                ]
+            }
+        ]);
+        switch (action) {
+            case 'select':
+                this.selectProfile(selectedId);
+                console.log(chalk_1.default.green(`✨ Selected profile: ${selectedProfile.name}`));
+                return selectedProfile;
+            case 'configure':
+                const optionsManager = new options_1.default();
+                optionsManager.setProfile(selectedProfile);
+                await optionsManager.configureOptions();
+                return selectedProfile;
+            case 'cancel':
+            default:
+                console.log(chalk_1.default.yellow('🚫 Cancelled.'));
+                return null;
+        }
     }
     listProfiles() {
         this.load();

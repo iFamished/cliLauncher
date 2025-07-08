@@ -117,6 +117,7 @@ program
     .command('profile')
     .description('Open Minecraft Profile Manager')
     .option('-s, --select <profile>', 'Select a specific profile', valid_profile)
+    .option('-d, --delete', 'Opens the Profile Deletion Menu')
     .option('-i, --install', 'Install a version')
     .option('-l, --list', 'List all profiles')
     .action(async (options) => {
@@ -127,7 +128,11 @@ program
         }
 
         if(options.install) {
-            await runtime.handler.install_version()
+            await runtime.handler.install_version();
+        }
+
+        if(options.delete) {
+            await runtime.handler.delete_profile();
         }
 
         if(options.list) {

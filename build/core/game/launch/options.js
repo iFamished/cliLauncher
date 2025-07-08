@@ -49,14 +49,33 @@ const chalk_1 = __importDefault(require("chalk"));
 const os_1 = __importDefault(require("os"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const launcher_1 = __importDefault(require("../../tools/launcher"));
+const java_1 = __importDefault(require("../../../java"));
 const mcDir = (0, common_1.minecraft_dir)(true);
 const launcherProfilesPath = path.join(mcDir, 'settings.json');
 class LauncherOptionsManager {
     filePath;
+    default_filePath;
     data;
+    currentProfile;
     constructor(filePath = launcherProfilesPath) {
         this.filePath = filePath;
+        this.default_filePath = filePath;
         this.data = { options: {} };
+        this.load();
+    }
+    setProfile(profile) {
+        if (!profile)
+            this.filePath = this.default_filePath;
+        else {
+            let instance_path = path.join(mcDir, 'instances', profile.origami.path);
+            (0, common_1.ensureDir)(instance_path);
+            this.filePath = path.join(instance_path, 'origami_options.json');
+            this.currentProfile = profile;
+        }
+        ;
+        if (!fs.existsSync(this.filePath)) {
+            this.save();
+        }
         this.load();
     }
     load() {
@@ -83,26 +102,37 @@ class LauncherOptionsManager {
     reset() {
         fs.writeFileSync(this.filePath, JSON.stringify({ options: {} }, null, 2));
     }
-    async configureOptions(profile) {
+    async configureOptions() {
+        const choices = [];
+        if (this.currentProfile) {
+            choices.push(new prompts_1.Separator(`-- Selected Profile Settings --`));
+            choices.push({ name: 'JVM Arguments (per profile)', value: 'jvm' });
+            choices.push({ name: 'Java Runtime (per profile)', value: 'java' });
+        }
+        else {
+            choices.push(new prompts_1.Separator(`-- Global --`));
+        }
+        ;
+        const global_options = [
+            { name: 'Memory Settings', value: 'memory' },
+            { name: 'Window Size', value: 'window' },
+            { name: 'Fullscreen Mode', value: 'fullscreen' },
+            { name: 'Safe Exit', value: 'safe_exit' },
+            { name: 'Max Sockets', value: 'max_sockets' },
+            { name: 'Parallel Connections', value: 'connections' },
+        ];
         const configChoices = await inquirer_1.default.prompt([
             {
                 type: 'checkbox',
                 name: 'optionsToConfigure',
                 message: 'Select which options to configure:',
-                choices: [
-                    { name: 'Memory Settings', value: 'memory' },
-                    { name: 'Window Size', value: 'window' },
-                    { name: 'Fullscreen Mode', value: 'fullscreen' },
-                    { name: 'Safe Exit', value: 'safe_exit' },
-                    { name: 'Max Sockets', value: 'max_sockets' },
-                    { name: 'Parallel Connections', value: 'connections' },
-                    { name: 'JVM Arguments (per profile)', value: 'jvm' },
-                ],
+                choices: choices.concat(global_options),
                 loop: false,
                 pageSize: 10
             }
         ]);
         const opts = this.data.options;
+        const profile = this.currentProfile;
         for (const item of configChoices.optionsToConfigure) {
             switch (item) {
                 case 'memory':
@@ -134,13 +164,20 @@ class LauncherOptionsManager {
                     break;
                 case 'jvm':
                     if (!profile) {
-                        console.error(chalk_1.default.red('❌ Cannot configure JVM arguments — no profile loaded.'));
+                        console.error(chalk_1.default.red('❌ Cannot configure JVM arguments — no selected profile loaded.'));
                         break;
                     }
                     const jvm = await promptEditor('Edit JVM arguments (opens your $EDITOR):', {
                         default: profile.origami.jvm
                     });
                     new launcher_1.default().editJvm(profile.origami.version, jvm);
+                    break;
+                case 'java':
+                    if (!profile) {
+                        console.error(chalk_1.default.red('❌ Cannot configure Java Runtime — no selected profile loaded.'));
+                        break;
+                    }
+                    await java_1.default.select(true, profile.origami.version);
                     break;
             }
         }
