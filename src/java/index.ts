@@ -408,7 +408,7 @@ async function deleteJavaBinary(): Promise<void> {
             custom_installations = custom_installations.filter((v: any) => v.path !== java.path);
             data_manager.set('custom:java', custom_installations);
             console.log(chalk.green(`✅ Deleted from Database: ${chalk.gray(java.path)}`));
-            return;
+            continue;
         };
 
         const maybeLegacy = path.resolve(java.path, '..', '..');

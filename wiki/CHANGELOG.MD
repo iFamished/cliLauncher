@@ -23,7 +23,7 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### \[2.0.8] - 2025-07-08
+### \[2.0.9] - 2025-07-08
 
 * ✨ **Per-Profile Java Runtime Selection**
 
@@ -139,7 +139,7 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### \[2.0.1-2.0.3] - 2025-07-06
+### \[2.0.3] - 2025-07-06
 
 * 🐛 Fixed `origami_installs.json` not found.
 
@@ -208,7 +208,7 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### \[1.0.3–1.0.4] - 2025-07-01
+### \[1.0.4] - 2025-07-01
 
 * 🐛 Fixed NPM Package Issues
 
