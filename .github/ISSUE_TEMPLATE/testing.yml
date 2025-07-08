@@ -34,7 +34,7 @@ body:
       label: What worked well?
       description: Tell us what features worked correctly or improved from before.
       placeholder: |
-        - Installed a modpack successfully
+        - Installed a mod successfully
         - Profile switching works great
         - Performance improved
 
@@ -45,7 +45,6 @@ body:
       description: Describe any bugs or odd behaviors you encountered.
       placeholder: |
         - Crash when launching Forge profile
-        - UI flickers during mod installation
 
   - type: textarea
     id: logs
@@ -64,4 +63,4 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you again for testing! If you'd like to join the dev tester group, let us know in the suggestions above 🙌
+        Thank you again for testing!
