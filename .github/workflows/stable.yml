@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   publish-stable:
-    if: contains(github.event.head_commit.message, '[stable]')
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[stable]') }}
     name: Publish Stable to NPM
     runs-on: ubuntu-latest
 
