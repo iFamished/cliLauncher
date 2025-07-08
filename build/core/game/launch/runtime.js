@@ -397,9 +397,6 @@ class Runtime {
             (0, fs_extra_1.removeSync)(data);
             (0, fs_extra_1.removeSync)(cache);
             (0, fs_extra_1.removeSync)(origami);
-            this.handler.accounts.reset();
-            this.handler.profiles.reset();
-            this.handler.settings.reset();
             console.log(chalk_1.default.green('🧹 Origami reset successfully.'));
         }
         catch (err) {

@@ -416,10 +416,6 @@ export class Runtime {
             removeSync(cache);
             removeSync(origami);
 
-            this.handler.accounts.reset();
-            this.handler.profiles.reset();
-            this.handler.settings.reset();
-
             console.log(chalk.green('🧹 Origami reset successfully.'));
         } catch (err) {
             console.log(chalk.red('❌ Failed to reset Origami'));
