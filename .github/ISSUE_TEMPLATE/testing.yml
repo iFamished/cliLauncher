@@ -1,0 +1,67 @@
+name: 🧪 Testing Report
+description: Report your test results for a specific Origami version (dev or stable)
+title: "[Test Report]: "
+labels: [testing, feedback]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping test **Origami**! Please let us know how your testing went for this version. Be honest — even if everything worked perfectly, we still appreciate the feedback!
+
+  - type: input
+    id: version
+    attributes:
+      label: Origami Version Tested
+      description: Enter the version you tested (e.g., `origami --version`)
+      placeholder: e.g., 2.0.8-dev or 2.0.7
+    validations:
+      required: true
+
+  - type: dropdown
+    id: result
+    attributes:
+      label: Overall Result
+      options:
+        - ✅ Everything worked perfectly
+        - ⚠️ Minor issues encountered
+        - ❌ Major issues or broken features
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_worked
+    attributes:
+      label: What worked well?
+      description: Tell us what features worked correctly or improved from before.
+      placeholder: |
+        - Installed a modpack successfully
+        - Profile switching works great
+        - Performance improved
+
+  - type: textarea
+    id: issues_found
+    attributes:
+      label: What issues did you find?
+      description: Describe any bugs or odd behaviors you encountered.
+      placeholder: |
+        - Crash when launching Forge profile
+        - UI flickers during mod installation
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or terminal output (optional)
+      description: Paste any logs or console messages that could help.
+      render: shell
+
+  - type: textarea
+    id: suggestions
+    attributes:
+      label: Suggestions or notes
+      description: Any additional feedback or improvement ideas?
+      placeholder: e.g., "Add better loader detection", "Make mod install prompt optional"
+
+  - type: markdown
+    attributes:
+      value: |
+        Thank you again for testing! If you'd like to join the dev tester group, let us know in the suggestions above 🙌

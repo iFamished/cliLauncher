@@ -11,6 +11,11 @@ issue_templates:
     labels: [bug]
     file: .github/ISSUE_TEMPLATE/bug_report.yml
 
+  - name: 🧪 Testing Report
+    description: Report your test results for a specific Origami version (dev or stable)
+    labels: [testing, feedback]
+    file: .github/ISSUE_TEMPLATE/testing.yml
+
   - name: ✨ Feature Request
     description: Suggest a new feature or improvement
     labels: [enhancement]
