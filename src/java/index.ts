@@ -304,17 +304,15 @@ async function selectJavaBinary(use_new: boolean, profileName?: string): Promise
 }
 
 function findJavaInstallations(basePath: string): JavaBinary[] {
-    if (!fs.existsSync(basePath)) return [];
-
-    const entries = fs.readdirSync(basePath, { withFileTypes: true });
     const installations: JavaBinary[] = [];
 
-    const custom_installations = data_manager.get('custom:java');
-    if(Array.isArray(custom_installations)) {
-        for (const entry of custom_installations) {
-            installations.push(entry)
-        }
+    const custom_installations = data_manager.get('custom:java') || [];
+    for (const entry of custom_installations) {
+        if(entry && entry.path && fs.existsSync(entry.path)) installations.push(entry)
     }
+
+    if (!fs.existsSync(basePath)) return installations;
+    const entries = fs.readdirSync(basePath, { withFileTypes: true });
 
     for (const entry of entries) {
         if (!entry.isDirectory()) continue;

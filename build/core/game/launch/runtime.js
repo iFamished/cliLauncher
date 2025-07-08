@@ -138,7 +138,7 @@ class Runtime {
         ]);
         if (agree) {
             if (remember) {
-                data_manager.set("license-agreed", true);
+                data_manager.set("license:agreed", true);
             }
         }
         else {
@@ -179,7 +179,7 @@ class Runtime {
         }
     }
     hasAgreedToLicense() {
-        return data_manager.get("license-agreed") ? true : false;
+        return data_manager.get("license:agreed") ? true : false;
     }
     async showHeader() {
         await (0, origami_1.checkForLatestVersion)(this.version);

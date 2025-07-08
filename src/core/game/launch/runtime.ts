@@ -121,7 +121,7 @@ export class Runtime {
 
         if (agree) {
             if (remember) {
-                data_manager.set("license-agreed", true);
+                data_manager.set("license:agreed", true);
             }
         } else {
             console.log(chalk.redBright('\n❌ You must agree to the license terms to use Origami.'));
@@ -164,7 +164,7 @@ export class Runtime {
     }
 
     private hasAgreedToLicense(): boolean {
-        return data_manager.get("license-agreed") ? true : false;
+        return data_manager.get("license:agreed") ? true : false;
     }
 
     private async showHeader() {
