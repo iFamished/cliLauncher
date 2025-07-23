@@ -1,13 +1,18 @@
-import * as Authenticator from "../../../tools/authenticator";
-import { LauncherAccount } from "../../../../types/launcher";
-import { Credentials, IAuthProvider } from "../../../../types/account";
-import get_authlib from "../../../tools/authlib";
-import { logger } from "../../launch/handler";
+import * as Authenticator from "../../../../tools/authenticator";
+import { LauncherAccount } from "../../../../../types/launcher";
+import { Credentials, IAuthMetadata, IAuthProvider } from "../../../../../types/account";
+import get_authlib from "../../../../tools/authlib";
+import { logger } from "../../../launch/handler";
 
 export default class MojangAuth implements IAuthProvider {
     private credentials: Credentials;
     private account: LauncherAccount | null = null;
-    private server: string = 'https://skin.meowserver.cn/api/yggdrasil';
+    private server: string = 'https://littleskin.cn/api/yggdrasil';
+
+    public metadata: IAuthMetadata = {
+        name: 'Little Skin',
+        base: 'Mojang'
+    };
 
     constructor(email: string, password: string) {
         this.credentials = { email, password };
@@ -51,7 +56,7 @@ export default class MojangAuth implements IAuthProvider {
                 client_token: auth.client_token,
                 user_properties: auth.user_properties,
                 credentials: this.credentials,
-                auth: "meowskin",
+                auth: this.metadata,
                 validation: !!(await Authenticator.validate(auth.access_token, auth.client_token)),
                 meta: {
                     type: "mojang",
@@ -85,9 +90,9 @@ export default class MojangAuth implements IAuthProvider {
                     uuid: refreshed.uuid,
                     access_token: refreshed.access_token,
                     client_token: refreshed.client_token,
-                    user_properties: refreshed.user_properties,
+                    user_properties: refreshed.user_properties,     
                     credentials: this.credentials,
-                    auth: "meowskin",
+                    auth: this.metadata,
                     validation: !!(await Authenticator.validate(refreshed.access_token, refreshed.client_token)),
                     meta: {
                         type: "mojang",

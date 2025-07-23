@@ -47,6 +47,7 @@ const handler_1 = require("../launch/handler");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const defaults_1 = require("../../../config/defaults");
+const _1 = require(".");
 const SERVICE = 'OrigamiLauncher';
 const ACCOUNT = os.userInfo().username;
 const IV_LENGTH = 16;
@@ -239,7 +240,7 @@ class LauncherAccountManager {
     }
     async hasAccount(cred, provider) {
         await this.load();
-        return Object.values(this.data.accounts).some(acc => acc.auth === provider.toLowerCase() && acc.credentials === cred);
+        return Object.values(this.data.accounts).some(acc => acc.auth.name === provider.toLowerCase() && acc.credentials === cred);
     }
     async getAccount(id) {
         await this.load();
@@ -272,18 +273,34 @@ class LauncherAccountManager {
             console.log(chalk_1.default.red("❌ No accounts found."));
             return null;
         }
-        const grouped = {};
-        for (const account of accounts) {
-            const provider = account.auth;
-            if (!grouped[provider])
-                grouped[provider] = [];
-            grouped[provider].push(account);
+        const allProviders = await (0, _1.getAuthProviders)();
+        const providerMeta = new Map();
+        for (const [key, ctor] of allProviders.entries()) {
+            try {
+                const meta = new ctor('', '').metadata;
+                providerMeta.set(key, meta);
+            }
+            catch {
+                providerMeta.set(key, { name: key, base: "Other" });
+            }
         }
+        const groupedByBase = {};
+        for (const acc of accounts) {
+            const authKey = acc.auth;
+            const meta = providerMeta.get(authKey.name);
+            const base = meta?.base ?? "Other";
+            if (!groupedByBase[base])
+                groupedByBase[base] = [];
+            groupedByBase[base].push(acc);
+        }
+        const sortedBases = Object.keys(groupedByBase).sort();
         const choices = [];
-        for (const [provider, providerAccounts] of Object.entries(grouped)) {
-            choices.push(new inquirer_1.default.Separator(chalk_1.default.bold.cyan(`🔑 ${provider.toUpperCase()}`)));
+        for (const base of sortedBases) {
+            choices.push(new inquirer_1.default.Separator(chalk_1.default.bold.cyan(`🔑 ${base.toUpperCase()}`)));
+            const providerAccounts = groupedByBase[base]
+                .sort((a, b) => (a.name || 'other').localeCompare(b.name || 'other'));
             for (const acc of providerAccounts) {
-                const line = `${chalk_1.default.hex('#4ade80')(acc.name)} ${chalk_1.default.gray(`(${acc.uuid?.slice(0, 8)}...)`)} - ${chalk_1.default.hex('#facc15')(acc.auth || 'No info')}`;
+                const line = `${chalk_1.default.hex('#4ade80')(acc.name)} ${chalk_1.default.gray(`(${acc.uuid?.slice(0, 8)}...)`)} - ${chalk_1.default.hex('#facc15')(acc.auth.name || 'No info')}`;
                 choices.push({ name: line, value: acc.id });
             }
         }

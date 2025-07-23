@@ -1,13 +1,18 @@
 import { Auth, Minecraft } from 'msmc';
-import { LauncherAccount } from '../../../../types/launcher';
-import { Credentials, IAuthProvider } from '../../../../types/account';
-import { fromMclcToken } from '../../../utils/tokens';
-import { logger } from '../../launch/handler';
+import { LauncherAccount } from '../../../../../types/launcher';
+import { Credentials, IAuthMetadata, IAuthProvider } from '../../../../../types/account';
+import { fromMclcToken } from '../../../../utils/tokens';
+import { logger } from '../../../launch/handler';
 
 export default class MicrosoftAuth implements IAuthProvider {
     private credentials: Credentials;
     private account: LauncherAccount | null = null;
     private minecraft: Minecraft | null = null;
+
+    public metadata: IAuthMetadata = {
+        name: 'MSA',
+        base: 'Microsoft'
+    };
 
     constructor(email: string, password: string) {
         this.credentials = { email, password };
@@ -65,7 +70,7 @@ export default class MicrosoftAuth implements IAuthProvider {
             this.account = {
                 ...mclcAuth,
                 id: mclcAuth.uuid,
-                auth: "microsoft",
+                auth: this.metadata,
                 validation: minecraft.validate(),
                 credentials: this.credentials,
                 meta: {

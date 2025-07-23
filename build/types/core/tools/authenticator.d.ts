@@ -11,5 +11,6 @@ export declare function validate(accessToken: string, clientToken: string): Prom
 export declare function refreshAuth(accessToken: string, clientToken: string): Promise<AuthResponse>;
 export declare function invalidate(accessToken: string, clientToken: string): Promise<boolean>;
 export declare function signOut(username: string, password: string): Promise<boolean>;
+export declare function checkAuthServer(url?: string): Promise<boolean>;
 export declare function auth_server(url: string): void;
 export {};

@@ -1,12 +1,16 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const msmc_1 = require("msmc");
-const tokens_1 = require("../../../utils/tokens");
-const handler_1 = require("../../launch/handler");
+const tokens_1 = require("../../../../utils/tokens");
+const handler_1 = require("../../../launch/handler");
 class MicrosoftAuth {
     credentials;
     account = null;
     minecraft = null;
+    metadata = {
+        name: 'MSA',
+        base: 'Microsoft'
+    };
     constructor(email, password) {
         this.credentials = { email, password };
     }
@@ -56,7 +60,7 @@ class MicrosoftAuth {
             this.account = {
                 ...mclcAuth,
                 id: mclcAuth.uuid,
-                auth: "microsoft",
+                auth: this.metadata,
                 validation: minecraft.validate(),
                 credentials: this.credentials,
                 meta: {

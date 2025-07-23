@@ -8,7 +8,6 @@ import { readFileSync } from 'fs';
 import * as data_manager from "../../tools/data_manager";
 import path from 'path';
 import readline from 'readline';
-import { AUTH_PROVIDERS } from '../../../types/account';
 import { localpath, minecraft_dir } from '../../utils/common';
 import { removeSync } from 'fs-extra';
 import { checkForLatestVersion } from '../../../cli/origami';
@@ -16,6 +15,15 @@ import temurin from '../../../java';
 import { ModInstaller } from '../install/packs/install';
 import { LauncherProfile } from '../../../types/launcher';
 import ModrinthModManager from '../install/packs/manager';
+import { getAuthProviders } from '../account';
+import MicrosoftAuth from '../account/auth_types/premade/microsoft';
+import { createProvider, deleteProvider } from '../account/auth_types/create';
+import { Separator } from '@inquirer/prompts';
+
+if (!process.stdin.isTTY) {
+    logger.error(`Umm... is this terminal asleep? I can't reach it (no TTY 😢)`);
+    process.exit(1);
+}
 
 export class Runtime {
     public handler: Handler = new Handler();
@@ -187,32 +195,66 @@ export class Runtime {
                         { name: '➕ Login', value: 'login' },
                         { name: '❌ Remove Account', value: 'remove' },
                         new inquirer.Separator(),
+                        { name: '🌐 Add a Custom Yggdrasil Server', value: 'create_provider' },
+                        { name: '🌐 Delete a Custom Yggdrasil Server', value: 'delete_provider' },
+                        new inquirer.Separator(),
                         { name: '🔙 Back to Main Menu', value: 'back' }
-                    ]
+                    ],
+                    loop: false
                 }
             ]);
 
             console.clear();
 
+            const all_providers = await getAuthProviders();
+
             switch (choice) {
                 case 'choose':
                     await this.handler.choose_account();
                     break;
+                
+                case 'create_provider':
+                    await createProvider();
+                    break;
+
+                case 'delete_provider':
+                    await deleteProvider();
+                    break;
 
                 case 'login':
-                    const provider = await inquirer.prompt({
+                    const grouped: Record<string, { name: string; value: string }[]> = {};
+
+                    for (const [prov, providerCtor] of all_providers.entries()) {
+                        const metadata = new providerCtor('', '').metadata;
+
+                        if (!grouped[metadata.base]) {
+                            grouped[metadata.base] = [];
+                        }
+
+                        grouped[metadata.base].push({
+                            name: metadata.name,
+                            value: prov
+                        });
+                    }
+
+                    const sortedBases = Object.keys(grouped).sort();
+                    const choices: Array<{ name: string; value: string } | Separator> = [];
+
+                    for (const base of sortedBases) {
+                        choices.push(new Separator(chalk.bold.cyan(`🔑 ${base}`)));
+
+                        const providers = grouped[base].sort((a, b) => a.name.localeCompare(b.name));
+                        choices.push(...providers);
+                    }
+
+                    const { provider } = await inquirer.prompt({
                         type: 'list',
                         name: 'provider',
                         message: 'Auth Provider:',
-                        choices: [
-                            { name: 'Microsoft (MSA)', value: 'microsoft' },
-                            { name: 'Mojang (LittleSkin)', value: 'littleskin' },
-                            { name: 'Mojang (Ely.by)', value: 'ely_by' },
-                            { name: 'Mojang (MeowSkin)', value: 'meowskin' }
-                        ]
+                        choices,
                     });
 
-                    const credentials = provider.provider === "microsoft" ? { email: "", password: "" } : await inquirer.prompt([
+                    const credentials = provider === "MSA" || provider === 'microsoft' ? { email: "", password: "" } : await inquirer.prompt([
                         {
                             type: 'input',
                             name: 'email',
@@ -228,7 +270,7 @@ export class Runtime {
 
                     const result = await this.handler.login(
                         credentials,
-                        provider.provider as AUTH_PROVIDERS
+                        provider
                     );
 
                     if (result) {

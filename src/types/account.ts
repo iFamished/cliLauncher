@@ -5,7 +5,13 @@ export interface Credentials {
     password: string;
 }
 
+export interface IAuthMetadata {
+    name: string;
+    base: string;
+}
+
 export interface IAuthProvider {
+    metadata: IAuthMetadata;
     set_current(account: LauncherAccount): Promise<LauncherAccount>;
     set_credentials(email: string, password: string): Credentials;
     authenticate(): Promise<LauncherAccount | null>;
@@ -17,5 +23,3 @@ export interface IAuthProvider {
 export interface AuthProviderConstructor {
     new (email: string, password: string): IAuthProvider;
 }
-
-export type AUTH_PROVIDERS = "microsoft" | "littleskin" | "ely_by" | "meowskin";

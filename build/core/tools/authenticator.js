@@ -8,6 +8,7 @@ exports.validate = validate;
 exports.refreshAuth = refreshAuth;
 exports.invalidate = invalidate;
 exports.signOut = signOut;
+exports.checkAuthServer = checkAuthServer;
 exports.auth_server = auth_server;
 const axios_1 = __importDefault(require("axios"));
 const uuid_1 = require("uuid");
@@ -110,6 +111,25 @@ async function signOut(username, password) {
     }
     catch (err) {
         throw new Error(err?.response?.data?.errorMessage || err.message);
+    }
+}
+async function checkAuthServer(url = apiUrl) {
+    try {
+        const res = await axios_1.default.post(`${url}/authenticate`, {
+            agent: { name: 'Minecraft', version: 1 },
+            username: 'testuser@example.com',
+            password: 'invalidpassword',
+            clientToken: defaults_1.ORIGAMI_CLIENT_TOKEN,
+            requestUser: true
+        });
+        return false;
+    }
+    catch (err) {
+        const message = err?.response?.data?.error || err?.response?.statusText;
+        if (message && typeof message === 'string') {
+            return true;
+        }
+        return false;
     }
 }
 function auth_server(url) {

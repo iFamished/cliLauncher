@@ -36,16 +36,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const Authenticator = __importStar(require("../../../tools/authenticator"));
-const authlib_1 = __importDefault(require("../../../tools/authlib"));
-const handler_1 = require("../../launch/handler");
+const Authenticator = __importStar(require("../../../../tools/authenticator"));
+const authlib_1 = __importDefault(require("../../../../tools/authlib"));
+const handler_1 = require("../../../launch/handler");
 class MojangAuth {
     credentials;
     account = null;
-    server = 'https://authserver.ely.by';
+    server = 'https://littleskin.cn/api/yggdrasil';
+    metadata = {
+        name: 'Little Skin',
+        base: 'Mojang'
+    };
     constructor(email, password) {
         this.credentials = { email, password };
-        Authenticator.auth_server(this.server + "/auth");
+        Authenticator.auth_server(this.server + "/authserver");
     }
     is_token(token) {
         if (!this.account)
@@ -82,7 +86,7 @@ class MojangAuth {
                 client_token: auth.client_token,
                 user_properties: auth.user_properties,
                 credentials: this.credentials,
-                auth: "ely_by",
+                auth: this.metadata,
                 validation: !!(await Authenticator.validate(auth.access_token, auth.client_token)),
                 meta: {
                     type: "mojang",
@@ -115,7 +119,7 @@ class MojangAuth {
                     client_token: refreshed.client_token,
                     user_properties: refreshed.user_properties,
                     credentials: this.credentials,
-                    auth: "ely_by",
+                    auth: this.metadata,
                     validation: !!(await Authenticator.validate(refreshed.access_token, refreshed.client_token)),
                     meta: {
                         type: "mojang",
@@ -133,4 +137,4 @@ class MojangAuth {
     }
 }
 exports.default = MojangAuth;
-//# sourceMappingURL=ely_by.js.map
+//# sourceMappingURL=littleskin.js.map

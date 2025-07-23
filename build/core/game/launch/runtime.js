@@ -53,6 +53,13 @@ const origami_1 = require("../../../cli/origami");
 const java_1 = __importDefault(require("../../../java"));
 const install_1 = require("../install/packs/install");
 const manager_1 = __importDefault(require("../install/packs/manager"));
+const account_1 = require("../account");
+const create_1 = require("../account/auth_types/create");
+const prompts_1 = require("@inquirer/prompts");
+if (!process.stdin.isTTY) {
+    handler_1.logger.error(`Umm... is this terminal asleep? I can't reach it (no TTY 😢)`);
+    process.exit(1);
+}
 class Runtime {
     handler = new handler_1.Handler();
     version;
@@ -200,28 +207,52 @@ class Runtime {
                         { name: '➕ Login', value: 'login' },
                         { name: '❌ Remove Account', value: 'remove' },
                         new inquirer_1.default.Separator(),
+                        { name: '🌐 Add a Custom Yggdrasil Server', value: 'create_provider' },
+                        { name: '🌐 Delete a Custom Yggdrasil Server', value: 'delete_provider' },
+                        new inquirer_1.default.Separator(),
                         { name: '🔙 Back to Main Menu', value: 'back' }
-                    ]
+                    ],
+                    loop: false
                 }
             ]);
             console.clear();
+            const all_providers = await (0, account_1.getAuthProviders)();
             switch (choice) {
                 case 'choose':
                     await this.handler.choose_account();
                     break;
+                case 'create_provider':
+                    await (0, create_1.createProvider)();
+                    break;
+                case 'delete_provider':
+                    await (0, create_1.deleteProvider)();
+                    break;
                 case 'login':
-                    const provider = await inquirer_1.default.prompt({
+                    const grouped = {};
+                    for (const [prov, providerCtor] of all_providers.entries()) {
+                        const metadata = new providerCtor('', '').metadata;
+                        if (!grouped[metadata.base]) {
+                            grouped[metadata.base] = [];
+                        }
+                        grouped[metadata.base].push({
+                            name: metadata.name,
+                            value: prov
+                        });
+                    }
+                    const sortedBases = Object.keys(grouped).sort();
+                    const choices = [];
+                    for (const base of sortedBases) {
+                        choices.push(new prompts_1.Separator(chalk_1.default.bold.cyan(`🔑 ${base}`)));
+                        const providers = grouped[base].sort((a, b) => a.name.localeCompare(b.name));
+                        choices.push(...providers);
+                    }
+                    const { provider } = await inquirer_1.default.prompt({
                         type: 'list',
                         name: 'provider',
                         message: 'Auth Provider:',
-                        choices: [
-                            { name: 'Microsoft (MSA)', value: 'microsoft' },
-                            { name: 'Mojang (LittleSkin)', value: 'littleskin' },
-                            { name: 'Mojang (Ely.by)', value: 'ely_by' },
-                            { name: 'Mojang (MeowSkin)', value: 'meowskin' }
-                        ]
+                        choices,
                     });
-                    const credentials = provider.provider === "microsoft" ? { email: "", password: "" } : await inquirer_1.default.prompt([
+                    const credentials = provider === "MSA" || provider === 'microsoft' ? { email: "", password: "" } : await inquirer_1.default.prompt([
                         {
                             type: 'input',
                             name: 'email',
@@ -234,7 +265,7 @@ class Runtime {
                             mask: '*'
                         },
                     ]);
-                    const result = await this.handler.login(credentials, provider.provider);
+                    const result = await this.handler.login(credentials, provider);
                     if (result) {
                         console.log(chalk_1.default.green(`✅ Logged in as ${result.name}`));
                     }

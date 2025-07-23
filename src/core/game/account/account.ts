@@ -5,11 +5,13 @@ import crypto from 'crypto';
 import keytar from 'keytar';
 import { LauncherAccounts, LauncherAccount } from '../../../types/launcher';
 import { minecraft_dir } from '../../utils/common';
-import { AUTH_PROVIDERS, Credentials } from '../../../types/account';
+import { Credentials } from '../../../types/account';
 import { logger } from '../launch/handler';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { ORIGAMI_CLIENT_TOKEN } from '../../../config/defaults';
+import { Separator } from '@inquirer/prompts';
+import { getAuthProviders } from '.';
 
 const SERVICE = 'OrigamiLauncher';
 const ACCOUNT = os.userInfo().username;
@@ -240,7 +242,7 @@ export class LauncherAccountManager {
     async hasAccount(cred: Credentials, provider: string): Promise<boolean> {
         await this.load();
 
-        return Object.values(this.data.accounts).some(acc => acc.auth === provider.toLowerCase() && acc.credentials === cred);
+        return Object.values(this.data.accounts).some(acc => acc.auth.name === provider.toLowerCase() && acc.credentials === cred);
     }
 
     async getAccount(id: string): Promise<LauncherAccount | null> {
@@ -282,20 +284,39 @@ export class LauncherAccountManager {
             return null;
         }
 
-        const grouped: Record<AUTH_PROVIDERS, LauncherAccount[]> = {} as any;
-        for (const account of accounts) {
-            const provider = account.auth as AUTH_PROVIDERS;
-            if (!grouped[provider]) grouped[provider] = [];
-            grouped[provider].push(account);
+        const allProviders = await getAuthProviders();
+        const providerMeta = new Map<string, { name: string; base: string }>();
+
+        for (const [key, ctor] of allProviders.entries()) {
+            try {
+                const meta = new ctor('', '').metadata;
+                providerMeta.set(key, meta);
+            } catch {
+                providerMeta.set(key, { name: key, base: "Other" });
+            }
         }
 
-        const choices: Array<any | { name: string; value: string }> = [];
+        const groupedByBase: Record<string, LauncherAccount[]> = {};
+        for (const acc of accounts) {
+            const authKey = acc.auth;
+            const meta = providerMeta.get(authKey.name);
+            const base = meta?.base ?? "Other";
 
-        for (const [provider, providerAccounts] of Object.entries(grouped)) {
-            choices.push(new inquirer.Separator(chalk.bold.cyan(`🔑 ${provider.toUpperCase()}`)));
+            if (!groupedByBase[base]) groupedByBase[base] = [];
+            groupedByBase[base].push(acc);
+        }
+
+        const sortedBases = Object.keys(groupedByBase).sort();
+        const choices: Array<Separator | { name: string; value: string }> = [];
+
+        for (const base of sortedBases) {
+            choices.push(new inquirer.Separator(chalk.bold.cyan(`🔑 ${base.toUpperCase()}`)));
+
+            const providerAccounts = groupedByBase[base]
+                .sort((a, b) => (a.name || 'other').localeCompare(b.name || 'other'));
 
             for (const acc of providerAccounts) {
-                const line = `${chalk.hex('#4ade80')(acc.name)} ${chalk.gray(`(${acc.uuid?.slice(0, 8)}...)`)} - ${chalk.hex('#facc15')(acc.auth || 'No info')}`;
+                const line = `${chalk.hex('#4ade80')(acc.name)} ${chalk.gray(`(${acc.uuid?.slice(0, 8)}...)`)} - ${chalk.hex('#facc15')(acc.auth.name || 'No info')}`;
                 choices.push({ name: line, value: acc.id });
             }
         }

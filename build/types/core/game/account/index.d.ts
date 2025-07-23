@@ -1,7 +1,7 @@
-import type { AUTH_PROVIDERS, AuthProviderConstructor, IAuthProvider } from "../../../types/account";
+import type { AuthProviderConstructor, IAuthProvider } from "../../../types/account";
 import { LauncherAccount } from "../../../types/launcher";
-export declare const providers: Record<string, () => Promise<{
+export declare function registerAuthProvider(name: string, loader: () => Promise<{
     default: AuthProviderConstructor;
-}>>;
+}>): void;
 export declare function getAuthProviders(): Promise<Map<string, AuthProviderConstructor>>;
-export declare function getAuthProvider(account: LauncherAccount | AUTH_PROVIDERS): Promise<IAuthProvider | null>;
+export declare function getAuthProvider(account: LauncherAccount | string): Promise<IAuthProvider | null>;

@@ -9,5 +9,5 @@
   "include": [
     "src/**/*.ts",
     "test/**/*.ts"
-, "src/core/game/install/mod_loaders/neo_forge.ts"  ]
+  ]
 }

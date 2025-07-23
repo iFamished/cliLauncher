@@ -129,6 +129,28 @@ export async function signOut(username: string, password: string): Promise<boole
     }
 }
 
+export async function checkAuthServer(url: string = apiUrl): Promise<boolean> {
+    try {
+        const res = await axios.post(`${url}/authenticate`, {
+            agent: { name: 'Minecraft', version: 1 },
+            username: 'testuser@example.com',
+            password: 'invalidpassword',
+            clientToken: ORIGAMI_CLIENT_TOKEN,
+            requestUser: true
+        });
+
+        return false;
+    } catch (err: any) {
+        const message = err?.response?.data?.error || err?.response?.statusText;
+
+        if (message && typeof message === 'string') {
+            return true;
+        }
+
+        return false;
+    }
+}
+
 export function auth_server(url: string): void {
     apiUrl = url
 }

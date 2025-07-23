@@ -1,4 +1,4 @@
-import { AUTH_PROVIDERS, Credentials } from "../../../types/account";
+import { Credentials } from "../../../types/account";
 import { LauncherAccount, LauncherProfile } from "../../../types/launcher";
 import LauncherProfileManager from "../../tools/launcher";
 import LauncherAccountManager from "../account/account";
@@ -22,7 +22,7 @@ export declare class Handler {
         jvm: string;
         token: LauncherAccount;
     } | null>;
-    login(credentials: Credentials, auth_provider: AUTH_PROVIDERS): Promise<LauncherAccount | null>;
+    login(credentials: Credentials, auth_provider: string): Promise<LauncherAccount | null>;
     choose_profile(): Promise<LauncherProfile | null>;
     choose_account(): Promise<LauncherAccount | null>;
     run_minecraft(_name?: string): Promise<200 | null>;

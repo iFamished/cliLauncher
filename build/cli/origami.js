@@ -11,11 +11,12 @@ const common_1 = require("../core/utils/common");
 const compare_versions_1 = __importDefault(require("compare-versions"));
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
-const account_1 = require("../core/game/account");
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const java_1 = __importDefault(require("../java"));
 const install_1 = require("../core/game/install/packs/install");
 const handler_1 = require("../core/game/launch/handler");
+const account_1 = require("../core/game/account");
+const create_1 = require("../core/game/account/auth_types/create");
 const program = new commander_1.Command();
 const runtime = new runtime_1.Runtime();
 program
@@ -143,12 +144,33 @@ program
     process.exit(1);
 });
 program
+    .command('authprovider')
+    .description('User added Authentication Provider manager')
+    .option('-c, --create', 'Add a Custom Yggdrasil Server')
+    .option('-d, --delete', 'Delete a Custom Yggdrasil Server')
+    .action(async (options) => {
+    const hasOptions = Object.keys(options).length > 0;
+    if (!hasOptions) {
+        await runtime['authenticatorMenu']();
+    }
+    else {
+        if (options.create) {
+            await (0, create_1.createProvider)();
+        }
+        if (options.delete) {
+            await (0, create_1.deleteProvider)();
+        }
+    }
+    process.exit(0);
+});
+program
     .command('auth')
     .description('Open Minecraft Authenticator')
     .option('-l, --login <provider>', 'Login to a provider (e.g. microsoft, littleskin)')
     .option('-r, --remove <account>', 'Remove a specific account')
     .option('-c, --choose', 'Choose an account')
     .action(async (options) => {
+    const providers = await (0, account_1.getAuthProviders)();
     const hasOptions = Object.keys(options).length > 0;
     if (!hasOptions) {
         await runtime['authenticatorMenu']();
@@ -157,9 +179,9 @@ program
         const handler = runtime['handler'];
         if (options.login) {
             const provider = options.login.trim().toLowerCase();
-            if (!Object.keys(account_1.providers).includes(provider)) {
+            if (!Object.keys(providers).includes(provider)) {
                 console.log(chalk_1.default.red(`❌ Invalid auth provider: "${provider}"`));
-                console.log('Available providers: microsoft, littleskin, ely_by, meowskin');
+                console.log(`Available providers: ${Object.keys(providers).join(', ')}`);
                 process.exit(1);
             }
             let credentials = { email: '', password: '' };

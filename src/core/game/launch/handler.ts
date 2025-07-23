@@ -1,4 +1,4 @@
-import { AUTH_PROVIDERS, Credentials, IAuthProvider } from "../../../types/account";
+import { Credentials, IAuthProvider } from "../../../types/account";
 import { LauncherAccount, LauncherProfile } from "../../../types/launcher";
 import LauncherProfileManager from "../../tools/launcher";
 import { ensureDir, minecraft_dir, printVersion } from "../../utils/common";
@@ -105,7 +105,7 @@ export class Handler {
         };
     }
 
-    public async login(credentials: Credentials, auth_provider: AUTH_PROVIDERS): Promise<LauncherAccount | null> {
+    public async login(credentials: Credentials, auth_provider: string): Promise<LauncherAccount | null> {
         try {
             if (await this.accounts.hasAccount(credentials, auth_provider)) {
                 logger.warn("⚠️  An account with these credentials already exists! Skipping login. 🐾");

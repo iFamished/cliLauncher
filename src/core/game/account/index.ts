@@ -1,26 +1,68 @@
-import type { AUTH_PROVIDERS, AuthProviderConstructor, IAuthProvider } from "../../../types/account";
+import path from "path";
+import fs from "fs-extra";
+import type { AuthProviderConstructor, IAuthProvider } from "../../../types/account";
 import { LauncherAccount } from "../../../types/launcher";
 import { logger } from "../launch/handler";
+import { Separator } from "@inquirer/prompts";
 
-export const providers: Record<string, () => Promise<{ default: AuthProviderConstructor }>> = {
-    ely_by: () => import('./auth_types/ely_by'),
-    littleskin: () => import('./auth_types/littleskin'),
-    meowskin: () => import('./auth_types/meowskin'),
-    microsoft: () => import('./auth_types/microsoft'),
-};
+const authRegistry = new Map<string, () => Promise<{ default: AuthProviderConstructor }>>();
+const loadedTimestamps = new Map<string, number>();
+
+export function registerAuthProvider(
+    name: string,
+    loader: () => Promise<{ default: AuthProviderConstructor }>
+) {
+    authRegistry.set(name, loader);
+}
+
+async function loadAllAuthProviders() {
+    const root = path.join(__dirname, "auth_types");
+    const folders = ["premade", "usermade"];
+
+    for (const folder of folders) {
+        const dir = path.join(root, folder);
+        if (!fs.existsSync(dir)) continue;
+
+        const files = fs.readdirSync(dir).filter(f => f.endsWith(".ts") || f.endsWith(".js"));
+
+        for (const file of files) {
+            const fullPath = path.join(dir, file);
+            const stats = fs.statSync(fullPath);
+            const lastModified = stats.mtimeMs;
+
+            if (loadedTimestamps.get(fullPath) === lastModified) continue;
+
+            const name = path.basename(file, path.extname(file));
+
+            try {
+                let providerCtor: AuthProviderConstructor = (await import(fullPath)).default;
+                if(!providerCtor) throw new Error('invalid provider');
+
+                let metadata = new providerCtor('', '').metadata;
+            
+                registerAuthProvider(metadata.name, async () => await import(fullPath));
+                loadedTimestamps.set(fullPath, lastModified);
+            } catch (err) {
+                logger.warn(`⚠️ Failed to register auth provider '${name}': ${(err as Error).message}`);
+            }
+        }
+    }
+}
 
 export async function getAuthProviders(): Promise<Map<string, AuthProviderConstructor>> {
-    const map = new Map<AUTH_PROVIDERS, AuthProviderConstructor>();
+    await loadAllAuthProviders();
 
-    for (const [key, loader] of Object.entries(providers)) {
+    const map = new Map<string, AuthProviderConstructor>();
+
+    for (const [key, loader] of authRegistry.entries()) {
         const module = await loader();
-        map.set(key as AUTH_PROVIDERS, module.default);
+        map.set(key, module.default);
     }
 
     return map;
 }
 
-export async function getAuthProvider(account: LauncherAccount | AUTH_PROVIDERS): Promise<IAuthProvider | null> {
+export async function getAuthProvider(account: LauncherAccount | string): Promise<IAuthProvider | null> {
     try {
         const providers = await getAuthProviders();
 
@@ -33,10 +75,9 @@ export async function getAuthProvider(account: LauncherAccount | AUTH_PROVIDERS)
             return new AuthClass("", "") as IAuthProvider;
         }
 
-        const AuthClass = providers.get(account.auth);
-
+        const AuthClass = providers.get(account.auth.name);
         if (!AuthClass) {
-            logger.log(`AuthProvider: '${account.auth}' not found`);
+            logger.log(`AuthProvider: '${account.auth.name}' not found`);
             return null;
         }
 
@@ -44,7 +85,8 @@ export async function getAuthProvider(account: LauncherAccount | AUTH_PROVIDERS)
         await auth_provider.set_current(account);
 
         return auth_provider;
-    } catch(_) {
-        return null
+    } catch (err) {
+        logger.error('Failed to get auth provider:', (err as Error).message);
+        return null;
     }
 }

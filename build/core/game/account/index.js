@@ -32,20 +32,54 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.providers = void 0;
+exports.registerAuthProvider = registerAuthProvider;
 exports.getAuthProviders = getAuthProviders;
 exports.getAuthProvider = getAuthProvider;
+const path_1 = __importDefault(require("path"));
+const fs_extra_1 = __importDefault(require("fs-extra"));
 const handler_1 = require("../launch/handler");
-exports.providers = {
-    ely_by: () => Promise.resolve().then(() => __importStar(require('./auth_types/ely_by'))),
-    littleskin: () => Promise.resolve().then(() => __importStar(require('./auth_types/littleskin'))),
-    meowskin: () => Promise.resolve().then(() => __importStar(require('./auth_types/meowskin'))),
-    microsoft: () => Promise.resolve().then(() => __importStar(require('./auth_types/microsoft'))),
-};
+const authRegistry = new Map();
+const loadedTimestamps = new Map();
+function registerAuthProvider(name, loader) {
+    authRegistry.set(name, loader);
+}
+async function loadAllAuthProviders() {
+    const root = path_1.default.join(__dirname, "auth_types");
+    const folders = ["premade", "usermade"];
+    for (const folder of folders) {
+        const dir = path_1.default.join(root, folder);
+        if (!fs_extra_1.default.existsSync(dir))
+            continue;
+        const files = fs_extra_1.default.readdirSync(dir).filter(f => f.endsWith(".ts") || f.endsWith(".js"));
+        for (const file of files) {
+            const fullPath = path_1.default.join(dir, file);
+            const stats = fs_extra_1.default.statSync(fullPath);
+            const lastModified = stats.mtimeMs;
+            if (loadedTimestamps.get(fullPath) === lastModified)
+                continue;
+            const name = path_1.default.basename(file, path_1.default.extname(file));
+            try {
+                let providerCtor = (await Promise.resolve(`${fullPath}`).then(s => __importStar(require(s)))).default;
+                if (!providerCtor)
+                    throw new Error('invalid provider');
+                let metadata = new providerCtor('', '').metadata;
+                registerAuthProvider(metadata.name, async () => await Promise.resolve(`${fullPath}`).then(s => __importStar(require(s))));
+                loadedTimestamps.set(fullPath, lastModified);
+            }
+            catch (err) {
+                handler_1.logger.warn(`⚠️ Failed to register auth provider '${name}': ${err.message}`);
+            }
+        }
+    }
+}
 async function getAuthProviders() {
+    await loadAllAuthProviders();
     const map = new Map();
-    for (const [key, loader] of Object.entries(exports.providers)) {
+    for (const [key, loader] of authRegistry.entries()) {
         const module = await loader();
         map.set(key, module.default);
     }
@@ -62,16 +96,17 @@ async function getAuthProvider(account) {
             }
             return new AuthClass("", "");
         }
-        const AuthClass = providers.get(account.auth);
+        const AuthClass = providers.get(account.auth.name);
         if (!AuthClass) {
-            handler_1.logger.log(`AuthProvider: '${account.auth}' not found`);
+            handler_1.logger.log(`AuthProvider: '${account.auth.name}' not found`);
             return null;
         }
         let auth_provider = new AuthClass(account.credentials.email, account.credentials.password);
         await auth_provider.set_current(account);
         return auth_provider;
     }
-    catch (_) {
+    catch (err) {
+        handler_1.logger.error('Failed to get auth provider:', err.message);
         return null;
     }
 }

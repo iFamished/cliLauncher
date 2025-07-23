@@ -5,12 +5,13 @@ import { parse_input, valid_string } from '../core/utils/common';
 import compareVersions from 'compare-versions';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
-import { Credentials, AUTH_PROVIDERS } from '../types/account';
-import { providers } from '../core/game/account';
+import { Credentials } from '../types/account';
 import fetch from 'node-fetch';
 import temurin from '../java';
 import { ModInstaller } from '../core/game/install/packs/install';
 import { logger } from '../core/game/launch/handler';
+import { getAuthProviders } from '../core/game/account';
+import { createProvider, deleteProvider } from '../core/game/account/auth_types/create';
 
 const program = new Command();
 const runtime = new Runtime();
@@ -161,12 +162,38 @@ program
     });
 
 program
+    .command('authprovider')
+    .description('User added Authentication Provider manager')
+    .option('-c, --create', 'Add a Custom Yggdrasil Server')
+    .option('-d, --delete', 'Delete a Custom Yggdrasil Server')
+    .action(async (options) => {
+        const hasOptions = Object.keys(options).length > 0;
+
+        if (!hasOptions) {
+            await runtime['authenticatorMenu']();
+        } else {
+
+            if (options.create) {
+                await createProvider();
+            }
+
+            if (options.delete) {
+                await deleteProvider();
+            }
+
+        }
+
+        process.exit(0);
+    });
+
+program
     .command('auth')
     .description('Open Minecraft Authenticator')
     .option('-l, --login <provider>', 'Login to a provider (e.g. microsoft, littleskin)')
     .option('-r, --remove <account>', 'Remove a specific account')
     .option('-c, --choose', 'Choose an account')
     .action(async (options) => {
+        const providers = await getAuthProviders();
         const hasOptions = Object.keys(options).length > 0;
 
         if (!hasOptions) {
@@ -179,7 +206,7 @@ program
 
                 if (!Object.keys(providers).includes(provider)) {
                     console.log(chalk.red(`❌ Invalid auth provider: "${provider}"`));
-                    console.log('Available providers: microsoft, littleskin, ely_by, meowskin');
+                    console.log(`Available providers: ${Object.keys(providers).join(', ')}`);
                     process.exit(1);
                 }
 
@@ -201,7 +228,7 @@ program
                     ]);
                 }
 
-                const result = await handler.login(credentials, provider as AUTH_PROVIDERS);
+                const result = await handler.login(credentials, provider);
 
                 if (result) {
                     console.log(chalk.green(`✅ Logged in as ${result.name}`));
@@ -247,7 +274,7 @@ program
         process.exit(0);
     });
 
-    program
+program
     .command('clean')
     .description('Reset Origami and/or Minecraft data directories')
     .option('--minecraft', 'Reset the .minecraft directory')

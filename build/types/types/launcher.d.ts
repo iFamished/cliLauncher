@@ -1,5 +1,5 @@
 import { MclcUser } from "msmc/types/types";
-import { Credentials } from "./account";
+import { Credentials, IAuthMetadata } from "./account";
 import { Options } from "./launcher_options";
 export interface LauncherProfile {
     name: string;
@@ -24,7 +24,7 @@ export interface Metadata {
 }
 export interface LauncherAccount {
     id: string;
-    auth: string;
+    auth: IAuthMetadata;
     minecraft?: any;
     validation: boolean;
     access_token: string;
