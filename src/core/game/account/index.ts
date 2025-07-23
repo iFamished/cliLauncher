@@ -3,9 +3,10 @@ import fs from "fs-extra";
 import type { AuthProviderConstructor, IAuthProvider } from "../../../types/account";
 import { LauncherAccount } from "../../../types/launcher";
 import { logger } from "../launch/handler";
-import { Separator } from "@inquirer/prompts";
+import chalk from "chalk";
+import { get } from "../../tools/data_manager";
 
-const authRegistry = new Map<string, () => Promise<{ default: AuthProviderConstructor }>>();
+export const authRegistry = new Map<string, () => Promise<{ default: AuthProviderConstructor }>>();
 const loadedTimestamps = new Map<string, number>();
 
 export function registerAuthProvider(
@@ -15,7 +16,7 @@ export function registerAuthProvider(
     authRegistry.set(name, loader);
 }
 
-async function loadAllAuthProviders() {
+export async function loadAllAuthProviders() {
     const root = path.join(__dirname, "auth_types");
     const folders = ["premade", "usermade"];
 
@@ -39,6 +40,13 @@ async function loadAllAuthProviders() {
                 if(!providerCtor) throw new Error('invalid provider');
 
                 let metadata = new providerCtor('', '').metadata;
+
+                if(metadata.name === chalk.bold.redBright('Offline') && !get('allow:offline_auth')) {
+                    let registered = authRegistry.get(metadata.name);
+                    if(registered) authRegistry.delete(metadata.name);
+
+                    continue;
+                }
             
                 registerAuthProvider(metadata.name, async () => await import(fullPath));
                 loadedTimestamps.set(fullPath, lastModified);

@@ -23,6 +23,37 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### \[2.0.11] - 2025-07-23
+
+* ✨ **Added support for custom Yggdrasil authentication servers**
+
+  * `origami authprovider --create` now allows adding custom servers
+  * Useful for private or enterprise login endpoints
+
+* ✨ **Offline mode authentication (experimental)**
+
+  * ⚠️ Only available if you **do not have internet**
+  * Can be toggled in global config via `Allow Offline Auth`
+  * Not recommended for regular users with Wi-Fi
+
+* 🔄 **Auth system refactor**
+
+  * Older accounts that do not match supported providers are now categorized as `"other"`
+  * ❗ **Disabled**, **non-working**, and **offline-created** accounts are also marked as `"other"` if **Offline Auth is disabled** (which is the default)
+  * Helps preserve data while warning users of unsupported or incompatible accounts
+
+* ⚠️ **Removed support for `meowskin`**
+
+  * API changes have broken compatibility
+  * Users must switch to supported providers (Microsoft, Littleskin, Ely.by)
+
+* 🐛 **Check for non-TTY environments**
+
+  * CLI now detects when it's running in a **non-interactive shell**
+  * Prevents prompts from blocking scripts or automation tools
+
+---
+
 ### \[2.0.10] - 2025-07-08
 
 * 🐛 **Fixed current bugs with Authlib JAR and Global/Profile Settings**

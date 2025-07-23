@@ -278,17 +278,18 @@ class LauncherAccountManager {
         for (const [key, ctor] of allProviders.entries()) {
             try {
                 const meta = new ctor('', '').metadata;
-                providerMeta.set(key, meta);
+                providerMeta.set(meta.name, meta);
             }
             catch {
                 providerMeta.set(key, { name: key, base: "Other" });
             }
         }
+        const other = "! Other, Disabled or Non-Working Accounts !";
         const groupedByBase = {};
         for (const acc of accounts) {
             const authKey = acc.auth;
             const meta = providerMeta.get(authKey.name);
-            const base = meta?.base ?? "Other";
+            const base = meta?.base ?? other;
             if (!groupedByBase[base])
                 groupedByBase[base] = [];
             groupedByBase[base].push(acc);
@@ -296,9 +297,8 @@ class LauncherAccountManager {
         const sortedBases = Object.keys(groupedByBase).sort();
         const choices = [];
         for (const base of sortedBases) {
-            choices.push(new inquirer_1.default.Separator(chalk_1.default.bold.cyan(`🔑 ${base.toUpperCase()}`)));
-            const providerAccounts = groupedByBase[base]
-                .sort((a, b) => (a.name || 'other').localeCompare(b.name || 'other'));
+            choices.push(new inquirer_1.default.Separator(base === other ? chalk_1.default.bold.yellowBright(`⚠️  ${other}`) : chalk_1.default.bold.cyan(`🔑 ${base.toUpperCase()}`)));
+            const providerAccounts = groupedByBase[base].sort((a, b) => (a.name || 'other').localeCompare(b.name || 'other'));
             for (const acc of providerAccounts) {
                 const line = `${chalk_1.default.hex('#4ade80')(acc.name)} ${chalk_1.default.gray(`(${acc.uuid?.slice(0, 8)}...)`)} - ${chalk_1.default.hex('#facc15')(acc.auth.name || 'No info')}`;
                 choices.push({ name: line, value: acc.id });

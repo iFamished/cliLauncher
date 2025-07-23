@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -12,6 +45,7 @@ const axios_1 = __importDefault(require("axios"));
 const url_1 = require("url");
 const authenticator_1 = require("../../../tools/authenticator");
 const fs_extra_1 = require("fs-extra");
+const __1 = require("..");
 function toClassName(name) {
     return (name
         .replace(/[^a-zA-Z0-9]/g, " ")
@@ -124,24 +158,51 @@ async function deleteProvider() {
     }
     const { selected } = await inquirer_1.default.prompt([
         {
-            type: "list",
+            type: "checkbox",
             name: "selected",
-            message: "Select a provider to delete:",
+            message: "Select provider(s) to delete:",
             choices: files
         }
     ]);
-    const filePath = path_1.default.join(usermadeDir, selected);
+    if (selected.length === 0) {
+        console.log("❎ No providers selected. Nothing was deleted.");
+        return;
+    }
     const { confirm } = await inquirer_1.default.prompt([
         {
             type: "confirm",
             name: "confirm",
-            message: `Are you sure you want to delete '${selected}'?`,
+            message: `Are you sure you want to delete ${selected.length} provider(s)?`,
             default: false
         }
     ]);
     if (confirm) {
-        fs_1.default.unlinkSync(filePath);
-        console.log(`🗑️ Provider '${selected}' deleted.`);
+        for (const file of selected) {
+            const filePath = path_1.default.join(usermadeDir, file);
+            try {
+                const module = await Promise.resolve(`${filePath}`).then(s => __importStar(require(s)));
+                const ProviderClass = module.default;
+                if (!ProviderClass) {
+                    console.warn(`⚠️ Could not load class from '${file}'`);
+                }
+                else {
+                    const instance = new ProviderClass('', '');
+                    const metadataName = instance.metadata?.name;
+                    if (metadataName && __1.authRegistry.has(metadataName)) {
+                        __1.authRegistry.delete(metadataName);
+                        console.log(`🧹 Removed '${metadataName}' from registry`);
+                    }
+                    else {
+                        console.warn(`⚠️ Could not find '${file}' in registry`);
+                    }
+                }
+            }
+            catch (err) {
+                console.warn(`⚠️ Error loading '${file}': ${err.message}`);
+            }
+            fs_1.default.unlinkSync(filePath);
+            console.log(`🗑️ Deleted '${file}'`);
+        }
     }
     else {
         console.log("❎ Deletion cancelled.");

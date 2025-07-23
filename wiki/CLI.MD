@@ -11,7 +11,7 @@
 
 ```bash
 npm install -g @origami-minecraft/stable
-````
+```
 
 ### Development Build (Unstable, bleeding-edge)
 
@@ -85,7 +85,7 @@ Authenticate Minecraft accounts.
 
 #### Options:
 
-* `-l, --login <provider>` — Log in using a provider (`microsoft`, `littleskin`, `ely_by`, `meowskin`)
+* `-l, --login <provider>` — Log in using a provider (`microsoft`, `littleskin`, `ely_by`)
 * `-r, --remove <account>` — Remove an account by ID
 * `-c, --choose` — Select an account to use
 
@@ -96,6 +96,25 @@ origami auth
 origami auth --login microsoft
 origami auth --remove 1234567890abcdef
 origami auth --choose
+```
+
+---
+
+### `authprovider`
+
+Manage user-added authentication providers (e.g. custom Yggdrasil servers).
+
+#### Options:
+
+* `-c, --create` — Add a custom auth provider
+* `-d, --delete` — Delete one or more custom auth providers (checkbox-based)
+
+#### Examples:
+
+```bash
+origami authprovider
+origami authprovider --create
+origami authprovider --delete
 ```
 
 ---
@@ -167,7 +186,8 @@ You can log in using:
 * `microsoft` — Official Microsoft account login
 * `littleskin` — BlessingSkin auth system
 * `ely_by` — Ely.by auth system
-* `meowskin` — BlessingSkin auth system
+
+❌ **Note:** `meowskin` is no longer supported.
 
 ---
 
@@ -175,7 +195,7 @@ You can log in using:
 
 * You **must select a profile** before launching Minecraft.
 * Development builds (`-devX`) may contain experimental or incomplete features.
-* You can install, select, and delete Java via `origami java`, `origami java:delete`.
+* You can install, select, and delete Java via `origami java`, `origami java --delete`.
 * You can manage mods and content via `origami modrinth` and `origami manage`.
 
 ---

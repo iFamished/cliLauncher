@@ -15,6 +15,7 @@ import {
 import inquirer from 'inquirer';
 import LauncherProfileManager from '../../tools/launcher';
 import temurin from '../../../java';
+import { get, set } from '../../tools/data_manager';
 
 const mcDir = minecraft_dir(true);
 const launcherProfilesPath = path.join(mcDir, 'settings.json');
@@ -85,6 +86,7 @@ export class LauncherOptionsManager {
             choices.push({ name: 'Java Runtime (per profile)', value: 'java' });
         } else {
             choices.push(new Separator(`-- Global --`));
+            choices.push({ name: 'Allow Offline Auth (EXPERIMENTAL AND NOT RECOMMEMDED)', value: '__offline_auth' });
         };
 
         const global_options: any[] = [
@@ -155,6 +157,14 @@ export class LauncherOptionsManager {
                         break;
                     }
                     await temurin.select(true, profile.origami.version);
+                    break;
+                case '__offline_auth':
+                    console.warn("⚠️  Offline authentication is experimental and not recommended by Mojang.");
+                    console.warn("   Use only if you have no internet and understand the risks.\n");
+
+                    let new_setting = await promptBoolean('Allow Offline Authentication?', false);
+
+                    set('allow:offline_auth', new_setting);
                     break;
             }
         }

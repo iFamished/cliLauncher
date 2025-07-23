@@ -5,6 +5,7 @@ import axios from "axios";
 import { URL } from "url";
 import { checkAuthServer } from "../../../tools/authenticator";
 import { pathExists } from "fs-extra";
+import { authRegistry } from "..";
 
 function toClassName(name: string) {
     return (
@@ -113,6 +114,9 @@ export async function createProvider() {
     console.log(`✅ Provider '${className}' created at ${targetPath}`);
 }
 
+
+
+
 export async function deleteProvider() {
     const usermadeDir = path.join(__dirname, "usermade");
 
@@ -130,27 +134,53 @@ export async function deleteProvider() {
 
     const { selected } = await inquirer.prompt([
         {
-            type: "list",
+            type: "checkbox",
             name: "selected",
-            message: "Select a provider to delete:",
+            message: "Select provider(s) to delete:",
             choices: files
         }
     ]);
 
-    const filePath = path.join(usermadeDir, selected);
+    if (selected.length === 0) {
+        console.log("❎ No providers selected. Nothing was deleted.");
+        return;
+    }
 
     const { confirm } = await inquirer.prompt([
         {
             type: "confirm",
             name: "confirm",
-            message: `Are you sure you want to delete '${selected}'?`,
+            message: `Are you sure you want to delete ${selected.length} provider(s)?`,
             default: false
         }
     ]);
 
     if (confirm) {
-        fs.unlinkSync(filePath);
-        console.log(`🗑️ Provider '${selected}' deleted.`);
+        for (const file of selected) {
+            const filePath = path.join(usermadeDir, file);
+            try {
+                const module = await import(filePath);
+                const ProviderClass = module.default;
+
+                if (!ProviderClass) {
+                    console.warn(`⚠️ Could not load class from '${file}'`);
+                } else {
+                    const instance = new ProviderClass('', '');
+                    const metadataName = instance.metadata?.name;
+                    if (metadataName && authRegistry.has(metadataName)) {
+                        authRegistry.delete(metadataName);
+                        console.log(`🧹 Removed '${metadataName}' from registry`);
+                    } else {
+                        console.warn(`⚠️ Could not find '${file}' in registry`);
+                    }
+                }
+            } catch (err: any) {
+                console.warn(`⚠️ Error loading '${file}': ${err.message}`);
+            }
+
+            fs.unlinkSync(filePath);
+            console.log(`🗑️ Deleted '${file}'`);
+        }
     } else {
         console.log("❎ Deletion cancelled.");
     }

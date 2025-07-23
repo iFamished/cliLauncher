@@ -216,7 +216,6 @@ class Runtime {
                 }
             ]);
             console.clear();
-            const all_providers = await (0, account_1.getAuthProviders)();
             switch (choice) {
                 case 'choose':
                     await this.handler.choose_account();
@@ -228,6 +227,7 @@ class Runtime {
                     await (0, create_1.deleteProvider)();
                     break;
                 case 'login':
+                    const all_providers = await (0, account_1.getAuthProviders)();
                     const grouped = {};
                     for (const [prov, providerCtor] of all_providers.entries()) {
                         const metadata = new providerCtor('', '').metadata;
@@ -251,6 +251,7 @@ class Runtime {
                         name: 'provider',
                         message: 'Auth Provider:',
                         choices,
+                        loop: false,
                     });
                     const credentials = provider === "MSA" || provider === 'microsoft' ? { email: "", password: "" } : await inquirer_1.default.prompt([
                         {
@@ -261,7 +262,7 @@ class Runtime {
                         {
                             type: 'password',
                             name: 'password',
-                            message: 'Password:',
+                            message: 'Password:' + (provider === chalk_1.default.bold.redBright('Offline') ? ' (This is not required as youre gonna use an OFFLINE ACCOUNT) ' : ''),
                             mask: '*'
                         },
                     ]);

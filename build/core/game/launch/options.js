@@ -50,6 +50,7 @@ const os_1 = __importDefault(require("os"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const launcher_1 = __importDefault(require("../../tools/launcher"));
 const java_1 = __importDefault(require("../../../java"));
+const data_manager_1 = require("../../tools/data_manager");
 const mcDir = (0, common_1.minecraft_dir)(true);
 const launcherProfilesPath = path.join(mcDir, 'settings.json');
 class LauncherOptionsManager {
@@ -111,6 +112,7 @@ class LauncherOptionsManager {
         }
         else {
             choices.push(new prompts_1.Separator(`-- Global --`));
+            choices.push({ name: 'Allow Offline Auth (EXPERIMENTAL AND NOT RECOMMEMDED)', value: '__offline_auth' });
         }
         ;
         const global_options = [
@@ -178,6 +180,12 @@ class LauncherOptionsManager {
                         break;
                     }
                     await java_1.default.select(true, profile.origami.version);
+                    break;
+                case '__offline_auth':
+                    console.warn("⚠️  Offline authentication is experimental and not recommended by Mojang.");
+                    console.warn("   Use only if you have no internet and understand the risks.\n");
+                    let new_setting = await promptBoolean('Allow Offline Authentication?', false);
+                    (0, data_manager_1.set)('allow:offline_auth', new_setting);
                     break;
             }
         }
