@@ -4,6 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.installVanillaViaExecutor = installVanillaViaExecutor;
+exports.isMinecraftVersionInstalled = isMinecraftVersionInstalled;
+exports.installVanillaHelper = installVanillaHelper;
 const axios_1 = __importDefault(require("axios"));
 const ora_1 = __importDefault(require("ora"));
 const path_1 = __importDefault(require("path"));
@@ -18,13 +20,13 @@ const metadata = {
     description: 'Pure, unmodded Minecraft client.',
     author: 'Mojang'
 };
-async function installVanillaViaExecutor() {
+async function installVanillaViaExecutor(version) {
     const spinner = (0, ora_1.default)('🌱 Preparing Vanilla installation...').start();
     try {
         const manifest = await (0, minecraft_versions_1.fetchMinecraftVersionManifest)();
         const latestMC = manifest.latest.release;
         spinner.stop();
-        const minecraftVersion = await (0, minecraft_versions_1.askForVersion)(manifest.versions, latestMC);
+        const minecraftVersion = version ?? await (0, minecraft_versions_1.askForVersion)(manifest.versions, latestMC);
         const versionMeta = manifest.versions.find(v => v.id === minecraftVersion);
         if (!versionMeta)
             throw new Error('Version metadata not found.');
@@ -62,6 +64,13 @@ async function installVanillaViaExecutor() {
         handler_1.logger.error(err.message || err);
         return null;
     }
+}
+function isMinecraftVersionInstalled(version) {
+    const profileManager = new launcher_1.default();
+    return profileManager.getProfile(version) ? true : false;
+}
+async function installVanillaHelper(version) {
+    return await installVanillaViaExecutor(version);
 }
 // Run if invoked directly
 if (require.main === module) {

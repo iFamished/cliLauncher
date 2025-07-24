@@ -5,7 +5,6 @@ declare const _default: {
         name: string;
         description: string;
         author: string;
-        unstable: boolean;
         jvm: string;
     };
     get: typeof installNeoForgeViaExecutor;

@@ -190,9 +190,21 @@ class Runtime {
     }
     async showHeader() {
         await (0, origami_1.checkForLatestVersion)(this.version);
-        const logo = figlet_1.default.textSync('Origami', { font: 'Standard' });
+        const fonts = figlet_1.default.fontsSync();
+        const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
+        const logo = figlet_1.default.textSync('Origami', { font: randomFont });
+        const profile = this.handler.profiles.getSelectedProfile();
+        const profileName = profile ? chalk_1.default.cyan(`📂 Current Selected Profile: ${chalk_1.default.green(profile.name)}`) : chalk_1.default.gray('📂 No profile selected');
+        const account = await this.handler.accounts.getSelectedAccount();
+        const accountName = account ? chalk_1.default.cyan(`🔐 Current Selected Account: ${chalk_1.default.green(account.name || 'user')} - ${chalk_1.default.yellow(account.auth.name) + chalk_1.default.blueBright(` (${account.auth.base})`)}`) : chalk_1.default.gray('🔐 No account selected');
+        const java = data_manager.get('use:temurin') || null;
+        const javaName = java ? chalk_1.default.cyan(`☕ Selected Java Binary: ${chalk_1.default.green(java.version || 'Unknown')} ${chalk_1.default.gray(`from ${chalk_1.default.yellow(java.provider || 'Unknown')}, ${java.path}`)}`) : chalk_1.default.cyan(`☕ No Selected Java Binary`);
         console.log(gradient.retro(logo));
         console.log(chalk_1.default.gray(` ✨ Lightweight Minecraft CLI Launcher — Version ${this.version}`));
+        console.log();
+        console.log(profileName);
+        console.log(accountName);
+        console.log(javaName);
         console.log();
     }
     async authenticatorMenu() {
@@ -360,18 +372,22 @@ class Runtime {
                     const _profile = this.handler.profiles.getSelectedProfile();
                     if (_profile)
                         await this.manageInstallationsMenu(_profile);
+                    await this.showHeader();
                     break;
                 case 'install_java':
                     await java_1.default.download();
                     console.log('\n\n\n');
+                    await this.showHeader();
                     break;
                 case 'select_java':
                     await java_1.default.select(true);
                     console.log('\n\n\n');
+                    await this.showHeader();
                     break;
                 case 'delete_java':
                     await java_1.default.delete();
                     console.log('\n\n\n');
+                    await this.showHeader();
                     break;
                 case 'reset_minecraft':
                     await this.resetMinecraft();
@@ -439,8 +455,8 @@ class Runtime {
     }
     async launch() {
         const code = await this.handler.run_minecraft();
-        if (code === 200) {
-            console.log(chalk_1.default.green('✅ Minecraft exited successfully!'));
+        if (code) {
+            console.log(chalk_1.default.green(`✅ Minecraft exited with code ${code}`));
         }
         else {
             console.log(chalk_1.default.red('❌ Failed to launch Minecraft.'));

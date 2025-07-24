@@ -1,5 +1,5 @@
 declare function main(): Promise<void>;
-interface JavaBinary {
+export interface JavaBinary {
     path: string;
     version?: string;
     provider?: string;

@@ -8,13 +8,13 @@ import { run as executeJar } from '../../../tools/executor';
 import { ClientJar } from '../../../../types/client';
 import LauncherProfileManager from '../../../tools/launcher';
 import { logger } from '../../launch/handler';
+import { installVanillaHelper, isMinecraftVersionInstalled } from '../vanilla';
 
 const metadata = {
     name: 'NeoForge',
-    description: 'NeoForge Minecraft client installer',
+    description: 'A modern fork of Minecraft Forge, designed to provide a faster, cleaner, and more community-friendly modding experience',
     author: 'NeoForged Project',
-    unstable: true,
-    jvm: '--add-opens java.base/java.lang.invoke=ALL-UNNAMED',
+    jvm: "${neoforged}",
 };
 
 const MAVEN_BASE = 'https://maven.neoforged.net/releases/net/neoforged';
@@ -25,7 +25,6 @@ function getInstallerJarUrl(version: string): string {
 }
 
 function extractMCVersionFromNeoForge(neoforgeVersion: string): string | null {
-    // Match things like 20.2.31, 21.5.3-beta, etc.
     const match = neoforgeVersion.match(/^(\d+)\.(\d+)\.\d+(?:-.+)?$/);
     if (!match) return null;
 
@@ -81,6 +80,12 @@ async function installNeoForgeViaExecutor(): Promise<ClientJar | null> {
             default: mcVersions[mcVersions.length - 1]
         });
 
+        spinner.stop();
+        const isVanillaInstalled = isMinecraftVersionInstalled(mcVersion);
+        if (!isVanillaInstalled) {
+            await installVanillaHelper(mcVersion);
+        }
+
         const neoChoices = mcMap[mcVersion];
         const defaultNeo = neoChoices[neoChoices.length - 1];
 
@@ -112,7 +117,7 @@ async function installNeoForgeViaExecutor(): Promise<ClientJar | null> {
 
         spinner.text = '🚀 Running NeoForge installer...';
         spinner.stop();
-        await executeJar(jarPath, []);
+        await executeJar(jarPath, ['--installClient']);
 
         spinner.succeed('✅ NeoForge installed successfully!');
         return {

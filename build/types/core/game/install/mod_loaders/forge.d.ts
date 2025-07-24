@@ -5,6 +5,7 @@ declare const _default: {
         name: string;
         description: string;
         author: string;
+        jvm: string;
     };
     get: typeof installForgeViaExecutor;
 };

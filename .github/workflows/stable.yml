@@ -43,24 +43,42 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Determine release type
+        id: get_release_type
+        run: |
+          DEFAULT_TYPE="patch"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "release_type=${{ github.event.inputs.release_type }}" >> $GITHUB_OUTPUT
+          else
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            echo "Commit message: $COMMIT_MSG"
+
+            if echo "$COMMIT_MSG" | grep -qE '\[stable\]:\s*major:'; then
+              echo "release_type=major" >> $GITHUB_OUTPUT
+            elif echo "$COMMIT_MSG" | grep -qE '\[stable\]:\s*minor:'; then
+              echo "release_type=minor" >> $GITHUB_OUTPUT
+            else
+              echo "release_type=patch" >> $GITHUB_OUTPUT
+            fi
+          fi
+
       - name: Bump version and rename to stable
         id: bump_version
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # Use input or fallback to patch
-          RELEASE_TYPE="${{ github.event.inputs.release_type || 'patch' }}"
+          RELEASE_TYPE="${{ steps.get_release_type.outputs.release_type }}"
+          echo "Using release type: $RELEASE_TYPE"
 
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           echo "Current version: $CURRENT_VERSION"
 
-          # Bump version
           NEW_VERSION=$(npm version "$RELEASE_TYPE" --no-git-tag-version)
           echo "Bumped version: $NEW_VERSION"
           echo "version_tag=$NEW_VERSION" >> $GITHUB_OUTPUT
 
-          # Rename to stable package
           jq '.name = "@origami-minecraft/stable"' package.json > tmp.json && mv tmp.json package.json
 
           git add package.json package-lock.json

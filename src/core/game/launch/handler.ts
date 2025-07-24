@@ -8,15 +8,17 @@ import path from "path";
 import temurin from "../../../java";
 import parseArgsStringToArgv from "string-argv";
 import LauncherOptionsManager from "./options";
-import { Logger } from "../../tools/logger";
+import { Logger, logPopupError } from "../../tools/logger";
 import { ORIGAMI_CLIENT_TOKEN } from "../../../config/defaults";
 import chalk from "chalk";
 import MCLCore from "../../launcher";
 import { ILauncherOptions, IUser } from "../../launcher/types";
-import { InstallerRegistry } from "../install/registry";
+import { InstallerProvider, InstallerRegistry } from "../install/registry";
 import inquirer from "inquirer";
 import { existsSync, writeFileSync, readFileSync, remove } from "fs-extra";
 import ModrinthModManager from "../install/packs/manager";
+import { exec } from "child_process";
+import { isJavaCompatible } from "../../utils/minecraft_versions";
 
 export const logger = new Logger();
 export const progress = logger.progress();
@@ -77,7 +79,7 @@ export class Handler {
         this.currentAccount = await this.accounts.getSelectedAccount();
 
         if (!this.currentAccount) {
-            logger.warn("⚠️  No account selected! Please log in first. 🐾");
+            await logPopupError("Authentication Error", "⚠️  No account selected! Please log in first. 🐾", true);
             return null;
         }
 
@@ -95,7 +97,7 @@ export class Handler {
         const token = await auth.token();
         
         if (!token) {
-            logger.warn("🚫 Authentication token could not be retrieved.");
+            await logPopupError("Authentication Error", "🚫 Authentication token could not be retrieved.", true);
             return null;
         }
 
@@ -125,7 +127,7 @@ export class Handler {
             const token = await auth.authenticate();
 
             if (!token) {
-                logger.error("🚫 Authentication failed — invalid credentials or network error.");
+                await logPopupError("Authentication Error", "🚫 Authentication failed — invalid credentials or network error.", true);
                 return null;
             }
 
@@ -136,7 +138,7 @@ export class Handler {
             logger.log(`✅ Logged in as ${token.name} [${token.uuid}] via "${auth_provider}" 🎉`);
             return token;
         } catch (err) {
-            logger.error("💥 Unexpected error during login:", (err as Error).message);
+            await logPopupError("Authentication Error", "💥 Unexpected error during login:"+(err as Error).message, true);
             return null;
         }
     }
@@ -149,7 +151,20 @@ export class Handler {
         return this.accounts.chooseAccount();
     }
 
-    public async run_minecraft(_name?: string): Promise<200 | null> {
+    public getJava(java: string): Promise<string | null> {
+        return new Promise(resolve => {
+            exec(`"${java}" -version`, (error, stdout, stderr) => {
+                if (error) {
+                    resolve(null);
+                } else {
+                    let version_match = stderr.match(/"(.*?)"/);
+                    resolve(version_match ? version_match.pop() || null : null)
+                }
+            })
+        })
+    }
+
+    public async run_minecraft(_name?: string): Promise<string | null> {
         let mc_dir = minecraft_dir();
         let version_dir = path.join(mc_dir, 'versions');
         let cache_dir = path.join(mc_dir, '.cache');
@@ -158,7 +173,7 @@ export class Handler {
         let name = selected_profile?.name || _name;
 
         if (!_name && (!selected_profile || !name) || !name) {
-            console.log(chalk.bgHex('#f87171').hex('#fff')(' 💔 No profile selected! ') + chalk.hex('#fca5a5')('Please pick a profile before launching the game.'));
+            await logPopupError('Profile Error', chalk.bgHex('#f87171').hex('#fff')(' 💔 No profile selected! ') + chalk.hex('#fca5a5')('Please pick a profile before launching the game.'), true)
             return null;
         }
 
@@ -167,6 +182,8 @@ export class Handler {
 
         let version_path = path.join(version_dir, name);
         let version_json = path.join(version_path, `${name}.json`);
+
+        let version_object = this.jsonParser(readFileSync(version_json, { encoding: 'utf-8' }));
 
         if(!existsSync(version_path) || !existsSync(version_json)) {
             return null;
@@ -185,7 +202,43 @@ export class Handler {
             return await new Promise(async(resolve) => {
                 let libraryRoot = path.join(mc_dir, 'libraries')
                 let assetRoot = path.join(mc_dir, 'assets');
+                let version = this.getVersion(version_json);
                 let loader = this.installers.get(this.installers.list().sort((a, b) => b.length - a.length).find(ld => name.toLowerCase().startsWith(ld) || name.toLowerCase().includes(ld)) || 'vanilla');
+
+                let installed_java = await this.getJava(java.path);
+                let java_check = await isJavaCompatible(installed_java, version.version);
+
+                if (!java_check.result && java_check.required) {
+                    if (java_check.installed === null || isNaN(java_check.installed)) {
+                        await logPopupError('Java Runtime Error', `🚫 Java isn't working or can't be found! 💔
+
+                                    We tried running \`java -version\`, but... nothing came back. 😢
+                                    That means Java might not be installed, or it's broken.
+
+                                    ☕ Minecraft needs Java to run, It's like the heart of everything!
+
+                                    ✨ You can install the right one by running:
+                                        👉 \`origami java --install\`
+                                        🌸 Or open the menu with: \`origami menu\`
+
+                                    Once Java's ready, we'll hop right into your world~ 💖🐇`, true);
+                    } else {
+                        await logPopupError('Java Runtime Error', `🐾 Aww, your Java version doesn't match what we need! ⚠️
+
+                                    This Minecraft version needs Java ${java_check.required}, 
+                                    but your current Java is ${java_check.installed}. 😿
+
+                                    It could be too old or even too new, either way, it's not compatible.
+
+                                    ✨ You can fix it with:
+                                        👉 \`origami java --install\`
+                                        🌸 Or just run: \`origami menu\`
+
+                                    Once we get the right Java, we'll be building together in no time~! 🧱🌼`, true);
+                    }
+
+                    return resolve(null);
+                }
 
                 let jvmArgs = `${auth.jvm}`;
 
@@ -199,13 +252,35 @@ export class Handler {
                     logger.warn(`⚠️  Heads up! ${loader.metadata.name} support is a bit wobbly right now — it might break or misbehave 🧪👀`);
                 }
 
+                const getOS = () => {
+                    switch (process.platform) {
+                        case 'win32': return 'windows'
+                        case 'darwin': return 'osx'
+                        default: return 'linux'
+                    }
+                }
+
+                const parseLoaderJVM = (jvm: string, loader: InstallerProvider): string => {
+                    const separator = getOS() === 'windows' ? ';' : ':';
+                    const neoforged = version_object.arguments?.jvm;
+                    const neoforge_jvm = neoforged && Array.isArray(neoforged) ? neoforged.join(' ') : '';
+                    
+                    if(loader.metadata.name.toLowerCase() === 'neoforge') return jvm
+                        .replaceAll('${neoforged}', neoforge_jvm)
+                        .replaceAll('${classpath_separator}', separator)
+                        .replaceAll('${version_name}', name)
+                        .replaceAll('${library_directory}', libraryRoot);
+
+                    return jvm;
+                }
+
                 if (loader && loader.metadata.jvm) {
-                    jvmArgs = `${loader.metadata.jvm} ${jvmArgs}`;
+                    jvmArgs = `${parseLoaderJVM(loader.metadata.jvm, loader)} ${jvmArgs}`;
                 }
 
                 let javaPath = java.path;
                 
-                if (selected_profile) {
+                if (selected_profile && selected_profile.origami.metadata.name.toLowerCase() !== 'vanilla') {
                     const mod_manager = new ModrinthModManager(selected_profile);
                     const installed = mod_manager.getList().mods;
 
@@ -222,7 +297,6 @@ export class Handler {
                 }
 
                 let auth_token = auth.token;
-                let version = this.getVersion(version_json);
 
                 let settings = this.settings.getFixedOptions();
                 let memory = settings.memory;
@@ -256,17 +330,17 @@ export class Handler {
                         detached: settings.safe_exit,
                         maxSockets: settings.max_sockets,
                         connections: settings.connections,
-                        versionName: `${metadata.name}/${metadata.version}`,         
+                        versionName: `${metadata.name}/${metadata.version}`      
                     },
-                    launcher: metadata,
+                    launcher: metadata
                 };
 
                 launcher.launch(instance).then((proc) => {
                     logger.warn(`Minecraft PID: ${chalk.yellow(proc?.pid || "<cannot be fetched>")}`)
                 });
 
-                launcher.on("close", () => {
-                    resolve(200);
+                launcher.on("close", (code) => {
+                    resolve(`${code || 1}`);
                 });
             
                 launcher.on('debug', (e) => logger.log(chalk.grey(String(e)).trim()));

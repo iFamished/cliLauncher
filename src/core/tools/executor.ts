@@ -1,8 +1,8 @@
 import { spawn } from 'child_process';
 import fs from "fs";
 import chalk from "chalk";
-import path from "path";
 import temurin from "../../java";
+import { minecraft_dir } from '../utils/common';
 
 async function run(jarPath: string, args: string[] = []): Promise<number> {
     if (!fs.existsSync(jarPath)) {
@@ -17,7 +17,7 @@ async function run(jarPath: string, args: string[] = []): Promise<number> {
     return new Promise((resolve, reject) => {
         const javaProcess = spawn(javaPath.path, ['-jar', jarPath, ...args], {
             stdio: 'inherit',
-            cwd: path.dirname(jarPath)
+            cwd: minecraft_dir(),
         });
 
         javaProcess.on('close', (code) => {

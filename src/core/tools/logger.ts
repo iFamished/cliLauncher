@@ -1,6 +1,8 @@
 import chalk from 'chalk';
 import Spinnies, { Color } from 'spinnies';
 import { v4 } from 'uuid';
+import boxen from "boxen";
+import inquirer from "inquirer";
 
 type LogType = 'log' | 'warn' | 'error' | 'progress' | 'success';
 
@@ -250,5 +252,39 @@ export class Logger {
 
     error(...msg: string[]) {
         loggers.error(msg.join(" "));
+    }
+}
+
+export async function logPopupError(
+    title: string,
+    body: string,
+    askBeforeContinue = false
+): Promise<void> {
+    console.clear();
+    process.stdout.write("\x07");
+
+    const boxed = boxen(
+        `${chalk.bold(title)}\n\n${body.split('\n').map(v => { if(v.startsWith(' ')) return v.trim(); return v }).join('\n')}`,
+        {
+            padding: 1,
+            margin: 1,
+            borderColor: "redBright",
+            borderStyle: "round",
+            title: chalk.redBright("🚫 ERROR"),
+            titleAlignment: "center"
+        }
+    );
+
+    console.error(boxed);
+
+    if (askBeforeContinue) {
+        await inquirer.prompt([
+            {
+                type: "confirm",
+                name: "continue",
+                message: chalk.gray("Press Enter to continue"),
+                default: true
+            }
+        ]);
     }
 }

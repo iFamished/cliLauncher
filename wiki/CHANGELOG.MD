@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 > Installed via:
 > `npm install -g @origami-minecraft/devbuilds`
+> or
+> `yarn global add @origami-minecraft/devbuilds`
 
 ⚠️ **Warning:**
 Development builds are experimental and **not completely tested**.
@@ -20,6 +22,45 @@ Some features introduced in these builds may never make it into stable releases.
 
 > These builds are published to the **npm registry**:
 > `npm install -g @origami-minecraft/stable`
+> or
+> `yarn global add @origami-minecraft/stable`
+
+---
+
+### \[2.1.0] - 2025-07-24
+
+> 🎉 **Minor UI Update**
+
+* ✨ **New UI Header in Interactive Menu**
+
+  * The interactive menu now shows a cleaner banner and includes:
+
+    * 🎮 Current selected **profile**
+    * 👤 Current selected **account**
+    * ☕ Selected **Java binary**
+
+* ✨ **New Error Popup System**
+
+  * Errors are now displayed in a clean, bordered **popup box** using `boxen`
+  * 💬 The errors will ask you to press Enter to continue, so you don’t miss them!
+
+* ✨ **Java Runtime Compatibility Check**
+
+  * Before launching, Origami now verifies if your Java version matches the required version for the **Minecraft version/profile**
+
+* 🔄 **Mod Loader Dependency Fixes**
+
+  * Ensures **vanilla Minecraft version is installed first** before setting up a mod loader (e.g. Forge, NeoForge, Fabric)
+  * Prevents mod loader crashes due to missing vanilla base versions
+
+* 🐛 **NeoForge is now fully supported!**
+
+  * 🐛 After weeks of instability, NeoForge support is now considered **stable**
+  * Launcher auto-handles metadata, dependencies, and profile creation like other loaders
+
+* ✨ Improved JVM Argument Profiles by Loader
+
+  * Forge, NeoForge, Fabric, Quilt, and Vanilla get tailored arguments based on their launch requirements
 
 ---
 
@@ -184,7 +225,7 @@ Some features introduced in these builds may never make it into stable releases.
 
 ### \[2.0.0] - 2025-07-06
 
-> 🚀 **Major Mod Installer Update**
+> 🎉 **Major Mod Installer Update**
 
 * ✨ **Brand-new Mod Downloading System**
 

@@ -25,7 +25,8 @@ export declare class Handler {
     login(credentials: Credentials, auth_provider: string): Promise<LauncherAccount | null>;
     choose_profile(): Promise<LauncherProfile | null>;
     choose_account(): Promise<LauncherAccount | null>;
-    run_minecraft(_name?: string): Promise<200 | null>;
+    getJava(java: string): Promise<string | null>;
+    run_minecraft(_name?: string): Promise<string | null>;
     configure_settings(): Promise<void>;
     install_version(): Promise<void>;
     remove_account(): Promise<void>;

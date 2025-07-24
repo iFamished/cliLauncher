@@ -9,11 +9,13 @@ import { ClientJar } from '../../../../types/client';
 import { ForgeVersions } from '../../../../types/version';
 import LauncherProfileManager from '../../../tools/launcher';
 import { logger } from '../../launch/handler';
+import { isMinecraftVersionInstalled, installVanillaHelper } from '../vanilla';
 
 const metadata = {
     name: 'Forge',
-    description: 'Minecraft Forge client installer',
-    author: 'MinecraftForge'
+    description: 'A most widely used modding platform for Minecraft Java Edition.',
+    author: 'MinecraftForge',
+    jvm: '-Djava.net.preferIPv6Addresses=system',
 };
 
 const FORGE_FILES = 'https://files.minecraftforge.net';
@@ -53,6 +55,12 @@ async function installForgeViaExecutor(): Promise<ClientJar | null> {
             default: latestMC
         });
 
+        spinner.stop();
+        const isVanillaInstalled = isMinecraftVersionInstalled(minecraftVersion);
+        if (!isVanillaInstalled) {
+            await installVanillaHelper(minecraftVersion);
+        }
+
         const forgeEntry = manifest.find(f => f.id === minecraftVersion);
         if (!forgeEntry) throw new Error(`No Forge versions found for Minecraft ${minecraftVersion}`);
 
@@ -84,7 +92,7 @@ async function installForgeViaExecutor(): Promise<ClientJar | null> {
         
         spinner.text = '🚀 Running Forge installer...';
         spinner.stop();
-        await executeJar(jarPath, []);
+        await executeJar(jarPath, ['--installClient']);
 
         spinner.succeed('✅ Forge installed successfully!');
         return {

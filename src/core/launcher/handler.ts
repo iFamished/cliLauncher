@@ -50,7 +50,7 @@ export default class Handler {
                 } else {
                     let version_match = stderr.match(/"(.*?)"/);
 
-                    this.client.emit('debug', `[MCLC]: Using Java version ${chalk.green(version_match ? version_match.pop() : `Adoptium Temurin Java`)} ${stderr.includes('64-Bit') ? '64-bit' : '32-Bit'}`)
+                    this.client.emit('debug', `[MCLC]: Using Java version ${chalk.green(version_match ? version_match.pop() : `<unknown>`)} ${stderr.includes('64-Bit') ? '64-bit' : '32-Bit'}`)
                     resolve({
                         run: true
                     })
@@ -86,7 +86,7 @@ export default class Handler {
                     timeout: 50000,
                     maxContentLength: Infinity,
                     maxBodyLength: Infinity,
-                    validateStatus: (status) => status < 400 // allow redirects
+                    validateStatus: (status) => status < 400
                 });
 
                 const totalBytes = parseInt(response.headers["content-length"] || "0", 10);
@@ -711,7 +711,6 @@ export default class Handler {
             '${clientid}': this.options.authorization.meta.clientId || (this.options.authorization.client_token || this.options.authorization.access_token),
             '${resolution_width}': this.options.window ? this.options.window.width : 856,
             '${resolution_height}': this.options.window ? this.options.window.height : 482,
-
         }
 
         if (this.options.authorization.meta.demo && (this.options.features ? !this.options.features.includes('is_demo_user') : true)) {

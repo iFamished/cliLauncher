@@ -12,10 +12,12 @@ const common_1 = require("../../../utils/common");
 const executor_1 = require("../../../tools/executor");
 const launcher_1 = __importDefault(require("../../../tools/launcher"));
 const handler_1 = require("../../launch/handler");
+const vanilla_1 = require("../vanilla");
 const metadata = {
     name: 'Forge',
-    description: 'Minecraft Forge client installer',
-    author: 'MinecraftForge'
+    description: 'A most widely used modding platform for Minecraft Java Edition.',
+    author: 'MinecraftForge',
+    jvm: '-Djava.net.preferIPv6Addresses=system',
 };
 const FORGE_FILES = 'https://files.minecraftforge.net';
 const FORGE_BASE = 'https://maven.minecraftforge.net';
@@ -46,6 +48,11 @@ async function installForgeViaExecutor() {
             choices: mcVersions,
             default: latestMC
         });
+        spinner.stop();
+        const isVanillaInstalled = (0, vanilla_1.isMinecraftVersionInstalled)(minecraftVersion);
+        if (!isVanillaInstalled) {
+            await (0, vanilla_1.installVanillaHelper)(minecraftVersion);
+        }
         const forgeEntry = manifest.find(f => f.id === minecraftVersion);
         if (!forgeEntry)
             throw new Error(`No Forge versions found for Minecraft ${minecraftVersion}`);
@@ -72,7 +79,7 @@ async function installForgeViaExecutor() {
         });
         spinner.text = '🚀 Running Forge installer...';
         spinner.stop();
-        await (0, executor_1.run)(jarPath, []);
+        await (0, executor_1.run)(jarPath, ['--installClient']);
         spinner.succeed('✅ Forge installed successfully!');
         return {
             name: metadata.name,

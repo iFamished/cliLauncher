@@ -11,7 +11,7 @@ import readline from 'readline';
 import { localpath, minecraft_dir } from '../../utils/common';
 import { removeSync } from 'fs-extra';
 import { checkForLatestVersion } from '../../../cli/origami';
-import temurin from '../../../java';
+import temurin, { JavaBinary } from '../../../java';
 import { ModInstaller } from '../install/packs/install';
 import { LauncherProfile } from '../../../types/launcher';
 import ModrinthModManager from '../install/packs/manager';
@@ -177,9 +177,26 @@ export class Runtime {
 
     private async showHeader() {
         await checkForLatestVersion(this.version);
-        const logo = figlet.textSync('Origami', { font: 'Standard' });
+        const fonts = figlet.fontsSync();
+        const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
+
+        const logo = figlet.textSync('Origami', { font: randomFont });
+
+        const profile = this.handler.profiles.getSelectedProfile();
+        const profileName = profile ? chalk.cyan(`📂 Current Selected Profile: ${chalk.green(profile.name)}`) : chalk.gray('📂 No profile selected');
+
+        const account = await this.handler.accounts.getSelectedAccount();
+        const accountName = account ? chalk.cyan(`🔐 Current Selected Account: ${chalk.green(account.name || 'user')} - ${chalk.yellow(account.auth.name)+chalk.blueBright(` (${account.auth.base})`)}`) : chalk.gray('🔐 No account selected');
+
+        const java: JavaBinary | null = data_manager.get('use:temurin') || null;
+        const javaName = java ? chalk.cyan(`☕ Selected Java Binary: ${chalk.green(java.version || 'Unknown')} ${chalk.gray(`from ${chalk.yellow(java.provider || 'Unknown')}, ${java.path}`)}`) : chalk.cyan(`☕ No Selected Java Binary`);
+
         console.log(gradient.retro(logo));
         console.log(chalk.gray(` ✨ Lightweight Minecraft CLI Launcher — Version ${this.version}`));
+        console.log()
+        console.log(profileName);
+        console.log(accountName);
+        console.log(javaName);
         console.log();
     }
 
@@ -376,21 +393,25 @@ export class Runtime {
                 case 'manage_installations':
                     const _profile = this.handler.profiles.getSelectedProfile();
                     if (_profile) await this.manageInstallationsMenu(_profile);
+                    await this.showHeader();
 
                     break;
                 case 'install_java':
                     await temurin.download();
                     console.log('\n\n\n');
+                    await this.showHeader();
 
                     break;
                 case 'select_java':
                     await temurin.select(true);
                     console.log('\n\n\n');
+                    await this.showHeader();
 
                     break;
                 case 'delete_java':
                     await temurin.delete();
                     console.log('\n\n\n');
+                    await this.showHeader();
 
                     break;
                 case 'reset_minecraft':
@@ -469,8 +490,8 @@ export class Runtime {
 
     private async launch() {
         const code = await this.handler.run_minecraft();
-        if (code === 200) {
-            console.log(chalk.green('✅ Minecraft exited successfully!'));
+        if (code) {
+            console.log(chalk.green(`✅ Minecraft exited with code ${code}`));
         } else {
             console.log(chalk.red('❌ Failed to launch Minecraft.'));
         }

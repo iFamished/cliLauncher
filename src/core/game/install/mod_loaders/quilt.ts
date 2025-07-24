@@ -9,6 +9,8 @@ import { run as executeJar } from '../../../tools/executor';
 import { ClientJar } from '../../../../types/client';
 import LauncherProfileManager from '../../../tools/launcher';
 import { logger } from '../../launch/handler';
+import { isMinecraftVersionInstalled, installVanillaHelper } from '../vanilla';
+import { pathExists, unlinkSync } from 'fs-extra';
 
 const metadata = {
     name: 'Quilt',
@@ -49,6 +51,12 @@ export async function installQuiltViaExecutor(): Promise<ClientJar | null> {
 
         const minecraftVersion = await askForVersion(manifest.versions, latestMC);
 
+        spinner.stop();
+        const isVanillaInstalled = isMinecraftVersionInstalled(minecraftVersion);
+        if (!isVanillaInstalled) {
+            await installVanillaHelper(minecraftVersion);
+        }
+
         const installerVersion = await getLatestInstallerVersion();
 
         const loaderVersions = await getAllLoaderVersions();
@@ -73,9 +81,13 @@ export async function installQuiltViaExecutor(): Promise<ClientJar | null> {
         
         await downloader(jarUrl, jarPath);
 
-        waitForFolder(metadata, minecraftVersion).then(versionFolder => {
+        waitForFolder(metadata, minecraftVersion).then(async(versionFolder) => {
             const profileManager = new LauncherProfileManager();
             const versionId = path.basename(versionFolder);
+
+            const quiltJar = path.join(versionFolder, `${versionId}.jar`);
+            if(await pathExists(quiltJar)) unlinkSync(quiltJar);
+            
             profileManager.addProfile(versionId, minecraftVersion, versionId, metadata, versionId, metadata.name);
         })
 

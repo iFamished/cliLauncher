@@ -16,7 +16,7 @@ const metadata = {
     author: 'Mojang'
 };
 
-export async function installVanillaViaExecutor(): Promise<ClientJar | null> {
+export async function installVanillaViaExecutor(version?: string): Promise<ClientJar | null> {
     const spinner = ora('🌱 Preparing Vanilla installation...').start();
 
     try {
@@ -25,7 +25,7 @@ export async function installVanillaViaExecutor(): Promise<ClientJar | null> {
 
         spinner.stop();
 
-        const minecraftVersion = await askForVersion(manifest.versions, latestMC);
+        const minecraftVersion = version ?? await askForVersion(manifest.versions, latestMC);
 
         const versionMeta = manifest.versions.find(v => v.id === minecraftVersion);
         if (!versionMeta) throw new Error('Version metadata not found.');
@@ -71,6 +71,15 @@ export async function installVanillaViaExecutor(): Promise<ClientJar | null> {
         logger.error(err.message || err);
         return null;
     }
+}
+
+export function isMinecraftVersionInstalled(version: string): Boolean {
+    const profileManager = new LauncherProfileManager();
+    return profileManager.getProfile(version) ? true : false;
+}
+
+export async function installVanillaHelper(version: string): Promise<ClientJar | null> {
+    return await installVanillaViaExecutor(version);
 }
 
 // Run if invoked directly

@@ -7,8 +7,8 @@ exports.run = run;
 const child_process_1 = require("child_process");
 const fs_1 = __importDefault(require("fs"));
 const chalk_1 = __importDefault(require("chalk"));
-const path_1 = __importDefault(require("path"));
 const java_1 = __importDefault(require("../../java"));
+const common_1 = require("../utils/common");
 async function run(jarPath, args = []) {
     if (!fs_1.default.existsSync(jarPath)) {
         console.error(`🚫 JAR not found: ${jarPath}`);
@@ -19,7 +19,7 @@ async function run(jarPath, args = []) {
     return new Promise((resolve, reject) => {
         const javaProcess = (0, child_process_1.spawn)(javaPath.path, ['-jar', jarPath, ...args], {
             stdio: 'inherit',
-            cwd: path_1.default.dirname(jarPath)
+            cwd: (0, common_1.minecraft_dir)(),
         });
         javaProcess.on('close', (code) => {
             if (code === 0) {

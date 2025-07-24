@@ -9,11 +9,13 @@ import { run as executeJar } from '../../../tools/executor';
 import { ClientJar } from '../../../../types/client';
 import LauncherProfileManager from '../../../tools/launcher';
 import { logger } from '../../launch/handler';
+import { isMinecraftVersionInstalled, installVanillaHelper } from '../vanilla';
 
 const metadata = {
     name: 'Fabric',
     description: 'A lightweight, experimental modding toolchain for Minecraft.',
-    author: 'FabricMC'
+    author: 'FabricMC',
+    jvm: '-DFabricMcEmu=net.minecraft.client.main.Main',
 };
 
 const FABRIC_META = 'https://meta.fabricmc.net/v2';
@@ -45,6 +47,12 @@ export async function installFabricViaExecutor(): Promise<ClientJar | null> {
         spinner.stop()
 
         const minecraftVersion = await askForVersion(manifest.versions, latestMC);
+
+        spinner.stop();
+        const isVanillaInstalled = isMinecraftVersionInstalled(minecraftVersion);
+        if (!isVanillaInstalled) {
+            await installVanillaHelper(minecraftVersion);
+        }
 
         const loaderVersions = await getAvailableLoaders();
         const { loaderVersion } = await inquirer.prompt([

@@ -4,9 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Logger = exports.ProgressReport = void 0;
+exports.logPopupError = logPopupError;
 const chalk_1 = __importDefault(require("chalk"));
 const spinnies_1 = __importDefault(require("spinnies"));
 const uuid_1 = require("uuid");
+const boxen_1 = __importDefault(require("boxen"));
+const inquirer_1 = __importDefault(require("inquirer"));
 const tags = {
     log: chalk_1.default.hex('#00c4cc')('📝 LOG'),
     warn: chalk_1.default.hex('#ffc107')('⚠️ WARN'),
@@ -212,4 +215,28 @@ class Logger {
     }
 }
 exports.Logger = Logger;
+async function logPopupError(title, body, askBeforeContinue = false) {
+    console.clear();
+    process.stdout.write("\x07");
+    const boxed = (0, boxen_1.default)(`${chalk_1.default.bold(title)}\n\n${body.split('\n').map(v => { if (v.startsWith(' '))
+        return v.trim(); return v; }).join('\n')}`, {
+        padding: 1,
+        margin: 1,
+        borderColor: "redBright",
+        borderStyle: "round",
+        title: chalk_1.default.redBright("🚫 ERROR"),
+        titleAlignment: "center"
+    });
+    console.error(boxed);
+    if (askBeforeContinue) {
+        await inquirer_1.default.prompt([
+            {
+                type: "confirm",
+                name: "continue",
+                message: chalk_1.default.gray("Press Enter to continue"),
+                default: true
+            }
+        ]);
+    }
+}
 //# sourceMappingURL=logger.js.map

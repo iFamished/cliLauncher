@@ -14,10 +14,12 @@ const common_1 = require("../../../utils/common");
 const executor_1 = require("../../../tools/executor");
 const launcher_1 = __importDefault(require("../../../tools/launcher"));
 const handler_1 = require("../../launch/handler");
+const vanilla_1 = require("../vanilla");
 const metadata = {
     name: 'Fabric',
     description: 'A lightweight, experimental modding toolchain for Minecraft.',
-    author: 'FabricMC'
+    author: 'FabricMC',
+    jvm: '-DFabricMcEmu=net.minecraft.client.main.Main',
 };
 const FABRIC_META = 'https://meta.fabricmc.net/v2';
 const FABRIC_MAVEN = `https://maven.fabricmc.net`;
@@ -41,6 +43,11 @@ async function installFabricViaExecutor() {
         const latestMC = manifest.latest.release;
         spinner.stop();
         const minecraftVersion = await (0, minecraft_versions_1.askForVersion)(manifest.versions, latestMC);
+        spinner.stop();
+        const isVanillaInstalled = (0, vanilla_1.isMinecraftVersionInstalled)(minecraftVersion);
+        if (!isVanillaInstalled) {
+            await (0, vanilla_1.installVanillaHelper)(minecraftVersion);
+        }
         const loaderVersions = await getAvailableLoaders();
         const { loaderVersion } = await inquirer_1.default.prompt([
             {

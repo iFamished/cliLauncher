@@ -11,12 +11,20 @@
 
 ```bash
 npm install -g @origami-minecraft/stable
+
+or
+
+yarn global add @origami-minecraft/stable
 ```
 
 ### Development Build (Unstable, bleeding-edge)
 
 ```bash
 npm install -g @origami-minecraft/devbuilds
+
+or
+
+yarn global add @origami-minecraft/devbuilds
 ```
 
 ---
@@ -229,3 +237,4 @@ origami launch
 
 * [GitHub Repository](https://github.com/merasugd/origami-launcher)
 * [NPM Page](https://www.npmjs.com/package/@origami-minecraft/stable)
+* [Yarn Page](https://yarnpkg.com/package?q=%40origami-mine&name=%40origami-minecraft%2Fstable)

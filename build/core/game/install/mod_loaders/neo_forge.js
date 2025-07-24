@@ -12,12 +12,12 @@ const common_1 = require("../../../utils/common");
 const executor_1 = require("../../../tools/executor");
 const launcher_1 = __importDefault(require("../../../tools/launcher"));
 const handler_1 = require("../../launch/handler");
+const vanilla_1 = require("../vanilla");
 const metadata = {
     name: 'NeoForge',
-    description: 'NeoForge Minecraft client installer',
+    description: 'A modern fork of Minecraft Forge, designed to provide a faster, cleaner, and more community-friendly modding experience',
     author: 'NeoForged Project',
-    unstable: true,
-    jvm: '--add-opens java.base/java.lang.invoke=ALL-UNNAMED',
+    jvm: "${neoforged}",
 };
 const MAVEN_BASE = 'https://maven.neoforged.net/releases/net/neoforged';
 const METADATA_URL = `${MAVEN_BASE}/neoforge/maven-metadata.xml`;
@@ -25,7 +25,6 @@ function getInstallerJarUrl(version) {
     return `${MAVEN_BASE}/neoforge/${version}/neoforge-${version}-installer.jar`;
 }
 function extractMCVersionFromNeoForge(neoforgeVersion) {
-    // Match things like 20.2.31, 21.5.3-beta, etc.
     const match = neoforgeVersion.match(/^(\d+)\.(\d+)\.\d+(?:-.+)?$/);
     if (!match)
         return null;
@@ -71,6 +70,11 @@ async function installNeoForgeViaExecutor() {
             choices: mcVersions,
             default: mcVersions[mcVersions.length - 1]
         });
+        spinner.stop();
+        const isVanillaInstalled = (0, vanilla_1.isMinecraftVersionInstalled)(mcVersion);
+        if (!isVanillaInstalled) {
+            await (0, vanilla_1.installVanillaHelper)(mcVersion);
+        }
         const neoChoices = mcMap[mcVersion];
         const defaultNeo = neoChoices[neoChoices.length - 1];
         const { neoVersion } = await inquirer_1.default.prompt({
@@ -95,7 +99,7 @@ async function installNeoForgeViaExecutor() {
         });
         spinner.text = '🚀 Running NeoForge installer...';
         spinner.stop();
-        await (0, executor_1.run)(jarPath, []);
+        await (0, executor_1.run)(jarPath, ['--installClient']);
         spinner.succeed('✅ NeoForge installed successfully!');
         return {
             name: metadata.name,

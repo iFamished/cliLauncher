@@ -2,7 +2,7 @@ import axios from "axios";
 import { VersionData, VersionManifest } from "../../types/version";
 import inquirer from "inquirer";
 
-let versions_manifest = 'https://launchermeta.mojang.com/mc/game/version_manifest.json';
+let versions_manifest = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
 
 export async function fetchMinecraftVersionManifest(): Promise<VersionManifest> {
     let req = await axios.get(versions_manifest);
@@ -43,4 +43,30 @@ export async function askForVersion(mcVersions: VersionData[], latestMC: string)
     ]);
 
     return minecraftVersion;
+}
+
+export async function getRequiredJavaMajor(versionId: string): Promise<number | null> {
+    try {
+        const manifest = await fetchMinecraftVersionManifest();
+        const entry = manifest.versions.find(v => v.id === versionId);
+        if (!entry) return null;
+
+        const res = await axios.get(entry.url);
+        const vjson = res.data;
+        return vjson?.javaVersion?.majorVersion || null;
+    } catch(_) {
+        return null;
+    }
+}
+
+export async function isJavaCompatible(installed: string | null, versionId: string): Promise<{ result: boolean, installed: number | null, required: number | null }> {
+    if(installed && installed.startsWith('1.')) installed = installed.replaceAll('1.', '');
+
+    const majInstalled = installed ? parseInt(installed) : NaN;
+    const required = await getRequiredJavaMajor(versionId);
+    return {
+        result: !isNaN(majInstalled) && required !== null && majInstalled >= required,
+        installed: majInstalled,
+        required: required,
+    };
 }

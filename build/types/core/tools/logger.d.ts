@@ -33,3 +33,4 @@ export declare class Logger {
     warn(msg: string): void;
     error(...msg: string[]): void;
 }
+export declare function logPopupError(title: string, body: string, askBeforeContinue?: boolean): Promise<void>;

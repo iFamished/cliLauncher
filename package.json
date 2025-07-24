@@ -39,6 +39,7 @@
     "@inquirer/prompts": "^7.5.3",
     "adm-zip": "^0.5.16",
     "axios": "^1.9.0",
+    "boxen": "^8.0.1",
     "chalk": "^5.4.1",
     "checksum": "^1.0.0",
     "chokidar": "^4.0.3",

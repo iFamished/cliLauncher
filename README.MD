@@ -101,6 +101,8 @@ Install the latest stable version from NPM:
 npm install -g @origami-minecraft/stable
 ```
 
+---
+
 Once installed, you can use the `origami` command anywhere in your terminal.
 
 ---
@@ -115,6 +117,30 @@ You can install them directly from NPM:
 ```bash
 npm install -g @origami-minecraft/devbuilds
 ```
+
+---
+
+### 🧶 Yarn Support
+
+Prefer [Yarn](https://yarnpkg.com/) over npm? Origami supports it too!
+
+Install with:
+
+```bash
+yarn global add @origami-minecraft/stable
+```
+
+Or for dev builds:
+
+```bash
+yarn global add @origami-minecraft/devbuilds
+```
+
+> ✅ Make sure Yarn is installed globally:
+>
+> ```bash
+> corepack enable
+> ```
 
 ---
 
@@ -194,8 +220,9 @@ npm run origami
 
 ## 🌐 Links
 
-- 📁 GitHub: [github.com/merasugd/origami-launcher](https://github.com/merasugd/origami-launcher)
-- 📦 NPM Stable: [npmjs.com/package/@origami-minecraft/stable](https://www.npmjs.com/package/@origami-minecraft/stable)
+- 📁 GitHub: [Click Here](https://github.com/merasugd/origami-launcher)
+- 📦 NPM Stable: [Click Here](https://www.npmjs.com/package/@origami-minecraft/stable)
+- 📦 Yarn Stable: [Click Here](https://yarnpkg.com/package?q=%40origami-mine&name=%40origami-minecraft%2Fstable)
 
 ---
 
