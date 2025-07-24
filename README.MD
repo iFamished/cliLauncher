@@ -185,7 +185,7 @@ Navigate using your keyboard to log in, manage accounts, install versions, or la
 
 Curious what all those launcher settings actually do?
 
-🧠 Check out the full settings breakdown in [`OPTIONS.md`](https://github.com/merasugd/origami-launcher/blob/main/wiki/OPTIONS.md)
+🧠 Check out the full settings breakdown in [Settings Guide](https://github.com/merasugd/origami-launcher/blob/main/wiki/SETTINGS.md)
 It explains every toggle and feature, like memory usage, window modes, safe exit, and more!
 
 ---

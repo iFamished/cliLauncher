@@ -27,6 +27,11 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### \[2.2.1] - 2025-07-24
+* Fixed readme issues
+
+---
+
 ### \[2.2.0] - 2025-07-24
 
 > 📦 **Data Structure Migration + Log Improvements**
