@@ -5,7 +5,7 @@ import fs from 'fs'
 import { ModrinthProjects } from './modrinth'
 import { Logger } from '../../../tools/logger'
 import { LauncherProfile } from '../../../../types/launcher'
-import { ensureDir, minecraft_dir } from '../../../utils/common'
+import { async_minecraft_data_dir, ensureDir } from '../../../utils/common'
 import { downloader } from '../../../utils/download'
 import { ModData, ModrinthSearchParams, ModrinthSortOption, ModrinthSortOptions, ModrinthVersion, ModrinthVersionFile } from '../../../../types/modrinth'
 import ModrinthModManager from './manager'
@@ -175,7 +175,7 @@ export class ModInstaller {
         let versions_p: string[] | undefined = defaults_p?.versionFilter ?? (type === 'mod' ? [profile.lastVersionId] : undefined);
         let categories_p: string[] | undefined = defaults_p?.selectedCategories ?? (type === 'mod' ? [loader] : undefined);
 
-        const version_folder = path.join(minecraft_dir(true), 'instances', profile.origami.path);
+        const version_folder = await async_minecraft_data_dir(profile.origami.path);
         const folder = { mod: 'mods', resourcepack: 'resourcepacks', shader: 'shaderpacks' }[type as string] || 'mods';
         const dest = path.join(version_folder, folder);
         ensureDir(dest);

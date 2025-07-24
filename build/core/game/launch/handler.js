@@ -159,8 +159,7 @@ class Handler {
         if (!(0, fs_extra_1.existsSync)(version_path) || !(0, fs_extra_1.existsSync)(version_json)) {
             return null;
         }
-        let origami_dir = (0, common_1.minecraft_dir)(true);
-        let origami_data = path_1.default.join(origami_dir, 'instances', name);
+        let origami_data = await (0, common_1.async_minecraft_data_dir)(name);
         (0, common_1.ensureDir)(origami_data);
         try {
             let java = await java_1.default.select(false, selected_profile?.origami.version);
@@ -456,9 +455,8 @@ class Handler {
         }
         try {
             const mc_dir = (0, common_1.minecraft_dir)();
-            const origami_dir = (0, common_1.minecraft_dir)(true);
             const version_path = path_1.default.join(mc_dir, "versions", profile.origami.path);
-            const instance_path = path_1.default.join(origami_dir, "instances", profile.origami.path);
+            const instance_path = await (0, common_1.async_minecraft_data_dir)(profile.origami.path);
             if ((0, fs_extra_1.existsSync)(version_path))
                 await (0, fs_extra_1.remove)(version_path);
             if ((0, fs_extra_1.existsSync)(instance_path))

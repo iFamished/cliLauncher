@@ -41,6 +41,8 @@ exports.cleanDir = cleanDir;
 exports.moveFileSync = moveFileSync;
 exports.localpath = localpath;
 exports.minecraft_dir = minecraft_dir;
+exports.sync_minecraft_data_dir = sync_minecraft_data_dir;
+exports.async_minecraft_data_dir = async_minecraft_data_dir;
 exports.printVersion = printVersion;
 exports.waitForFolder = waitForFolder;
 exports.valid_string = valid_string;
@@ -48,25 +50,27 @@ exports.valid_boolean = valid_boolean;
 exports.parse_input = parse_input;
 exports.getSafeConcurrencyLimit = getSafeConcurrencyLimit;
 exports.limitedAll = limitedAll;
-const fs_1 = __importStar(require("fs"));
+const fs_extra_1 = __importStar(require("fs-extra"));
 const envs_1 = __importDefault(require("../tools/envs"));
 const path_1 = __importDefault(require("path"));
 const chokidar_1 = __importDefault(require("chokidar"));
 const os_1 = require("os");
 const p_limit_1 = __importDefault(require("p-limit"));
+const handler_1 = require("../game/launch/handler");
+const data_manager_1 = require("../tools/data_manager");
 function ensureDir(dir) {
-    if (!fs_1.default.existsSync(dir)) {
-        fs_1.default.mkdirSync(dir, { recursive: true });
+    if (!fs_extra_1.default.existsSync(dir)) {
+        fs_extra_1.default.mkdirSync(dir, { recursive: true });
     }
 }
 function cleanDir(dir) {
-    if (fs_1.default.existsSync(dir)) {
-        fs_1.default.rmSync(dir, { recursive: true, force: true });
+    if (fs_extra_1.default.existsSync(dir)) {
+        fs_extra_1.default.rmSync(dir, { recursive: true, force: true });
     }
 }
 function moveFileSync(oldPath, newPath) {
-    (0, fs_1.copyFileSync)(oldPath, newPath);
-    (0, fs_1.unlinkSync)(oldPath);
+    (0, fs_extra_1.copyFileSync)(oldPath, newPath);
+    (0, fs_extra_1.unlinkSync)(oldPath);
 }
 function localpath(isCache = false) {
     let folder = isCache ? (0, envs_1.default)('Origami-Cache').temp : (0, envs_1.default)('Origami-Data').data;
@@ -79,18 +83,65 @@ function minecraft_dir(origami_data) {
     ensureDir(mc);
     ensureDir(path_1.default.join(mc, "versions"));
     if (origami_data) {
-        let origami = path_1.default.join(mc, 'origami_files');
-        ensureDir(origami);
-        ensureDir(path_1.default.join(origami, 'instances'));
-        return origami;
+        let data = path_1.default.join(localpath(), '.data');
+        ensureDir(data);
+        return data;
     }
     return mc;
 }
 ;
+function sync_minecraft_data_dir(version, options) {
+    let mc = path_1.default.join(minecraft_dir(), 'versions', version);
+    let data = path_1.default.join(mc, 'data');
+    if ((0, data_manager_1.get)('universal:dir') && !options) {
+        return minecraft_dir();
+    }
+    ensureDir(mc);
+    ensureDir(data);
+    return data;
+}
+async function async_minecraft_data_dir(version) {
+    const newDir = sync_minecraft_data_dir(version);
+    const legacyDir = path_1.default.join(minecraft_dir(), 'origami_files', 'instances', version);
+    if (!(await fs_extra_1.default.pathExists(legacyDir))) {
+        return newDir;
+    }
+    const files = await collectFiles(legacyDir);
+    const progress = handler_1.logger.progress();
+    const task = progress.create(`Migrating ${version}`, files.length);
+    progress.start();
+    await fs_extra_1.default.ensureDir(newDir);
+    for (let i = 0; i < files.length; i++) {
+        const relPath = path_1.default.relative(legacyDir, files[i]);
+        const destPath = path_1.default.join(newDir, relPath);
+        await fs_extra_1.default.ensureDir(path_1.default.dirname(destPath));
+        await fs_extra_1.default.copy(files[i], destPath);
+        task?.increment();
+    }
+    await fs_extra_1.default.remove(legacyDir);
+    task?.stop(false);
+    handler_1.logger.success(`Migration complete for version ${version}.`);
+    return newDir;
+}
+async function collectFiles(dir) {
+    const entries = await fs_extra_1.default.readdir(dir, { withFileTypes: true });
+    const files = [];
+    for (const entry of entries) {
+        const fullPath = path_1.default.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            const nested = await collectFiles(fullPath);
+            files.push(...nested);
+        }
+        else {
+            files.push(fullPath);
+        }
+    }
+    return files;
+}
 function printVersion() {
     let package_json = path_1.default.join(__dirname, '..', '..', '..', 'package.json');
-    if (fs_1.default.existsSync(package_json)) {
-        const { version } = JSON.parse(fs_1.default.readFileSync(package_json, { encoding: "utf-8" }));
+    if (fs_extra_1.default.existsSync(package_json)) {
+        const { version } = JSON.parse(fs_extra_1.default.readFileSync(package_json, { encoding: "utf-8" }));
         return version;
     }
     else {

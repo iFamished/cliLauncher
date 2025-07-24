@@ -41,13 +41,12 @@ const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const chalk_1 = __importDefault(require("chalk"));
 const common_1 = require("../../../utils/common");
-const mcDir = (0, common_1.minecraft_dir)(true);
 class ModrinthModManager {
     filePath;
     versionPath;
     data;
     constructor(profile) {
-        this.versionPath = path.join(mcDir, 'instances', profile.origami.path);
+        this.versionPath = (0, common_1.sync_minecraft_data_dir)(profile.origami.path);
         this.filePath = path.join(this.versionPath, 'origami_installs.json');
         if (!fs.existsSync(this.versionPath))
             fs.mkdirSync(this.versionPath, { recursive: true });

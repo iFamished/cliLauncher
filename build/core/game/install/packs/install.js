@@ -152,7 +152,7 @@ class ModInstaller {
         let sort_p = defaults_p?.sort ?? 'relevance';
         let versions_p = defaults_p?.versionFilter ?? (type === 'mod' ? [profile.lastVersionId] : undefined);
         let categories_p = defaults_p?.selectedCategories ?? (type === 'mod' ? [loader] : undefined);
-        const version_folder = path_1.default.join((0, common_1.minecraft_dir)(true), 'instances', profile.origami.path);
+        const version_folder = await (0, common_1.async_minecraft_data_dir)(profile.origami.path);
         const folder = { mod: 'mods', resourcepack: 'resourcepacks', shader: 'shaderpacks' }[type] || 'mods';
         const dest = path_1.default.join(version_folder, folder);
         (0, common_1.ensureDir)(dest);

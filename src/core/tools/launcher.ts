@@ -12,11 +12,12 @@ import neoforge from '../game/install/mod_loaders/neo_forge';
 import fabric from '../game/install/mod_loaders/fabric';
 import quilt from '../game/install/mod_loaders/quilt';
 import vanilla from '../game/install/vanilla';
-import { confirm } from '@inquirer/prompts';
 import LauncherOptionsManager from '../game/launch/options';
 
 const mcDir = minecraft_dir(true);
+
 const launcherProfilesPath = path.join(mcDir, 'profiles.json');
+const legacy_210_profiles = path.join(minecraft_dir(), 'origami_files', 'profiles.json');
 
 export class LauncherProfileManager {
     private filePath: string;
@@ -24,6 +25,13 @@ export class LauncherProfileManager {
 
     constructor(filePath: string = launcherProfilesPath) {
         this.filePath = filePath;
+
+        if(fs.existsSync(legacy_210_profiles)) {
+            fs.writeFileSync(filePath, fs.readFileSync(legacy_210_profiles));
+            
+            setTimeout(() => fs.unlinkSync(legacy_210_profiles), 500);
+        }
+        
         this.data = { origami_profiles: {} };
         this.load();
         this.autoImportVanillaProfiles();

@@ -1,7 +1,7 @@
 import { Credentials, IAuthProvider } from "../../../types/account";
 import { LauncherAccount, LauncherProfile } from "../../../types/launcher";
 import LauncherProfileManager from "../../tools/launcher";
-import { ensureDir, minecraft_dir, printVersion } from "../../utils/common";
+import { async_minecraft_data_dir, ensureDir, minecraft_dir, printVersion } from "../../utils/common";
 import { getAuthProvider } from "../account";
 import LauncherAccountManager from "../account/account";
 import path from "path";
@@ -189,8 +189,7 @@ export class Handler {
             return null;
         }
 
-        let origami_dir = minecraft_dir(true);
-        let origami_data = path.join(origami_dir, 'instances', name);
+        let origami_data = await async_minecraft_data_dir(name);
         ensureDir(origami_data);
 
         try {
@@ -541,10 +540,9 @@ export class Handler {
 
         try {
             const mc_dir = minecraft_dir();
-            const origami_dir = minecraft_dir(true);
 
             const version_path = path.join(mc_dir, "versions", profile.origami.path);
-            const instance_path = path.join(origami_dir, "instances", profile.origami.path);
+            const instance_path = await async_minecraft_data_dir(profile.origami.path);
 
             if (existsSync(version_path)) await remove(version_path);
             if (existsSync(instance_path)) await remove(instance_path);

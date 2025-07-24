@@ -34,7 +34,8 @@ async function installVanillaViaExecutor(version) {
         const res = await axios_1.default.get(versionMeta.url);
         const versionData = res.data;
         let versionFolder = path_1.default.join((0, common_1.minecraft_dir)(), 'versions', minecraftVersion);
-        versionFolder = ensureVersionDir(versionFolder);
+        (0, common_1.cleanDir)(versionFolder);
+        (0, common_1.ensureDir)(versionFolder);
         const jarUrl = versionData.downloads.client.url;
         const jarPath = path_1.default.join(versionFolder, `${minecraftVersion}.jar`);
         const jsonPath = path_1.default.join(versionFolder, `${minecraftVersion}.json`);
@@ -80,20 +81,4 @@ exports.default = {
     metadata,
     get: installVanillaViaExecutor,
 };
-function ensureVersionDir(dir, i = 1) {
-    if (fs_1.default.existsSync(dir)) {
-        const contents = fs_1.default.readdirSync(dir);
-        if (contents.length === 0 || !contents.find(v => v.endsWith('.json')) || contents.find(v => v.endsWith('.jar'))) {
-            (0, common_1.cleanDir)(dir);
-            return ensureVersionDir(dir, i);
-        }
-        const baseName = path_1.default.basename(dir);
-        const parentDir = path_1.default.dirname(dir);
-        const newDir = path_1.default.join(parentDir, `${baseName} (${i})`);
-        return ensureVersionDir(newDir, i + 1);
-    }
-    (0, common_1.ensureDir)(dir);
-    return dir;
-}
-;
 //# sourceMappingURL=vanilla.js.map

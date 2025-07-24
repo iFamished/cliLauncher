@@ -1,10 +1,12 @@
-import fs, { copyFileSync, unlinkSync } from "fs";
+import fs, { copyFileSync, unlinkSync } from "fs-extra";
 import envPaths from "../tools/envs";
 import path, { join } from "path";
 import chokidar from "chokidar";
 import { Metadata } from "../../types/launcher";
 import { platform } from "os";
 import pLimit, { LimitFunction } from "p-limit";
+import { logger } from "../game/launch/handler";
+import { get } from "../tools/data_manager";
 
 export function ensureDir(dir: string) {
     if (!fs.existsSync(dir)) {
@@ -38,16 +40,75 @@ export function minecraft_dir(origami_data?: boolean) {
     ensureDir(path.join(mc, "versions"));
 
     if(origami_data) {
-        let origami = path.join(mc, 'origami_files');
-
-        ensureDir(origami);
-        ensureDir(path.join(origami, 'instances'));
-        
-        return origami;
+        let data = path.join(localpath(), '.data');
+        ensureDir(data);
+        return data;
     }
 
     return mc;
 };
+
+export function sync_minecraft_data_dir(version: string, options?: boolean) {
+    let mc = path.join(minecraft_dir(), 'versions', version);
+    let data = path.join(mc, 'data');
+
+    if(get('universal:dir') && !options) {
+        return minecraft_dir();
+    }
+
+    ensureDir(mc);
+    ensureDir(data);
+
+    return data;
+}
+
+export async function async_minecraft_data_dir(version: string): Promise<string> {
+    const newDir = sync_minecraft_data_dir(version);
+    const legacyDir = path.join(minecraft_dir(), 'origami_files', 'instances', version);
+
+    if (!(await fs.pathExists(legacyDir))) {
+        return newDir;
+    }
+
+    const files = await collectFiles(legacyDir);
+    const progress = logger.progress();
+    const task = progress.create(`Migrating ${version}`, files.length);
+    progress.start();
+
+    await fs.ensureDir(newDir);
+
+    for (let i = 0; i < files.length; i++) {
+        const relPath = path.relative(legacyDir, files[i]);
+        const destPath = path.join(newDir, relPath);
+
+        await fs.ensureDir(path.dirname(destPath));
+        await fs.copy(files[i], destPath);
+        task?.increment();
+    }
+
+    await fs.remove(legacyDir);
+    task?.stop(false);
+    logger.success(`Migration complete for version ${version}.`);
+
+    return newDir;
+}
+
+async function collectFiles(dir: string): Promise<string[]> {
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    const files: string[] = [];
+
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+            const nested = await collectFiles(fullPath);
+            files.push(...nested);
+        } else {
+            files.push(fullPath);
+        }
+    }
+
+    return files;
+}
 
 export function printVersion () {
     let package_json = path.join(__dirname, '..', '..', '..', 'package.json');

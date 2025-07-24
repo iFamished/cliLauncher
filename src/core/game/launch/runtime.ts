@@ -475,9 +475,9 @@ export class Runtime {
         if (!confirm) return;
 
         try {
+            removeSync(origami);
             removeSync(data);
             removeSync(cache);
-            removeSync(origami);
 
             console.log(chalk.green('🧹 Origami reset successfully.'));
         } catch (err) {

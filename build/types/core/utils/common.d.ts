@@ -5,6 +5,8 @@ export declare function cleanDir(dir: string): void;
 export declare function moveFileSync(oldPath: string, newPath: string): void;
 export declare function localpath(isCache?: boolean): string;
 export declare function minecraft_dir(origami_data?: boolean): string;
+export declare function sync_minecraft_data_dir(version: string, options?: boolean): string;
+export declare function async_minecraft_data_dir(version: string): Promise<string>;
 export declare function printVersion(): any;
 export declare function waitForFolder(metadata: Metadata, id: string): Promise<string>;
 export declare function valid_string(input: any): input is string;

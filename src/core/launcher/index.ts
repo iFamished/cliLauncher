@@ -211,6 +211,12 @@ export default class MCLCore extends EventEmitter {
             const raw = data.toString('utf-8').trim();
             const lower = raw.toLowerCase();
 
+            if (
+                raw.includes("OpenGL debug message") &&
+                raw.includes("GL_INVALID_OPERATION") &&
+                raw.includes("mojang/GlDebug")
+            ) return
+
             if (lower.includes("error") || lower.includes("exception in thread")) {
                 return master.emit("minecraft-error", raw);
             }

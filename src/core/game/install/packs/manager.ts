@@ -2,10 +2,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import chalk from 'chalk';
 import { Filters, InstalledProfile, ModProfile, ModrinthSortOption } from '../../../../types/modrinth';
-import { minecraft_dir } from '../../../utils/common';
+import { sync_minecraft_data_dir } from '../../../utils/common';
 import { LauncherProfile } from '../../../../types/launcher';
-
-const mcDir = minecraft_dir(true);
 
 export class ModrinthModManager {
     private filePath: string;
@@ -13,7 +11,7 @@ export class ModrinthModManager {
     private data: ModProfile;
 
     constructor(profile: LauncherProfile) {
-        this.versionPath = path.join(mcDir, 'instances', profile.origami.path);
+        this.versionPath = sync_minecraft_data_dir(profile.origami.path);
         this.filePath = path.join(this.versionPath, 'origami_installs.json');
 
         if(!fs.existsSync(this.versionPath)) fs.mkdirSync(this.versionPath, { recursive: true });

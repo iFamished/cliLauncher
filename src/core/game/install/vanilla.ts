@@ -1,5 +1,4 @@
 import axios from 'axios';
-import inquirer from 'inquirer';
 import ora from 'ora';
 import path from 'path';
 import fs from 'fs';
@@ -35,7 +34,9 @@ export async function installVanillaViaExecutor(version?: string): Promise<Clien
         const versionData = res.data;
 
         let versionFolder = path.join(minecraft_dir(), 'versions', minecraftVersion);
-        versionFolder = ensureVersionDir(versionFolder);
+        
+        cleanDir(versionFolder);
+        ensureDir(versionFolder);
 
         const jarUrl = versionData.downloads.client.url;
         const jarPath = path.join(versionFolder, `${minecraftVersion}.jar`);
@@ -90,22 +91,4 @@ if (require.main === module) {
 export default {
     metadata,
     get: installVanillaViaExecutor,
-};
-
-function ensureVersionDir(dir: string, i: number = 1): string {
-    if (fs.existsSync(dir)) {
-        const contents = fs.readdirSync(dir);
-        if (contents.length === 0 || !contents.find(v => v.endsWith('.json')) || contents.find(v => v.endsWith('.jar'))) {
-            cleanDir(dir);
-            return ensureVersionDir(dir, i);
-        }
-
-        const baseName = path.basename(dir);
-        const parentDir = path.dirname(dir);
-        const newDir = path.join(parentDir, `${baseName} (${i})`);
-        return ensureVersionDir(newDir, i + 1);
-    }
-
-    ensureDir(dir);
-    return dir;
 };

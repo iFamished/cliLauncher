@@ -27,6 +27,56 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### \[2.2.0] - 2025-07-24
+
+> 📦 **Data Structure Migration + Log Improvements**
+
+* 🔄 **New Storage Structure for Origami Files**
+
+  * ✅ All `origami_files` data (e.g., accounts, global settings, profiles) has been **moved out of `.minecraft`**
+  * ✅ Keeps Origami files **safe from accidental `.minecraft` deletion**
+  * 🧠 Migration is seamless — **auto-migration is fully supported**, no user action needed!
+
+* 📁 **Game Version Data Relocation**
+
+  * All version-specific data in `./minecraft/origami_files/instances/<id>` has been moved to:
+
+    ```
+    ./minecraft/versions/<id>/data
+    ```
+  * 🔍 Groups configuration files, metadata, and game data **in one place per version**
+  * Makes it easier to navigate and manually tweak individual instance settings
+
+* 🌐 **New Global Setting: "Universal Game Directory"**
+
+  * You can now enable a **Universal Game Directory** mode in the global settings
+  * When enabled, the launcher uses `.minecraft` as the **main game directory** for all versions
+  * Useful for compatibility with mods or tools expecting files in the traditional location
+
+* 🧹 **OpenGL Debug Spam Suppressed**
+
+  * 🪄 Suppressed `GLDebug` OpenGL error messages from Minecraft log output like:
+
+    ```
+    GL_INVALID_OPERATION in (null): (ID: 173538523) Generic error
+    ```
+  * Keeps logs clean and readable by hiding non-critical rendering errors
+
+* ✨ **Config UI Now Shows Current Values**
+
+  * The options configuration screen now **displays current values** for each setting
+  * Makes reviewing and editing settings easier and more transparent
+
+* ✨ **New: Reset Settings**
+  * You can now **reset all global or per-profile options** to their default values from the configuration menu
+  * Great for resolving issues or starting fresh with default launcher behavior
+
+* 🐛 **Fixed Profile Settings Not Saving Properly**
+
+  * Per-profile JVM and Java runtime settings now **save correctly** and persist between sessions
+
+---
+
 ### \[2.1.0] - 2025-07-24
 
 > 🎉 **Minor UI Update**

@@ -22,7 +22,8 @@ const HMAC_ALGO = 'sha256';
 const mcDir = minecraft_dir(true);
 const launcherProfilesPath = path.join(mcDir, 'accounts.dat');
 
-const old_launcherProfilesPath = path.join(mcDir, 'launcher_profiles.json');
+const old_launcherProfilesPath = path.join(minecraft_dir(), 'launcher_profiles.json');
+const legacy_210_profiles = path.join(minecraft_dir(), 'origami_files', 'accounts.dat');
 
 async function getOrGenerateKey(): Promise<Buffer> {
     const stored = await keytar.getPassword(SERVICE, ACCOUNT);
@@ -146,6 +147,13 @@ export class LauncherAccountManager {
 
     constructor(filePath: string = launcherProfilesPath) {
         this.filePath = filePath;
+
+        if(fs.existsSync(legacy_210_profiles)) {
+            fs.writeFileSync(filePath, fs.readFileSync(legacy_210_profiles));
+            
+            setTimeout(() => fs.unlinkSync(legacy_210_profiles), 500);
+        }
+        
         this.data = { accounts: {} };
         this.load();
     }

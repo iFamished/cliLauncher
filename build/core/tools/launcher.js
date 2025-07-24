@@ -52,11 +52,16 @@ const vanilla_1 = __importDefault(require("../game/install/vanilla"));
 const options_1 = __importDefault(require("../game/launch/options"));
 const mcDir = (0, common_1.minecraft_dir)(true);
 const launcherProfilesPath = path.join(mcDir, 'profiles.json');
+const legacy_210_profiles = path.join((0, common_1.minecraft_dir)(), 'origami_files', 'profiles.json');
 class LauncherProfileManager {
     filePath;
     data;
     constructor(filePath = launcherProfilesPath) {
         this.filePath = filePath;
+        if (fs.existsSync(legacy_210_profiles)) {
+            fs.writeFileSync(filePath, fs.readFileSync(legacy_210_profiles));
+            setTimeout(() => fs.unlinkSync(legacy_210_profiles), 500);
+        }
         this.data = { origami_profiles: {} };
         this.load();
         this.autoImportVanillaProfiles();

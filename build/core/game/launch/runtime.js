@@ -442,9 +442,9 @@ class Runtime {
         if (!confirm)
             return;
         try {
+            (0, fs_extra_1.removeSync)(origami);
             (0, fs_extra_1.removeSync)(data);
             (0, fs_extra_1.removeSync)(cache);
-            (0, fs_extra_1.removeSync)(origami);
             console.log(chalk_1.default.green('🧹 Origami reset successfully.'));
         }
         catch (err) {

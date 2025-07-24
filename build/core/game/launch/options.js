@@ -51,8 +51,8 @@ const inquirer_1 = __importDefault(require("inquirer"));
 const launcher_1 = __importDefault(require("../../tools/launcher"));
 const java_1 = __importDefault(require("../../../java"));
 const data_manager_1 = require("../../tools/data_manager");
-const mcDir = (0, common_1.minecraft_dir)(true);
-const launcherProfilesPath = path.join(mcDir, 'settings.json');
+const launcherProfilesPath = path.join((0, common_1.minecraft_dir)(true), 'settings.json');
+const legacy_210_settings = path.join((0, common_1.minecraft_dir)(), 'origami_files', 'settings.json');
 class LauncherOptionsManager {
     filePath;
     default_filePath;
@@ -60,6 +60,10 @@ class LauncherOptionsManager {
     currentProfile;
     constructor(filePath = launcherProfilesPath) {
         this.filePath = filePath;
+        if (fs.existsSync(legacy_210_settings)) {
+            fs.writeFileSync(filePath, fs.readFileSync(legacy_210_settings));
+            setTimeout(() => fs.unlinkSync(legacy_210_settings), 500);
+        }
         this.default_filePath = filePath;
         this.data = { options: {} };
         this.load();
@@ -68,7 +72,7 @@ class LauncherOptionsManager {
         if (!profile)
             this.filePath = this.default_filePath;
         else {
-            let instance_path = path.join(mcDir, 'instances', profile.origami.path);
+            let instance_path = (0, common_1.sync_minecraft_data_dir)(profile.origami.path, true);
             (0, common_1.ensureDir)(instance_path);
             this.filePath = path.join(instance_path, 'origami_options.json');
             this.currentProfile = profile;
@@ -104,37 +108,50 @@ class LauncherOptionsManager {
         fs.writeFileSync(this.filePath, JSON.stringify({ options: {} }, null, 2));
     }
     async configureOptions() {
+        const opts = this.data.options;
+        const profile = this.currentProfile;
         const choices = [];
-        if (this.currentProfile) {
+        if (profile) {
             choices.push(new prompts_1.Separator(`-- Selected Profile Settings --`));
-            choices.push({ name: 'JVM Arguments (per profile)', value: 'jvm' });
-            choices.push({ name: 'Java Runtime (per profile)', value: 'java' });
+            const jvmValue = profile.origami.jvm ? ` (current: ${profile.origami.jvm.slice(0, 32)}...)` : '';
+            choices.push({ name: `JVM Arguments${jvmValue}`, value: 'jvm' });
+            const java = (0, data_manager_1.get)('use:temurin');
+            const javaLabel = java
+                ? `Java Runtime [${java.version ?? 'unknown version'} - ${java.provider ?? 'manual'}] (${java.path || '<unknown path>'})`
+                : 'Java Runtime [not set]';
+            choices.push({ name: javaLabel, value: 'java' });
         }
         else {
-            choices.push(new prompts_1.Separator(`-- Global --`));
-            choices.push({ name: 'Allow Offline Auth (EXPERIMENTAL AND NOT RECOMMEMDED)', value: '__offline_auth' });
+            choices.push(new prompts_1.Separator(`-- Global Options --`));
+            const allowOffline = (0, data_manager_1.get)('allow:offline_auth');
+            choices.push({ name: `Allow Offline Auth [${allowOffline ? 'ENABLED' : 'DISABLED'}]`, value: '__offline_auth' });
+            const universalDataFolder = (0, data_manager_1.get)('universal:dir');
+            choices.push({ name: `Universal Game Directory [${universalDataFolder ? 'ENABLED' : 'DISABLED'}]`, value: '__universal_dir' });
         }
-        ;
         const global_options = [
-            { name: 'Memory Settings', value: 'memory' },
-            { name: 'Window Size', value: 'window' },
-            { name: 'Fullscreen Mode', value: 'fullscreen' },
-            { name: 'Safe Exit', value: 'safe_exit' },
-            { name: 'Max Sockets', value: 'max_sockets' },
-            { name: 'Parallel Connections', value: 'connections' },
+            { name: `Memory Settings [min: ${opts.memory?.min ?? '512M'}, max: ${opts.memory?.max ?? '2G'}]`, value: 'memory' },
+            {
+                name: `Window Size [${opts.fullscreen ? 'Fullscreen' : `${opts.window_size?.width ?? '-'}x${opts.window_size?.height ?? '-'}`}]`,
+                value: 'window'
+            },
+            { name: `Fullscreen Mode [${opts.fullscreen ? 'ENABLED' : 'DISABLED'}]`, value: 'fullscreen' },
+            { name: `Safe Exit [${opts.safe_exit ? 'ENABLED' : 'DISABLED'}]`, value: 'safe_exit' },
+            { name: `Max Sockets [${opts.max_sockets ?? 8}]`, value: 'max_sockets' },
+            { name: `Parallel Connections [${opts.connections ?? (0, common_1.getSafeConcurrencyLimit)()}]`, value: 'connections' },
         ];
         const configChoices = await inquirer_1.default.prompt([
             {
                 type: 'checkbox',
                 name: 'optionsToConfigure',
                 message: 'Select which options to configure:',
-                choices: choices.concat(global_options),
+                choices: choices.concat(global_options).concat([
+                    new prompts_1.Separator(),
+                    { name: chalk_1.default.red('🗑️  Reset All Settings to Defaults'), value: '__reset' },
+                ]),
                 loop: false,
                 pageSize: 10
             }
         ]);
-        const opts = this.data.options;
-        const profile = this.currentProfile;
         for (const item of configChoices.optionsToConfigure) {
             switch (item) {
                 case 'memory':
@@ -187,13 +204,28 @@ class LauncherOptionsManager {
                     let new_setting = await promptBoolean('Allow Offline Authentication?', false);
                     (0, data_manager_1.set)('allow:offline_auth', new_setting);
                     break;
+                case '__universal_dir':
+                    let default_univeraal = (0, data_manager_1.get)('universal:dir') ? true : false;
+                    let universal = await promptBoolean('Universal Game Directory', default_univeraal);
+                    (0, data_manager_1.set)('universal:dir', universal);
+                    break;
+                case '__reset': // 🆕
+                    const confirmReset = await promptBoolean('Are you sure you want to reset all settings to default?', false);
+                    if (confirmReset) {
+                        this.reset();
+                        (0, data_manager_1.set)('allow:offline_auth', false);
+                        (0, data_manager_1.set)('universal:dir', false);
+                        console.log(chalk_1.default.green('✅ All settings have been reset.'));
+                        this.load();
+                    }
+                    break;
             }
         }
+        this.save();
         if (this.currentProfile) {
             this.currentProfile = void 0;
             this.filePath = this.default_filePath;
         }
-        this.save();
     }
     getFixedOptions() {
         const opts = this.data.options;
