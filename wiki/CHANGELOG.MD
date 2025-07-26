@@ -27,6 +27,11 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### \[2.3.1] - 2025-07-27
+ * Updated readme
+
+---
+
 ### \[2.3.0] - 2025-07-27
 
 > 📦 **Modpack Installer**

@@ -156,12 +156,26 @@ See what's new in stable builds in the [Changelog](https://github.com/merasugd/o
 
 ## 🎮 Features
 
-- 🎨 Beautiful terminal UI with gradient animations and ASCII art
-- 🔐 Microsoft & Mojang Authenticator support
-- 📂 Profile management (choose/create/remove)
-- ⬇️ Install and manage Minecraft versions (vanilla & modded)
-- 🛠 Customizable settings and CLI-first configuration
-- 💨 Launch Minecraft directly from the terminal
+* 🎨 **Beautiful terminal UI** with gradient animations and ASCII art
+* 🔐 **Microsoft, Mojang & Custom Auth support** (Littleskin, Ely.by, etc)
+* 📂 **Profile system** - create, select, and configure per-profile settings
+* ⬇️ **Install and manage Minecraft versions** (Vanilla, Forge, NeoForge, Fabric, Quilt)
+* 🧪 **Experimental Modpack Installer**
+  * Installs mods, sets up loaders automatically via `origami menu`
+* 🌐 **Universal Game Directory Mode**
+  * Enable globally or per profile, great for switching between traditional `.minecraft` and isolated setups
+
+* ⚙️ **Per-Profile JVM & Java Runtime config**
+
+  * Control memory, JVM flags, and choose Java binary per profile
+* 📦 **Modrinth browser with filters**
+
+  * Browse mods, resource packs, and shaders with pagination and custom filters
+* 💬 **Friendly error prompts and CLI feedback**
+
+  * Errors are shown clearly, with retry logic and detailed messages
+* ✨ **Supports GraalVM, Zulu, Corretto, Temurin**, install JDKs right in the launcher
+* 💨 **Launch Minecraft directly from terminal**
 
 ---
 
@@ -178,6 +192,11 @@ origami menu
 ![Preview](https://raw.githubusercontent.com/merasugd/origami-launcher/refs/heads/main/wiki/images/image.png)
 
 Navigate using your keyboard to log in, manage accounts, install versions, or launch the game.
+
+<video width="720" controls>
+  <source src="https://github.com/merasugd/origami-launcher/raw/refs/heads/main/wiki/videos/preview.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ---
 
