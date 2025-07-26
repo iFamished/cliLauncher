@@ -4,3 +4,6 @@ scripts/
 .npmrc
 .npmtoken
 build/**/usermade/
+
+# large file
+wiki/

@@ -27,8 +27,9 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### \[2.3.3] - 2025-07-27
+### \[2.3.4] - 2025-07-27
  * Updated readme
+ * Wiki Files finally not bundled in the package
 
 ---
 
