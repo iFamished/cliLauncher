@@ -189,7 +189,7 @@ origami menu
 
 ### 🖼️ Preview
 
-![Preview](https://raw.githubusercontent.com/merasugd/origami-launcher/refs/heads/main/wiki/images/image.png)
+![Preview](https://raw.githubusercontent.com/merasugd/origami-launcher/refs/heads/main/wiki/images/new_image.png)
 
 Navigate using your keyboard to log in, manage accounts, install versions, or launch the game.
 
@@ -197,6 +197,8 @@ Navigate using your keyboard to log in, manage accounts, install versions, or la
   <source src="https://github.com/merasugd/origami-launcher/raw/refs/heads/main/wiki/videos/preview.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
+
+[![Demo Video](https://raw.githubusercontent.com/merasugd/origami-launcher/refs/heads/main/wiki/images/new_image.png)](https://github.com/merasugd/origami-launcher/raw/refs/heads/main/wiki/videos/preview.mp4)
 
 ---
 
