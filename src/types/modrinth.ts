@@ -175,6 +175,7 @@ export interface ModrinthSearchHit {
 
 export type FacetOptions = {
     categories?: string[];
+    loaders?: string[];
     versions?: string[];
     project_type?: string[];
     client_side?: ('required' | 'optional' | 'unsupported')[];
@@ -214,3 +215,35 @@ export interface ModData {
     specific: ModrinthVersionFile | undefined;
     versions: ModrinthVersion[];
 }
+
+export interface ModpackData {
+    hit: ModrinthSearchHit;
+    is_installed: boolean;
+    versions: ModrinthVersion[];
+}
+
+export type ModrinthModpackIndex = {
+    game: string;
+    formatVersion: number;
+    versionId: string;
+    name: string;
+    summary: string;
+    files: ModrinthModFile[];
+    dependencies: {
+        [key: string]: string;
+    };
+};
+
+export type ModrinthModFile = {
+    path: string;
+    hashes: {
+        sha512: string;
+        sha1: string;
+    };
+    env: {
+        client: 'required' | 'optional' | 'unsupported';
+        server: 'required' | 'optional' | 'unsupported';
+    };
+    downloads: string[];
+    fileSize: number;
+};

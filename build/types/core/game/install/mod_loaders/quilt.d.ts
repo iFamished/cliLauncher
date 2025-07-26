@@ -1,5 +1,5 @@
 import { ClientJar } from '../../../../types/client';
-export declare function installQuiltViaExecutor(): Promise<ClientJar | null>;
+export declare function installQuiltViaExecutor(version?: string, loader_ver?: string): Promise<ClientJar | null>;
 declare const _default: {
     metadata: {
         name: string;

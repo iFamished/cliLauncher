@@ -8,7 +8,7 @@ import inquirer from 'inquirer';
 import { Credentials } from '../types/account';
 import fetch from 'node-fetch';
 import temurin from '../java';
-import { ModInstaller } from '../core/game/install/packs/install';
+import { ModInstaller } from '../core/game/install/packs/mod';
 import { logger } from '../core/game/launch/handler';
 import { getAuthProviders } from '../core/game/account';
 import { createProvider, deleteProvider } from '../core/game/account/auth_types/create';

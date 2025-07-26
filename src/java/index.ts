@@ -5,10 +5,8 @@ import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import * as tar from 'tar';
-import AdmZip from 'adm-zip';
 import { downloader } from '../core/utils/download';
-import { ensureDir, localpath } from '../core/utils/common';
+import { ensureDir, extractTar, extractZip, localpath } from '../core/utils/common';
 import * as data_manager from "../core/tools/data_manager";
 
 //const API_BASE = 'https://api.adoptium.net/v3';
@@ -65,13 +63,9 @@ async function extractArchive(filePath: string, outputDir: string) {
     }
 
     if (isZip) {
-        const zip = new AdmZip(filePath);
-        zip.extractAllTo(outputDir, true);
+        await extractZip(filePath, outputDir);
     } else if (isTarGz) {
-        await tar.x({
-            file: filePath,
-            cwd: outputDir
-        });
+        await extractTar(filePath, outputDir);
     } else {
         throw new Error('Uh-oh! Unsupported archive format 😿');
     }
@@ -154,7 +148,7 @@ async function main() {
         return;
     }
 
-    const extractSpinner = ora(`🎁 Unwrapping your package into ./binaries ...`).start();
+    const extractSpinner = ora(`🎁 Unwrapping your package into ./binaries ...`).start().stop();
     try {
         await extractArchive(downloadPath, extractPath);
         await fs.promises.rm(downloadPath, { recursive: true, force: true });

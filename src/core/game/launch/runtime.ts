@@ -12,13 +12,14 @@ import { localpath, minecraft_dir } from '../../utils/common';
 import { removeSync } from 'fs-extra';
 import { checkForLatestVersion } from '../../../cli/origami';
 import temurin, { JavaBinary } from '../../../java';
-import { ModInstaller } from '../install/packs/install';
+import { ModInstaller } from '../install/packs/mod';
 import { LauncherProfile } from '../../../types/launcher';
 import ModrinthModManager from '../install/packs/manager';
 import { getAuthProviders } from '../account';
 import MicrosoftAuth from '../account/auth_types/premade/microsoft';
 import { createProvider, deleteProvider } from '../account/auth_types/create';
 import { Separator } from '@inquirer/prompts';
+import { ModpackInstaller } from '../install/packs/modpack';
 
 if (!process.stdin.isTTY) {
     logger.error(`Umm... is this terminal asleep? I can't reach it (no TTY 😢)`);
@@ -183,7 +184,7 @@ export class Runtime {
         const logo = figlet.textSync('Origami', { font: randomFont });
 
         const profile = this.handler.profiles.getSelectedProfile();
-        const profileName = profile ? chalk.cyan(`📂 Current Selected Profile: ${chalk.green(profile.name)}`) : chalk.gray('📂 No profile selected');
+        const profileName = profile ? chalk.cyan(`🎮 Current Selected Profile: ${chalk.green(profile.name)}`) : chalk.gray('🎮 No profile selected');
 
         const account = await this.handler.accounts.getSelectedAccount();
         const accountName = account ? chalk.cyan(`🔐 Current Selected Account: ${chalk.green(account.name || 'user')} - ${chalk.yellow(account.auth.name)+chalk.blueBright(` (${account.auth.base})`)}`) : chalk.gray('🔐 No account selected');
@@ -327,6 +328,7 @@ export class Runtime {
                         new inquirer.Separator(),
                         { name: '📂 All Profiles', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
+                        { name: '⬇️  Install Modpack', value: 'install_modpack' },
                         { name: '🗑️  Delete Profile/Instance', value: 'delete_profile' },
                         new inquirer.Separator(),
                         { name: '🧩 Install Mods / Resources / Shaders', value: 'install_content' },
@@ -378,6 +380,13 @@ export class Runtime {
                     break;
                 case 'install_version':
                     await this.handler.install_version();
+                    console.log('\n\n\n');
+                    await this.showHeader();
+
+                    break;
+                case 'install_modpack':
+                    const mpack_installer = new ModpackInstaller(logger);
+                    await mpack_installer.install_modrinth_content();
                     console.log('\n\n\n');
                     await this.showHeader();
 

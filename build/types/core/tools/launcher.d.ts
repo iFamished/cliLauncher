@@ -5,6 +5,7 @@ export declare class LauncherProfileManager {
     constructor(filePath?: string);
     fetchMetadata(folder: string, versionJsonPath: string): {
         version: string;
+        mc_version: string;
         metadata: Metadata;
     };
     private cleanupProfiles;

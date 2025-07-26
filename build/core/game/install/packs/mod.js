@@ -23,84 +23,109 @@ class ModInstaller {
         this.modrinth = new modrinth_1.ModrinthProjects(logger);
     }
     async configure_filters(project_type, version, loader, manager, defaults) {
+        const stored = manager.getDefaultFilters(project_type) ?? {};
+        const currentSort = defaults?.sort ?? stored.sort ?? 'relevance';
+        const currentVersionMatch = defaults?.versionMatch ?? ((stored.versionFilter?.length || 0) < 1 ? 'none' : stored.versionFilter?.length === 1 ? 'strict' : 'match') ?? 'strict';
+        const currentCategories = defaults?.selectedCategories ?? stored.selectedCategories ?? [];
         const all_categories = (await this.modrinth.tags.getCategories(project_type)) || [];
         const categoryOptions = all_categories
             .filter(cat => project_type === 'mod' ? cat.name.toLowerCase() !== loader.toLowerCase() : true)
             .map(cat => ({ name: cat.name, value: cat.name }));
-        const { sort } = await inquirer_1.default.prompt([
+        const { configureWhat } = await inquirer_1.default.prompt([
             {
-                type: 'list',
-                name: 'sort',
-                message: '📊 Sort results by:',
-                choices: modrinth_2.ModrinthSortOptions.map(opt => ({
-                    name: opt.charAt(0).toUpperCase() + opt.slice(1),
-                    value: opt,
-                })),
-                default: defaults?.sort ?? 'relevance'
-            }
-        ]);
-        const { versionMatch } = await inquirer_1.default.prompt([
-            {
-                type: 'list',
-                name: 'versionMatch',
-                message: '🎯 Minecraft version match strategy:',
+                type: 'checkbox',
+                name: 'configureWhat',
+                message: '🛠️ What would you like to configure?',
                 choices: [
-                    { name: 'Strict (exact version match)', value: 'strict' },
-                    { name: 'Match (minor version match)', value: 'match' },
-                    { name: 'None (ignore version)', value: 'none' }
-                ],
-                default: defaults?.versionMatch ?? 'strict'
+                    { name: `Sort (${currentSort})`, value: 'sort' },
+                    { name: `Version match (${currentVersionMatch})`, value: 'versionMatch' },
+                    { name: `Categories (${currentCategories.join(', ') || 'none'})`, value: 'categories' },
+                    { name: `Page Limit (${manager.getPageLimit()})`, value: 'page_limit' },
+                ]
             }
         ]);
+        let sort = currentSort;
+        let versionMatch = currentVersionMatch;
         let versionFilter = undefined;
-        if (versionMatch === 'strict') {
-            versionFilter = [];
-            versionFilter.push(version);
-        }
-        else if (versionMatch === 'match') {
-            versionFilter = [];
-            const matchedVersion = await this.modrinth.fetchAllMatchVersions(version);
-            versionFilter.push(version);
-            matchedVersion.forEach(ver => {
-                if (!versionFilter?.find(v => v === ver)) {
-                    versionFilter?.push(ver);
-                }
-            });
-        }
-        let categories = defaults?.selectedCategories;
-        if (categoryOptions.length > 0) {
-            const { selectedCategories } = await inquirer_1.default.prompt([
+        let categories = currentCategories;
+        if (configureWhat.includes('sort')) {
+            const sortAns = await inquirer_1.default.prompt([
                 {
-                    type: 'checkbox',
-                    name: 'selectedCategories',
-                    message: '🧩 Select categories to filter by:',
-                    choices: categoryOptions,
-                    default: defaults?.selectedCategories ?? [],
+                    type: 'list',
+                    name: 'sort',
+                    message: '📊 Sort results by:',
+                    choices: modrinth_2.ModrinthSortOptions.map(opt => ({
+                        name: opt.charAt(0).toUpperCase() + opt.slice(1),
+                        value: opt,
+                    })),
+                    default: sort,
                 }
             ]);
-            categories = selectedCategories.length > 0 ? selectedCategories : undefined;
+            sort = sortAns.sort;
+        }
+        if (configureWhat.includes('versionMatch')) {
+            const versionAns = await inquirer_1.default.prompt([
+                {
+                    type: 'list',
+                    name: 'versionMatch',
+                    message: '🎯 Minecraft version match strategy:',
+                    choices: [
+                        { name: 'Strict (exact version match)', value: 'strict' },
+                        { name: 'Match (minor version match)', value: 'match' },
+                        { name: 'None (ignore version)', value: 'none' }
+                    ],
+                    default: versionMatch
+                }
+            ]);
+            versionMatch = versionAns.versionMatch;
+            if (versionMatch === 'strict') {
+                versionFilter = [version];
+            }
+            else if (versionMatch === 'match') {
+                const matchedVersion = await this.modrinth.fetchAllMatchVersions(version);
+                versionFilter = [version, ...matchedVersion.filter(ver => ver !== version)];
+            }
+            else {
+                versionFilter = undefined;
+            }
+        }
+        if (configureWhat.includes('categories')) {
+            if (categoryOptions.length > 0) {
+                const catAns = await inquirer_1.default.prompt([
+                    {
+                        type: 'checkbox',
+                        name: 'selectedCategories',
+                        message: '🧩 Select categories to filter by:',
+                        choices: categoryOptions,
+                        default: currentCategories,
+                    }
+                ]);
+                categories = catAns.selectedCategories.length > 0 ? catAns.selectedCategories : undefined;
+            }
         }
         if (project_type === 'mod' && !categories?.some(v => v.toLowerCase() === loader.toLowerCase())) {
             categories = [...(categories ?? []), loader.toLowerCase()];
         }
-        const { page_limit } = await inquirer_1.default.prompt([
-            {
-                type: 'input',
-                name: 'page_limit',
-                message: '📄 How many results per page?',
-                default: `${manager.getPageLimit()}`,
-                filter: input => parseInt(input, 10),
-                validate: input => {
-                    const num = parseInt(input, 10);
-                    if (isNaN(num) || num <= 0)
-                        return 'Page limit must be a positive number';
-                    if (num > 100)
-                        return 'Maximum allowed is 100';
-                    return true;
+        if (configureWhat.includes('page_limit')) {
+            const pageAns = await inquirer_1.default.prompt([
+                {
+                    type: 'input',
+                    name: 'page_limit',
+                    message: '📄 How many results per page?',
+                    default: `${manager.getPageLimit()}`,
+                    filter: input => parseInt(input, 10),
+                    validate: input => {
+                        const num = parseInt(input, 10);
+                        if (isNaN(num) || num <= 0)
+                            return 'Page limit must be a positive number';
+                        if (num > 100)
+                            return 'Maximum allowed is 100';
+                        return true;
+                    }
                 }
-            }
-        ]);
-        manager.currentPageLimit(typeof page_limit === 'string' ? parseInt(page_limit) : page_limit);
+            ]);
+            manager.currentPageLimit(pageAns.page_limit);
+        }
         manager.configureFilter(project_type, {
             sort,
             versionFilter,
@@ -151,14 +176,14 @@ class ModInstaller {
         let defaults_p = manager.getDefaultFilters(type);
         let sort_p = defaults_p?.sort ?? 'relevance';
         let versions_p = defaults_p?.versionFilter ?? (type === 'mod' ? [profile.lastVersionId] : undefined);
-        let categories_p = defaults_p?.selectedCategories ?? (type === 'mod' ? [loader] : undefined);
+        let categories_p = defaults_p?.selectedCategories;
         const version_folder = await (0, common_1.async_minecraft_data_dir)(profile.origami.path);
         const folder = { mod: 'mods', resourcepack: 'resourcepacks', shader: 'shaderpacks' }[type] || 'mods';
         const dest = path_1.default.join(version_folder, folder);
         (0, common_1.ensureDir)(dest);
         while (true) {
             console.clear();
-            console.log(chalk_1.default.bold(`📦 ${mode === 'home' ? 'Featured' : 'Search'} ${type}s (MC ${mcVersion}) — Page ${page + 1}\n`));
+            console.log(chalk_1.default.bold(`📦 ${mode === 'home' ? 'Featured' : 'Search'} ${type}s (MC ${mcVersion}) — Page ${page + 1})\n`));
             const spinner = (0, ora_1.default)('🐾 Warming up the search engine...').start();
             this.pageSize = manager.getPageLimit();
             let searchResults;
@@ -171,6 +196,7 @@ class ModInstaller {
                     project_type: type,
                     versions: versions_p,
                     categories: categories_p,
+                    loaders: type === 'mod' ? [loader] : undefined,
                 }
             };
             spinner.text = '🔍 Looking through Modrinth...';
@@ -184,9 +210,17 @@ class ModInstaller {
             spinner.text = `🎀 Gathering ${type} files...`;
             spinner.color = 'yellow';
             for (const hit of hits) {
-                const versions = await this.modrinth.versions.fetchVersions(hit.project_id, type === 'mod' ? [loader] : undefined, versions_p);
-                const isInstalled = versions?.find(v => v.files.find(f => manager.getFromType(f.filename, type)));
-                const file = isInstalled ? isInstalled.files.find(f => manager.getFromType(f.filename, type)) : undefined;
+                const raw_versions = await this.modrinth.versions.fetchVersions(hit.project_id, type === 'mod' ? [loader] : undefined, versions_p);
+                const supports_loader = raw_versions?.some(v => v.loaders.includes(loader));
+                if (!supports_loader && type === 'mod')
+                    return;
+                const versions = raw_versions?.filter(v => {
+                    if (type !== 'mod')
+                        return true;
+                    return v.loaders.includes(loader);
+                });
+                let isInstalled = versions?.find(v => v.files.find(f => manager.getFromType(f.filename, type)));
+                let file = isInstalled ? isInstalled.files.find(f => manager.getFromType(f.filename, type)) : undefined;
                 if (versions) {
                     versions_data.push({ hit: hit.project_id, is_installed: isInstalled, specific: file, versions });
                 }
@@ -194,8 +228,8 @@ class ModInstaller {
                     versions_data.push({ hit: hit.project_id, is_installed: undefined, specific: undefined, versions: [] });
                 }
                 const displayName = isInstalled
-                    ? chalk_1.default.italic.underline(`${hit.title} — ⬇ ${hit.downloads.toLocaleString()} / ⭐ ${hit.follows.toLocaleString()}`)
-                    : `${hit.title} — ⬇ ${hit.downloads.toLocaleString()} / ⭐ ${hit.follows.toLocaleString()}`;
+                    ? chalk_1.default.italic.underline(`${hit.title} — ⬇ ${hit.downloads.toLocaleString()} / ⭐ ${hit.follows.toLocaleString()} — ${hit.description}`)
+                    : `${hit.title} — ⬇ ${hit.downloads.toLocaleString()} / ⭐ ${hit.follows.toLocaleString()} — ${hit.description}`;
                 choices.push({ name: displayName, value: hit.project_id });
             }
             if (page > 0)
@@ -355,4 +389,4 @@ class ModInstaller {
     }
 }
 exports.ModInstaller = ModInstaller;
-//# sourceMappingURL=install.js.map
+//# sourceMappingURL=mod.js.map

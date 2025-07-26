@@ -43,6 +43,7 @@ exports.localpath = localpath;
 exports.minecraft_dir = minecraft_dir;
 exports.sync_minecraft_data_dir = sync_minecraft_data_dir;
 exports.async_minecraft_data_dir = async_minecraft_data_dir;
+exports.collectFiles = collectFiles;
 exports.printVersion = printVersion;
 exports.waitForFolder = waitForFolder;
 exports.valid_string = valid_string;
@@ -50,6 +51,12 @@ exports.valid_boolean = valid_boolean;
 exports.parse_input = parse_input;
 exports.getSafeConcurrencyLimit = getSafeConcurrencyLimit;
 exports.limitedAll = limitedAll;
+exports.moveFolderContents = moveFolderContents;
+exports.sanitizePathSegment = sanitizePathSegment;
+exports.jsonParser = jsonParser;
+exports.cleanAfterInstall = cleanAfterInstall;
+exports.extractZip = extractZip;
+exports.extractTar = extractTar;
 const fs_extra_1 = __importStar(require("fs-extra"));
 const envs_1 = __importDefault(require("../tools/envs"));
 const path_1 = __importDefault(require("path"));
@@ -57,7 +64,12 @@ const chokidar_1 = __importDefault(require("chokidar"));
 const os_1 = require("os");
 const p_limit_1 = __importDefault(require("p-limit"));
 const handler_1 = require("../game/launch/handler");
-const data_manager_1 = require("../tools/data_manager");
+const tar = __importStar(require("tar"));
+const launcher_1 = __importDefault(require("../tools/launcher"));
+const options_1 = __importDefault(require("../game/launch/options"));
+const promises_1 = require("fs/promises");
+const adm_zip_1 = __importDefault(require("adm-zip"));
+const logger_1 = require("../tools/logger");
 function ensureDir(dir) {
     if (!fs_extra_1.default.existsSync(dir)) {
         fs_extra_1.default.mkdirSync(dir, { recursive: true });
@@ -90,15 +102,29 @@ function minecraft_dir(origami_data) {
     return mc;
 }
 ;
+let _isSyncing = false;
 function sync_minecraft_data_dir(version, options) {
-    let mc = path_1.default.join(minecraft_dir(), 'versions', version);
-    let data = path_1.default.join(mc, 'data');
-    if ((0, data_manager_1.get)('universal:dir') && !options) {
+    if (_isSyncing)
         return minecraft_dir();
+    _isSyncing = true;
+    try {
+        const rootDir = minecraft_dir();
+        const mc = path_1.default.join(rootDir, 'versions', version);
+        const data = path_1.default.join(mc, 'data');
+        const profile_manager = new launcher_1.default();
+        const settings = new options_1.default();
+        const current_profile = profile_manager.getSelectedProfile();
+        settings.setProfile(current_profile);
+        if (settings.getFixedOptions().universal_game_dir && !options) {
+            return rootDir;
+        }
+        ensureDir(mc);
+        ensureDir(data);
+        return data;
     }
-    ensureDir(mc);
-    ensureDir(data);
-    return data;
+    finally {
+        _isSyncing = false;
+    }
 }
 async function async_minecraft_data_dir(version) {
     const newDir = sync_minecraft_data_dir(version);
@@ -199,5 +225,116 @@ function getSafeConcurrencyLimit() {
 async function limitedAll(tasks, limit = (0, p_limit_1.default)(getSafeConcurrencyLimit())) {
     const wrappedTasks = tasks.map(task => typeof task === 'function' ? limit(task) : limit(() => task));
     return Promise.all(wrappedTasks);
+}
+async function moveFolderContents(srcFolder, destFolder) {
+    const entries = await fs_extra_1.default.readdir(srcFolder);
+    for (const entry of entries) {
+        const srcPath = path_1.default.join(srcFolder, entry);
+        const destPath = path_1.default.join(destFolder, entry);
+        await fs_extra_1.default.move(srcPath, destPath, { overwrite: true });
+    }
+}
+function sanitizePathSegment(input) {
+    return input
+        .replaceAll(/[<>:"/\\|?*\x00-\x1F]/g, '_')
+        .replaceAll(/\s+/g, '_')
+        .replaceAll(' ', '_')
+        .trim();
+}
+function jsonParser(str) {
+    try {
+        return JSON.parse(str);
+    }
+    catch (_) {
+        return {};
+    }
+}
+async function cleanAfterInstall(dir) {
+    await new Promise((res) => setTimeout(res, 100));
+    let mc = await (0, promises_1.readdir)(minecraft_dir(), { withFileTypes: true });
+    let logs = mc.filter(v => !v.isDirectory() && v.name.endsWith('.log'));
+    await (0, promises_1.rm)(dir, { recursive: true, force: true });
+    await Promise.all(logs.map(async (log) => {
+        let log_path = path_1.default.join(minecraft_dir(), log.name);
+        let logs_path = path_1.default.join(minecraft_dir(), 'logs');
+        ensureDir(logs_path);
+        return await (0, fs_extra_1.rename)(log_path, path_1.default.join(logs_path, log.name));
+    }));
+}
+async function extractZip(zip_file, target) {
+    try {
+        const zip = new adm_zip_1.default(zip_file);
+        const entries = zip.getEntries();
+        let start = false;
+        const prog = handler_1.progress.create(`${path_1.default.basename(zip_file)}`, entries.length, true);
+        for (const entry of entries) {
+            if (!start) {
+                handler_1.progress.start();
+                start = true;
+            }
+            const dest = path_1.default.join(target, entry.entryName);
+            if (entry.isDirectory) {
+                ensureDir(dest);
+                prog?.increment();
+                continue;
+            }
+            let data = await new Promise((res, rej) => entry.getDataAsync((data, err) => {
+                if (err)
+                    return rej(new Error(err));
+                res(data);
+            }));
+            ensureDir(path_1.default.dirname(dest));
+            await (0, fs_extra_1.writeFile)(dest, data);
+            prog?.increment();
+        }
+        handler_1.progress.stopAll();
+        return;
+    }
+    catch (e) {
+        await (0, logger_1.logPopupError)('Extraction Error', `🌸 Uh-oh! Something went wrong while unpacking your files:\n${e.message}`, true);
+        return;
+    }
+}
+function isGzipped(file) {
+    return file.endsWith(".tar.gz") || file.endsWith(".tgz");
+}
+async function extractTar(tarFile, target) {
+    try {
+        ensureDir(target);
+        const gzip = isGzipped(tarFile);
+        let tarPath = tarFile;
+        let entries = [];
+        await tar.t({
+            file: tarPath,
+            gzip,
+            onentry: (entry) => { entries.push(entry.path); },
+            onwarn(code, message, data) {
+                handler_1.logger.warn(`[TAR WARN] (${code}) - ${message} - Tar Code: ${data.tarCode || '<unknown>'} - File: ${data.file || '<unknown>'}`);
+            },
+        });
+        let start = false;
+        const prog = handler_1.progress.create(`${path_1.default.basename(tarFile)}`, entries.length, true);
+        await tar.x({
+            file: tarPath,
+            cwd: target,
+            gzip,
+            onentry: () => {
+                if (!start) {
+                    handler_1.progress.start();
+                    start = true;
+                }
+                prog?.increment();
+            },
+            onwarn(code, message, data) {
+                handler_1.logger.warn(`[TAR WARN] (${code}) - ${message} - Tar Code: ${data.tarCode || '<unknown>'} - File: ${data.file || '<unknown>'}`);
+            },
+        });
+        handler_1.progress.stopAll();
+        return;
+    }
+    catch (e) {
+        await (0, logger_1.logPopupError)('Extraction Error', `🌸 Uh-oh! Something went wrong while unpacking your files:\n${e.message}`, true);
+        return;
+    }
 }
 //# sourceMappingURL=common.js.map

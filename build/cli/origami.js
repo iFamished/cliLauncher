@@ -13,7 +13,7 @@ const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const node_fetch_1 = __importDefault(require("node-fetch"));
 const java_1 = __importDefault(require("../java"));
-const install_1 = require("../core/game/install/packs/install");
+const mod_1 = require("../core/game/install/packs/mod");
 const handler_1 = require("../core/game/launch/handler");
 const account_1 = require("../core/game/account");
 const create_1 = require("../core/game/account/auth_types/create");
@@ -38,7 +38,7 @@ program
         console.log(chalk_1.default.red('❌ No profile selected.'));
         process.exit(1);
     }
-    const installer = new install_1.ModInstaller(handler_1.logger);
+    const installer = new mod_1.ModInstaller(handler_1.logger);
     await installer.install_modrinth_content(profile);
     process.exit(0);
 });

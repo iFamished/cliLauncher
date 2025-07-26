@@ -150,6 +150,8 @@ class ModrinthProjects {
     }
     generateModrinthFacets(options) {
         const facets = [];
+        if (options.loaders?.length)
+            facets.push(options.loaders.map(c => `categories:${c}`));
         if (options.categories?.length)
             facets.push(options.categories.map(c => `categories:${c}`));
         if (options.versions?.length)

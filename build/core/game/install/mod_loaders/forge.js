@@ -17,7 +17,6 @@ const metadata = {
     name: 'Forge',
     description: 'A most widely used modding platform for Minecraft Java Edition.',
     author: 'MinecraftForge',
-    jvm: '-Djava.net.preferIPv6Addresses=system',
 };
 const FORGE_FILES = 'https://files.minecraftforge.net';
 const FORGE_BASE = 'https://maven.minecraftforge.net';
@@ -34,14 +33,14 @@ async function fetchAllForgeVersions() {
     }));
 }
 const INSTALLER_DIR = path_1.default.join((0, common_1.localpath)(true), 'forge-client');
-async function installForgeViaExecutor() {
+async function installForgeViaExecutor(version, loader_ver) {
     const spinner = (0, ora_1.default)('🛠️ Preparing Forge installation...').start();
     try {
         const manifest = await fetchAllForgeVersions();
         const mcVersions = manifest.map(entry => entry.id);
         const latestMC = mcVersions[mcVersions.length - 1];
         spinner.stop();
-        const { minecraftVersion } = await inquirer_1.default.prompt({
+        const { minecraftVersion } = version ? { minecraftVersion: version } : await inquirer_1.default.prompt({
             type: 'list',
             name: 'minecraftVersion',
             message: '🎮 Select Minecraft version:',
@@ -57,7 +56,7 @@ async function installForgeViaExecutor() {
         if (!forgeEntry)
             throw new Error(`No Forge versions found for Minecraft ${minecraftVersion}`);
         const latestForge = forgeEntry.forge[forgeEntry.forge.length - 1];
-        const { forgeVersion } = await inquirer_1.default.prompt({
+        const { forgeVersion } = loader_ver ? { forgeVersion: loader_ver } : await inquirer_1.default.prompt({
             type: 'list',
             name: 'forgeVersion',
             message: '🧱 Select Forge version:',
@@ -80,6 +79,8 @@ async function installForgeViaExecutor() {
         spinner.text = '🚀 Running Forge installer...';
         spinner.stop();
         await (0, executor_1.run)(jarPath, ['--installClient']);
+        spinner.text = 'Cleaning caches';
+        await (0, common_1.cleanAfterInstall)(INSTALLER_DIR);
         spinner.succeed('✅ Forge installed successfully!');
         return {
             name: metadata.name,

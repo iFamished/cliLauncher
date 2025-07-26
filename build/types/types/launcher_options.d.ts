@@ -5,6 +5,7 @@ export interface Options {
     safe_exit?: boolean;
     max_sockets?: number;
     connections?: number;
+    universal_game_dir?: boolean;
 }
 export interface FIXED_Options {
     memory: FIXED_MemoryOptions;
@@ -13,6 +14,7 @@ export interface FIXED_Options {
     safe_exit: boolean;
     max_sockets: number;
     connections: number;
+    universal_game_dir: boolean;
 }
 export interface FIXED_MemoryOptions {
     min: string;

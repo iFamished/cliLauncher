@@ -12,10 +12,10 @@ const chalk_1 = __importDefault(require("chalk"));
 const utils_1 = require("./utils");
 const handler_1 = require("../game/launch/handler");
 const axios_1 = __importDefault(require("axios"));
-const defaults_1 = require("../../config/defaults");
 const https_1 = require("https");
 const p_limit_1 = __importDefault(require("p-limit"));
 const common_1 = require("../utils/common");
+const download_1 = require("../utils/download");
 let counter = 0;
 class Handler {
     client;
@@ -56,64 +56,7 @@ class Handler {
     async downloadAsync(url, directory, name = "Task", retry = true, type = "Download", maxRetries = 2) {
         const targetPath = path_1.default.join(directory, name);
         (0, common_1.ensureDir)(directory);
-        let attempt = 0;
-        while (attempt <= maxRetries) {
-            try {
-                const response = await (0, axios_1.default)({
-                    url,
-                    method: "GET",
-                    responseType: "stream",
-                    headers: {
-                        "User-Agent": defaults_1.ORIGAMi_USER_AGENT,
-                    },
-                    httpAgent: this.agent,
-                    httpsAgent: this.agent,
-                    timeout: 50000,
-                    maxContentLength: Infinity,
-                    maxBodyLength: Infinity,
-                    validateStatus: (status) => status < 400
-                });
-                const totalBytes = parseInt(response.headers["content-length"] || "0", 10);
-                let receivedBytes = 0;
-                await new Promise((resolve, reject) => {
-                    const fileStream = fs_1.default.createWriteStream(targetPath);
-                    response.data.on("data", (chunk) => {
-                        receivedBytes += chunk.length;
-                        this.client.emit("download-status", {
-                            name,
-                            type,
-                            current: receivedBytes,
-                            total: totalBytes,
-                        });
-                    });
-                    response.data.pipe(fileStream);
-                    fileStream.on("finish", () => {
-                        this.client.emit("download", name);
-                        resolve();
-                    });
-                    fileStream.on("error", (err) => {
-                        reject(err);
-                    });
-                    response.data.on("error", (err) => {
-                        reject(err);
-                    });
-                });
-                return true;
-            }
-            catch (err) {
-                this.client.emit("debug", `[DOWNLOADER]: Failed to download ${url} to ${targetPath}:\n${err.message}`);
-                if (fs_1.default.existsSync(targetPath))
-                    fs_1.default.unlinkSync(targetPath);
-                attempt++;
-                if (attempt > maxRetries || !retry) {
-                    return { failed: true, asset: null };
-                }
-                const wait = 500 * Math.pow(2, attempt - 1);
-                this.client.emit("debug", `[DOWNLOADER]: Retrying download (${attempt}/${maxRetries}) after ${wait}ms...`);
-                await new Promise(res => setTimeout(res, wait));
-            }
-        }
-        return { failed: true, asset: null };
+        return (0, download_1.downloadAsync)(url, targetPath, retry, type, maxRetries, this.agent, this.client);
     }
     checkSum(hash, file) {
         return new Promise((resolve, _) => {

@@ -51,11 +51,12 @@ const common_1 = require("../../utils/common");
 const fs_extra_1 = require("fs-extra");
 const origami_1 = require("../../../cli/origami");
 const java_1 = __importDefault(require("../../../java"));
-const install_1 = require("../install/packs/install");
+const mod_1 = require("../install/packs/mod");
 const manager_1 = __importDefault(require("../install/packs/manager"));
 const account_1 = require("../account");
 const create_1 = require("../account/auth_types/create");
 const prompts_1 = require("@inquirer/prompts");
+const modpack_1 = require("../install/packs/modpack");
 if (!process.stdin.isTTY) {
     handler_1.logger.error(`Umm... is this terminal asleep? I can't reach it (no TTY 😢)`);
     process.exit(1);
@@ -194,7 +195,7 @@ class Runtime {
         const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
         const logo = figlet_1.default.textSync('Origami', { font: randomFont });
         const profile = this.handler.profiles.getSelectedProfile();
-        const profileName = profile ? chalk_1.default.cyan(`📂 Current Selected Profile: ${chalk_1.default.green(profile.name)}`) : chalk_1.default.gray('📂 No profile selected');
+        const profileName = profile ? chalk_1.default.cyan(`🎮 Current Selected Profile: ${chalk_1.default.green(profile.name)}`) : chalk_1.default.gray('🎮 No profile selected');
         const account = await this.handler.accounts.getSelectedAccount();
         const accountName = account ? chalk_1.default.cyan(`🔐 Current Selected Account: ${chalk_1.default.green(account.name || 'user')} - ${chalk_1.default.yellow(account.auth.name) + chalk_1.default.blueBright(` (${account.auth.base})`)}`) : chalk_1.default.gray('🔐 No account selected');
         const java = data_manager.get('use:temurin') || null;
@@ -312,6 +313,7 @@ class Runtime {
                         new inquirer_1.default.Separator(),
                         { name: '📂 All Profiles', value: 'choose_profile' },
                         { name: '⬇️  Install Minecraft Version', value: 'install_version' },
+                        { name: '⬇️  Install Modpack', value: 'install_modpack' },
                         { name: '🗑️  Delete Profile/Instance', value: 'delete_profile' },
                         new inquirer_1.default.Separator(),
                         { name: '🧩 Install Mods / Resources / Shaders', value: 'install_content' },
@@ -360,8 +362,14 @@ class Runtime {
                     console.log('\n\n\n');
                     await this.showHeader();
                     break;
+                case 'install_modpack':
+                    const mpack_installer = new modpack_1.ModpackInstaller(handler_1.logger);
+                    await mpack_installer.install_modrinth_content();
+                    console.log('\n\n\n');
+                    await this.showHeader();
+                    break;
                 case 'install_content':
-                    const installer = new install_1.ModInstaller(handler_1.logger);
+                    const installer = new mod_1.ModInstaller(handler_1.logger);
                     const profile = this.handler.profiles.getSelectedProfile();
                     if (profile)
                         await installer.install_modrinth_content(profile);

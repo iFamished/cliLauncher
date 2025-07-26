@@ -201,7 +201,12 @@ export default class MCLCore extends EventEmitter {
         if(!this.options || !this.options.overrides) return;
 
         const minecraft = child.spawn(this.options.javaPath ? this.options.javaPath : 'java', launchArguments,
-            { cwd: this.options.overrides.cwd || this.options.root, detached: this.options.overrides.detached });
+            {
+                cwd: this.options.overrides.cwd || this.options.root,
+                detached: this.options.overrides.detached,
+                stdio: ['inherit', 'pipe', 'pipe'],
+            }
+        );
         const master = this;
 
         minecraft.stdout.on('data', parseLogs);

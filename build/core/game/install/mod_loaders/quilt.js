@@ -19,7 +19,7 @@ const fs_extra_1 = require("fs-extra");
 const metadata = {
     name: 'Quilt',
     description: 'A modular, community-driven mod loader for Minecraft.',
-    author: 'QuiltMC'
+    author: 'QuiltMC',
 };
 const INSTALLER_BASE = 'https://maven.quiltmc.org/repository/release';
 const INSTALLER_DIR = path_1.default.join((0, common_1.localpath)(true), 'quilt-client');
@@ -42,13 +42,13 @@ async function getAllLoaderVersions() {
 function getInstallerJarUrl(version) {
     return `${INSTALLER_BASE}/org/quiltmc/quilt-installer/${version}/quilt-installer-${version}.jar`;
 }
-async function installQuiltViaExecutor() {
+async function installQuiltViaExecutor(version, loader_ver) {
     const spinner = (0, ora_1.default)('🧵 Preparing Quilt installation...').start();
     try {
         const manifest = await (0, minecraft_versions_1.fetchMinecraftVersionManifest)();
         const latestMC = manifest.latest.release;
         spinner.stop();
-        const minecraftVersion = await (0, minecraft_versions_1.askForVersion)(manifest.versions, latestMC);
+        const minecraftVersion = version || await (0, minecraft_versions_1.askForVersion)(manifest.versions, latestMC);
         spinner.stop();
         const isVanillaInstalled = (0, vanilla_1.isMinecraftVersionInstalled)(minecraftVersion);
         if (!isVanillaInstalled) {
@@ -56,7 +56,7 @@ async function installQuiltViaExecutor() {
         }
         const installerVersion = await getLatestInstallerVersion();
         const loaderVersions = await getAllLoaderVersions();
-        const { loaderVersion } = await inquirer_1.default.prompt([
+        const { loaderVersion } = loader_ver ? { loaderVersion: loader_ver } : await inquirer_1.default.prompt([
             {
                 type: 'list',
                 name: 'loaderVersion',
@@ -86,6 +86,8 @@ async function installQuiltViaExecutor() {
             'install', 'client', minecraftVersion, loaderVersion,
             `--install-dir=${(0, common_1.minecraft_dir)()}`
         ]);
+        spinner.text = 'Cleaning caches';
+        await (0, common_1.cleanAfterInstall)(INSTALLER_DIR);
         spinner.succeed('🎉 Quilt installed successfully!');
         return {
             name: metadata.name,

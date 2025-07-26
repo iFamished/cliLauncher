@@ -4,7 +4,7 @@ import ora from 'ora';
 import path from 'path';
 import { askForVersion, fetchMinecraftVersionManifest } from '../../../utils/minecraft_versions';
 import { downloader } from '../../../utils/download';
-import { ensureDir, cleanDir, localpath, minecraft_dir, waitForFolder } from '../../../utils/common';
+import { ensureDir, cleanDir, localpath, minecraft_dir, waitForFolder, cleanAfterInstall } from '../../../utils/common';
 import { run as executeJar } from '../../../tools/executor';
 import { ClientJar } from '../../../../types/client';
 import LauncherProfileManager from '../../../tools/launcher';
@@ -15,7 +15,7 @@ import { pathExists, unlinkSync } from 'fs-extra';
 const metadata = {
     name: 'Quilt',
     description: 'A modular, community-driven mod loader for Minecraft.',
-    author: 'QuiltMC'
+    author: 'QuiltMC',
 };
 
 const INSTALLER_BASE = 'https://maven.quiltmc.org/repository/release';
@@ -41,7 +41,7 @@ function getInstallerJarUrl(version: string): string {
     return `${INSTALLER_BASE}/org/quiltmc/quilt-installer/${version}/quilt-installer-${version}.jar`;
 }
 
-export async function installQuiltViaExecutor(): Promise<ClientJar | null> {
+export async function installQuiltViaExecutor(version?: string, loader_ver?: string): Promise<ClientJar | null> {
     const spinner = ora('🧵 Preparing Quilt installation...').start();
 
     try {
@@ -49,7 +49,7 @@ export async function installQuiltViaExecutor(): Promise<ClientJar | null> {
         const latestMC = manifest.latest.release;
         spinner.stop();
 
-        const minecraftVersion = await askForVersion(manifest.versions, latestMC);
+        const minecraftVersion = version || await askForVersion(manifest.versions, latestMC);
 
         spinner.stop();
         const isVanillaInstalled = isMinecraftVersionInstalled(minecraftVersion);
@@ -60,7 +60,7 @@ export async function installQuiltViaExecutor(): Promise<ClientJar | null> {
         const installerVersion = await getLatestInstallerVersion();
 
         const loaderVersions = await getAllLoaderVersions();
-        const { loaderVersion } = await inquirer.prompt([
+        const { loaderVersion } = loader_ver ? { loaderVersion: loader_ver } : await inquirer.prompt([
           {
             type: 'list',
             name: 'loaderVersion',
@@ -98,6 +98,9 @@ export async function installQuiltViaExecutor(): Promise<ClientJar | null> {
             'install', 'client', minecraftVersion, loaderVersion,
             `--install-dir=${minecraft_dir()}`
         ]);
+
+        spinner.text = 'Cleaning caches';
+        await cleanAfterInstall(INSTALLER_DIR);
 
         spinner.succeed('🎉 Quilt installed successfully!');
 

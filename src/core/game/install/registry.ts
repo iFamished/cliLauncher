@@ -5,7 +5,7 @@ import { Metadata } from '../../../types/launcher';
 
 export interface InstallerProvider {
     metadata: Metadata;
-    get(): Promise<ClientJar | null>;
+    get(version?: string, modloader_version?: string): Promise<ClientJar | null>;
 }
 
 export class InstallerRegistry {

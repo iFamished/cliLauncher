@@ -185,7 +185,11 @@ class MCLCore extends events_1.default {
     startMinecraft(launchArguments) {
         if (!this.options || !this.options.overrides)
             return;
-        const minecraft = child_process_1.default.spawn(this.options.javaPath ? this.options.javaPath : 'java', launchArguments, { cwd: this.options.overrides.cwd || this.options.root, detached: this.options.overrides.detached });
+        const minecraft = child_process_1.default.spawn(this.options.javaPath ? this.options.javaPath : 'java', launchArguments, {
+            cwd: this.options.overrides.cwd || this.options.root,
+            detached: this.options.overrides.detached,
+            stdio: ['inherit', 'pipe', 'pipe'],
+        });
         const master = this;
         minecraft.stdout.on('data', parseLogs);
         minecraft.stderr.on('data', parseLogs);

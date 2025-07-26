@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import path from 'path';
 import { downloader } from '../../../utils/download';
-import { ensureDir, cleanDir, localpath, waitForFolder } from '../../../utils/common';
+import { ensureDir, cleanDir, localpath, waitForFolder, cleanAfterInstall } from '../../../utils/common';
 import { run as executeJar } from '../../../tools/executor';
 import { ClientJar } from '../../../../types/client';
 import { ForgeVersions } from '../../../../types/version';
@@ -15,7 +15,6 @@ const metadata = {
     name: 'Forge',
     description: 'A most widely used modding platform for Minecraft Java Edition.',
     author: 'MinecraftForge',
-    jvm: '-Djava.net.preferIPv6Addresses=system',
 };
 
 const FORGE_FILES = 'https://files.minecraftforge.net';
@@ -38,7 +37,7 @@ async function fetchAllForgeVersions(): Promise<ForgeVersions[]> {
 
 const INSTALLER_DIR = path.join(localpath(true), 'forge-client');
 
-async function installForgeViaExecutor(): Promise<ClientJar | null> {
+async function installForgeViaExecutor(version?: string, loader_ver?: string): Promise<ClientJar | null> {
     const spinner = ora('🛠️ Preparing Forge installation...').start();
 
     try {
@@ -47,7 +46,7 @@ async function installForgeViaExecutor(): Promise<ClientJar | null> {
         const latestMC = mcVersions[mcVersions.length - 1];
 
         spinner.stop();
-        const { minecraftVersion } = await inquirer.prompt({
+        const { minecraftVersion } = version ? { minecraftVersion: version } : await inquirer.prompt({
             type: 'list',
             name: 'minecraftVersion',
             message: '🎮 Select Minecraft version:',
@@ -65,7 +64,7 @@ async function installForgeViaExecutor(): Promise<ClientJar | null> {
         if (!forgeEntry) throw new Error(`No Forge versions found for Minecraft ${minecraftVersion}`);
 
         const latestForge = forgeEntry.forge[forgeEntry.forge.length - 1];
-        const { forgeVersion } = await inquirer.prompt({
+        const { forgeVersion } = loader_ver ? { forgeVersion: loader_ver } : await inquirer.prompt({
             type: 'list',
             name: 'forgeVersion',
             message: '🧱 Select Forge version:',
@@ -93,6 +92,9 @@ async function installForgeViaExecutor(): Promise<ClientJar | null> {
         spinner.text = '🚀 Running Forge installer...';
         spinner.stop();
         await executeJar(jarPath, ['--installClient']);
+
+        spinner.text = 'Cleaning caches';
+        await cleanAfterInstall(INSTALLER_DIR);
 
         spinner.succeed('✅ Forge installed successfully!');
         return {

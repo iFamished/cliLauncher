@@ -4,7 +4,7 @@ import ora from 'ora';
 import path from 'path';
 import { askForVersion, fetchMinecraftVersionManifest } from '../../../utils/minecraft_versions';
 import { downloader } from '../../../utils/download';
-import { ensureDir, cleanDir, localpath, minecraft_dir, waitForFolder } from '../../../utils/common';
+import { ensureDir, cleanDir, localpath, minecraft_dir, waitForFolder, cleanAfterInstall } from '../../../utils/common';
 import { run as executeJar } from '../../../tools/executor';
 import { ClientJar } from '../../../../types/client';
 import LauncherProfileManager from '../../../tools/launcher';
@@ -14,8 +14,7 @@ import { isMinecraftVersionInstalled, installVanillaHelper } from '../vanilla';
 const metadata = {
     name: 'Fabric',
     description: 'A lightweight, experimental modding toolchain for Minecraft.',
-    author: 'FabricMC',
-    jvm: '-DFabricMcEmu=net.minecraft.client.main.Main',
+    author: 'FabricMC'
 };
 
 const FABRIC_META = 'https://meta.fabricmc.net/v2';
@@ -37,7 +36,7 @@ async function getInstallerJarUrl(installerVersion: string): Promise<string> {
     return `${FABRIC_MAVEN}/net/fabricmc/fabric-installer/${installerVersion}/fabric-installer-${installerVersion}.jar`;
 }
 
-export async function installFabricViaExecutor(): Promise<ClientJar | null> {
+export async function installFabricViaExecutor(version?: string, loader_ver?: string): Promise<ClientJar | null> {
     const spinner = ora('🧵 Preparing Fabric installation...').start();
 
     try {
@@ -46,7 +45,7 @@ export async function installFabricViaExecutor(): Promise<ClientJar | null> {
 
         spinner.stop()
 
-        const minecraftVersion = await askForVersion(manifest.versions, latestMC);
+        const minecraftVersion = version || await askForVersion(manifest.versions, latestMC);
 
         spinner.stop();
         const isVanillaInstalled = isMinecraftVersionInstalled(minecraftVersion);
@@ -55,7 +54,7 @@ export async function installFabricViaExecutor(): Promise<ClientJar | null> {
         }
 
         const loaderVersions = await getAvailableLoaders();
-        const { loaderVersion } = await inquirer.prompt([
+        const { loaderVersion } = loader_ver ? { loaderVersion: loader_ver } : await inquirer.prompt([
             {
                 type: 'list',
                 name: 'loaderVersion',
@@ -95,6 +94,9 @@ export async function installFabricViaExecutor(): Promise<ClientJar | null> {
             `-loader`, loaderVersion
         ]);
 
+        spinner.text = 'Cleaning caches';
+        await cleanAfterInstall(INSTALLER_DIR);
+        
         spinner.succeed('🎉 Fabric installed successfully!');
 
         return {

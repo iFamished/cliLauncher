@@ -2,7 +2,7 @@ import { ClientJar } from '../../../types/client';
 import { Metadata } from '../../../types/launcher';
 export interface InstallerProvider {
     metadata: Metadata;
-    get(): Promise<ClientJar | null>;
+    get(version?: string, modloader_version?: string): Promise<ClientJar | null>;
 }
 export declare class InstallerRegistry {
     private providers;

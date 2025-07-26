@@ -27,6 +27,56 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
+### \[2.3.0] - 2025-07-27
+
+> 📦 **Modpack Installer**
+
+* 🧪 **Experimental Modpack Installer**
+  * Modpacks can now be installed via the **interactive menu** (`origami menu`)
+  * Supports basic `.mrpack` modpack formats (Modrinth), downloads mods, and sets up loaders
+
+> 🌐 **Profile & Game Directory Improvements**
+
+* 🌐 **Universal Game Directory (Per Profile)**
+  * Previously a **global-only** setting, **Universal Game Directory** can now be enabled **per profile**
+  * Great for cases where some profiles need traditional `.minecraft` behavior, while others prefer isolated folders
+
+* 🛠️ **Fixed Profile Auto Importer**
+  * Now reads `version.json` to determine the correct loader metadata (e.g., Forge, Fabric) instead of guessing from the folder name
+  * Prevents misclassification (e.g., treating Quilt as Fabric)
+
+> 🚀 **Performance & Stability Improvements**
+
+* ⚡ **Parallel Downloading for Non-Assets and Non-Libraries**
+  * Added parallel downloading support to the general file downloader
+  * Assets and libraries already had parallel downloading via **MCLC**, but now this applies to other downloads (e.g., modpacks, custom files)
+
+* 💾 **Safer File Writing**
+  * Fixed downloader to use **temporary files** before renaming to final path
+  * Prevents partial or corrupted files if a download fails or is interrupted
+
+> 🔧 **Loader Compatibility**
+
+* 🛠️ **Improved JVM Flag Handling for Forge + NeoForge**
+  * 🐛 Fixed crashes on certain Forge and NeoForge installs due to missing JVM arguments
+  * Launcher now auto-detects and injects necessary `-D` flags for both loaders
+
+> 🎛️ **Modrinth Filter Enhancements**
+
+* 🎯 **Improved Modrinth Filter Configuration**
+  * Filter settings like page limit, categories, and version matching are now individually configurable
+  * No longer need to reconfigure all filters each time — just change what you want
+  * Improves speed and user control when browsing mods or resource packs
+
+> 📂 **New Extraction System**
+
+* 🗃️ **Streamlined Tar & Zip Extraction**
+  * Rewrote the internal extraction system for `.zip` and `.tar.gz` formats
+  * Ensures reliable decompression using safer stream handling and temporary files
+  * Adds support for progress tracking
+
+---
+
 ### \[2.2.1] - 2025-07-24
 * Fixed readme issues
 
@@ -383,13 +433,3 @@ Some features introduced in these builds may never make it into stable releases.
 * 🎉 Initial stable release
 
 ---
-
-## 📌 Legend
-
-* ✨ Feature
-* 🐛 Bugfix
-* 🔄 Change
-* ⚠️ Deprecation
-* 🧪 Test
-* 🚧 Refactor
-* 🎉 Release

@@ -166,6 +166,9 @@ export class ModrinthProjects {
     private generateModrinthFacets(options: FacetOptions): string[][] {
         const facets: string[][] = [];
 
+        if (options.loaders?.length)
+            facets.push(options.loaders.map(c => `categories:${c}`));
+
         if (options.categories?.length)
             facets.push(options.categories.map(c => `categories:${c}`));
 

@@ -1,11 +1,10 @@
 import { ClientJar } from '../../../../types/client';
-declare function installNeoForgeViaExecutor(): Promise<ClientJar | null>;
+declare function installNeoForgeViaExecutor(version?: string, loader_ver?: string): Promise<ClientJar | null>;
 declare const _default: {
     metadata: {
         name: string;
         description: string;
         author: string;
-        jvm: string;
     };
     get: typeof installNeoForgeViaExecutor;
 };

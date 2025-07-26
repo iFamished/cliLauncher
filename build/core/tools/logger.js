@@ -45,8 +45,10 @@ function formatTime(ms) {
     return parts.join(' ');
 }
 function renderBar(percent, width = 30) {
-    const complete = Math.round(percent * width);
-    const incomplete = width - complete;
+    const maxWidth = process.stdout.columns || 80;
+    const availableWidth = Math.min(width, Math.floor(maxWidth / 2));
+    const complete = Math.round(percent * availableWidth);
+    const incomplete = availableWidth - complete;
     return '█'.repeat(complete) + '░'.repeat(incomplete);
 }
 const MAX_VISIBLE_BARS = 7;

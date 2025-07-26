@@ -43,8 +43,6 @@ const chalk_1 = __importDefault(require("chalk"));
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const os = __importStar(require("os"));
-const tar = __importStar(require("tar"));
-const adm_zip_1 = __importDefault(require("adm-zip"));
 const download_1 = require("../core/utils/download");
 const common_1 = require("../core/utils/common");
 const data_manager = __importStar(require("../core/tools/data_manager"));
@@ -96,14 +94,10 @@ async function extractArchive(filePath, outputDir) {
         fs.mkdirSync(outputDir);
     }
     if (isZip) {
-        const zip = new adm_zip_1.default(filePath);
-        zip.extractAllTo(outputDir, true);
+        await (0, common_1.extractZip)(filePath, outputDir);
     }
     else if (isTarGz) {
-        await tar.x({
-            file: filePath,
-            cwd: outputDir
-        });
+        await (0, common_1.extractTar)(filePath, outputDir);
     }
     else {
         throw new Error('Uh-oh! Unsupported archive format 😿');
@@ -169,7 +163,7 @@ async function main() {
         console.error(`😿 Download failed: ${err.message}`);
         return;
     }
-    const extractSpinner = (0, ora_1.default)(`🎁 Unwrapping your package into ./binaries ...`).start();
+    const extractSpinner = (0, ora_1.default)(`🎁 Unwrapping your package into ./binaries ...`).start().stop();
     try {
         await extractArchive(downloadPath, extractPath);
         await fs.promises.rm(downloadPath, { recursive: true, force: true });

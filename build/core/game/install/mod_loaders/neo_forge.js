@@ -17,7 +17,6 @@ const metadata = {
     name: 'NeoForge',
     description: 'A modern fork of Minecraft Forge, designed to provide a faster, cleaner, and more community-friendly modding experience',
     author: 'NeoForged Project',
-    jvm: "${neoforged}",
 };
 const MAVEN_BASE = 'https://maven.neoforged.net/releases/net/neoforged';
 const METADATA_URL = `${MAVEN_BASE}/neoforge/maven-metadata.xml`;
@@ -54,7 +53,7 @@ async function mapMCtoNeoForge() {
     return map;
 }
 const INSTALL_DIR = path_1.default.join((0, common_1.localpath)(true), 'neoforge-client');
-async function installNeoForgeViaExecutor() {
+async function installNeoForgeViaExecutor(version, loader_ver) {
     const spinner = (0, ora_1.default)('🛠️ Preparing NeoForge installation...').start();
     try {
         const allVersions = await fetchNeoForgeVersions();
@@ -63,7 +62,7 @@ async function installNeoForgeViaExecutor() {
         const mcMap = await mapMCtoNeoForge();
         const mcVersions = Object.keys(mcMap).sort();
         spinner.stop();
-        const { mcVersion } = await inquirer_1.default.prompt({
+        const { mcVersion } = version ? { mcVersion: version } : await inquirer_1.default.prompt({
             type: 'list',
             name: 'mcVersion',
             message: '🎮 Select Minecraft version:',
@@ -77,7 +76,7 @@ async function installNeoForgeViaExecutor() {
         }
         const neoChoices = mcMap[mcVersion];
         const defaultNeo = neoChoices[neoChoices.length - 1];
-        const { neoVersion } = await inquirer_1.default.prompt({
+        const { neoVersion } = loader_ver ? { neoVersion: loader_ver } : await inquirer_1.default.prompt({
             type: 'list',
             name: 'neoVersion',
             message: `🧱 Select NeoForge version for MC ${mcVersion}:`,
@@ -100,6 +99,8 @@ async function installNeoForgeViaExecutor() {
         spinner.text = '🚀 Running NeoForge installer...';
         spinner.stop();
         await (0, executor_1.run)(jarPath, ['--installClient']);
+        spinner.text = 'Cleaning caches';
+        await (0, common_1.cleanAfterInstall)(INSTALL_DIR);
         spinner.succeed('✅ NeoForge installed successfully!');
         return {
             name: metadata.name,

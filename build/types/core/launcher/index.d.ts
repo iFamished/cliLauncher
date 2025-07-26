@@ -5,11 +5,11 @@ import { ILauncherOptions } from "./types";
 export default class MCLCore extends EventEmitter {
     options: ILauncherOptions | null;
     handler: Handler | null;
-    launch(options: ILauncherOptions): Promise<child.ChildProcessWithoutNullStreams | null | undefined>;
+    launch(options: ILauncherOptions): Promise<child.ChildProcessByStdio<null, import("stream").Readable, import("stream").Readable> | null | undefined>;
     printVersion(): void;
     createRootDirectory(): void;
     createGameDirectory(): void;
     extractPackage(): Promise<void>;
     getModifyJson(): Promise<any>;
-    startMinecraft(launchArguments: string[]): child.ChildProcessWithoutNullStreams | undefined;
+    startMinecraft(launchArguments: string[]): child.ChildProcessByStdio<null, import("stream").Readable, import("stream").Readable> | undefined;
 }

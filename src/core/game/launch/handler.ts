@@ -1,7 +1,7 @@
 import { Credentials, IAuthProvider } from "../../../types/account";
-import { LauncherAccount, LauncherProfile } from "../../../types/launcher";
+import { LauncherAccount, LauncherProfile, Metadata } from "../../../types/launcher";
 import LauncherProfileManager from "../../tools/launcher";
-import { async_minecraft_data_dir, ensureDir, minecraft_dir, printVersion } from "../../utils/common";
+import { async_minecraft_data_dir, ensureDir, jsonParser, minecraft_dir, printVersion } from "../../utils/common";
 import { getAuthProvider } from "../account";
 import LauncherAccountManager from "../account/account";
 import path from "path";
@@ -35,14 +35,6 @@ export class Handler {
 
     constructor() {}
 
-    private jsonParser(str: string) {
-        try {
-            return JSON.parse(str);
-        } catch(_) {
-            return {};
-        }
-    }
-
     private launcherToUser(la: LauncherAccount): IUser {
         return {
             access_token: la.access_token,
@@ -51,7 +43,7 @@ export class Handler {
             name: la.name ?? "Origami-User",
             user_properties:
             typeof la.user_properties === "string"
-                ? this.jsonParser(la.user_properties)
+                ? jsonParser(la.user_properties)
                 : la.user_properties ?? {},
 
             meta: la.meta
@@ -67,7 +59,7 @@ export class Handler {
     }
 
     private getVersion(versionJson: string) {
-        let version_data = this.jsonParser(readFileSync(versionJson, { encoding: "utf-8" }));
+        let version_data = jsonParser(readFileSync(versionJson, { encoding: "utf-8" }));
 
         return {
             version: version_data["inheritsFrom"] || version_data["id"],
@@ -172,10 +164,12 @@ export class Handler {
 
         let name = selected_profile?.name || _name;
 
-        if (!_name && (!selected_profile || !name) || !name) {
+        if (!_name && (!selected_profile || !name) || !name || !selected_profile) {
             await logPopupError('Profile Error', chalk.bgHex('#f87171').hex('#fff')(' 💔 No profile selected! ') + chalk.hex('#fca5a5')('Please pick a profile before launching the game.'), true)
             return null;
         }
+
+        let loader = selected_profile.origami.metadata;
 
         if(selected_profile) this.settings.setProfile(selected_profile)
         else this.settings.setProfile();
@@ -183,7 +177,7 @@ export class Handler {
         let version_path = path.join(version_dir, name);
         let version_json = path.join(version_path, `${name}.json`);
 
-        let version_object = this.jsonParser(readFileSync(version_json, { encoding: 'utf-8' }));
+        let version_object = jsonParser(readFileSync(version_json, { encoding: 'utf-8' }));
 
         if(!existsSync(version_path) || !existsSync(version_json)) {
             return null;
@@ -202,7 +196,6 @@ export class Handler {
                 let libraryRoot = path.join(mc_dir, 'libraries')
                 let assetRoot = path.join(mc_dir, 'assets');
                 let version = this.getVersion(version_json);
-                let loader = this.installers.get(this.installers.list().sort((a, b) => b.length - a.length).find(ld => name.toLowerCase().startsWith(ld) || name.toLowerCase().includes(ld)) || 'vanilla');
 
                 let installed_java = await this.getJava(java.path);
                 let java_check = await isJavaCompatible(installed_java, version.version);
@@ -247,8 +240,8 @@ export class Handler {
                     jvmArgs = `${jvmArgs} ${additional_jvm}`
                 }
 
-                if (loader && loader.metadata.unstable) {
-                    logger.warn(`⚠️  Heads up! ${loader.metadata.name} support is a bit wobbly right now — it might break or misbehave 🧪👀`);
+                if (loader && loader.unstable) {
+                    logger.warn(`⚠️  Heads up! ${loader.name} support is a bit wobbly right now — it might break or misbehave 🧪👀`);
                 }
 
                 const getOS = () => {
@@ -259,22 +252,21 @@ export class Handler {
                     }
                 }
 
-                const parseLoaderJVM = (jvm: string, loader: InstallerProvider): string => {
+                const parseLoaderJVM = (loader: Metadata): string => {
                     const separator = getOS() === 'windows' ? ';' : ':';
-                    const neoforged = version_object.arguments?.jvm;
-                    const neoforge_jvm = neoforged && Array.isArray(neoforged) ? neoforged.join(' ') : '';
+                    const args = version_object.arguments?.jvm;
+                    const json_jvm = args && Array.isArray(args) ? args.filter(v => typeof v === 'string').map(v => v.replaceAll('= ', '=')).join(' ') : '';
                     
-                    if(loader.metadata.name.toLowerCase() === 'neoforge') return jvm
-                        .replaceAll('${neoforged}', neoforge_jvm)
+                    if(loader.name.toLowerCase() !== 'vanilla') return json_jvm
                         .replaceAll('${classpath_separator}', separator)
                         .replaceAll('${version_name}', name)
                         .replaceAll('${library_directory}', libraryRoot);
-
-                    return jvm;
+                    
+                    return '';
                 }
 
-                if (loader && loader.metadata.jvm) {
-                    jvmArgs = `${parseLoaderJVM(loader.metadata.jvm, loader)} ${jvmArgs}`;
+                if (loader) {
+                    jvmArgs = `${parseLoaderJVM(loader)} ${jvmArgs}`;
                 }
 
                 let javaPath = java.path;
@@ -504,7 +496,10 @@ export class Handler {
     }
 
     public async delete_profile(): Promise<void> {
-        const profiles = this.profiles.listProfiles().map(id => this.profiles.getProfile(id)).filter(v => typeof v !== 'undefined');
+        const profiles = this.profiles
+            .listProfiles()
+            .map(id => this.profiles.getProfile(id))
+            .filter((p): p is LauncherProfile => !!p);
 
         if (profiles.length === 0) {
             logger.warn("⚠️ No profiles to delete.");
@@ -513,22 +508,29 @@ export class Handler {
 
         const { selected } = await inquirer.prompt([
             {
-                type: "list",
+                type: "checkbox",
                 name: "selected",
-                message: chalk.hex("#f87171")("🗑️ Select a profile/instance to delete:"),
+                message: chalk.hex("#f87171")("🗑️ Select profiles/instances to delete:"),
+                loop: false,
                 choices: profiles.map(p => ({
-                    name: `${p.name} (${p.origami.version || "unknown"})`,
+                    name: `${chalk.hex("#f472b6")(p.name)} ${chalk.gray(`(${p.origami.version || "unknown"})`)}`,
                     value: p
                 }))
             }
         ]);
-        const profile = selected as LauncherProfile;
+
+        const selectedProfiles = selected as LauncherProfile[];
+
+        if (selectedProfiles.length === 0) {
+            logger.log("❌ No profiles selected. Deletion cancelled.");
+            return;
+        }
 
         const { confirm } = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "confirm",
-                message: chalk.red(`Are you sure you want to delete the "${profile.name}" profile and all associated data?`),
+                message: chalk.red(`Are you sure you want to delete ${selectedProfiles.length} profile(s) and their data?`),
                 default: false
             }
         ]);
@@ -541,17 +543,23 @@ export class Handler {
         try {
             const mc_dir = minecraft_dir();
 
-            const version_path = path.join(mc_dir, "versions", profile.origami.path);
-            const instance_path = await async_minecraft_data_dir(profile.origami.path);
+            for (const profile of selectedProfiles) {
+                const version_path = path.join(mc_dir, "versions", profile.origami.path);
+                const instance_path = await async_minecraft_data_dir(profile.origami.path);
 
-            if (existsSync(version_path)) await remove(version_path);
-            if (existsSync(instance_path)) await remove(instance_path);
+                if (existsSync(version_path)) await remove(version_path);
+                if (existsSync(instance_path)) await remove(instance_path);
 
-            this.profiles.deleteProfile(profile.origami.version);
-            logger.success(`🗑️ Successfully deleted profile "${profile.name}" and its data.`);
+                this.profiles.deleteProfile(profile.origami.version);
+
+                logger.success(`✅ Deleted profile: ${chalk.cyan(profile.name)}`);
+            }
+
+            logger.success(`🗑️ Successfully deleted ${selectedProfiles.length} profile(s) and associated data.`);
         } catch (err) {
-            logger.error(`💥 Failed to delete profile "${profile.name}":`, (err as Error).message);
+            logger.error("💥 Failed during profile deletion:", (err as Error).message);
         }
     }
+
 
 }

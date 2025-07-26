@@ -67,26 +67,28 @@ class LauncherProfileManager {
         this.autoImportVanillaProfiles();
     }
     fetchMetadata(folder, versionJsonPath) {
-        const name = folder.toLowerCase();
         const versionJson = (0, fs_extra_1.readJsonSync)(versionJsonPath);
-        const id = versionJson.inheritsFrom || versionJson.id || 'Origami-Imported-' + (0, uuid_1.v4)();
-        if (name.includes('forge')) {
-            return { version: id, metadata: forge_1.default.metadata };
+        const id = versionJson.id || versionJson.inheritsFrom || folder || 'Origami-Imported-' + (0, uuid_1.v4)();
+        const mc = versionJson.inheritsFrom || versionJson.id || folder || 'Origami-Imported-' + (0, uuid_1.v4)();
+        const idLower = id.toLowerCase();
+        const mainClass = (versionJson.mainClass || "").toLowerCase();
+        const libraries = (versionJson.libraries || []).map((lib) => lib.name || "").join(",");
+        if (idLower.includes('neoforge') || libraries.includes('neoforge')) {
+            return { version: id, mc_version: mc, metadata: neo_forge_1.default.metadata };
         }
-        else if (name.includes('neoforge')) {
-            return { version: id, metadata: neo_forge_1.default.metadata };
+        else if (idLower.includes('forge') || mainClass.includes('forge') || libraries.includes('forge')) {
+            return { version: id, mc_version: mc, metadata: forge_1.default.metadata };
         }
-        else if (name.includes('fabric')) {
-            return { version: id, metadata: fabric_1.default.metadata };
+        else if (idLower.includes('quilt') || mainClass.includes('quilt') || libraries.includes('quilt')) {
+            return { version: id, mc_version: mc, metadata: quilt_1.default.metadata };
         }
-        else if (name.includes('quilt')) {
-            return { version: id, metadata: quilt_1.default.metadata };
+        else if (idLower.includes('fabric') || mainClass.includes('fabric') || libraries.includes('fabric')) {
+            return { version: id, mc_version: mc, metadata: fabric_1.default.metadata };
         }
         else {
-            return { version: id, metadata: vanilla_1.default.metadata };
+            return { version: id, mc_version: mc, metadata: vanilla_1.default.metadata };
         }
     }
-    ;
     cleanupProfiles() {
         const versionsDir = path.join((0, common_1.minecraft_dir)(), 'versions');
         const removed = [];
@@ -121,7 +123,7 @@ class LauncherProfileManager {
                 const name = folder;
                 const manifest = this.fetchMetadata(name, versionJsonPath);
                 if (!this.data.origami_profiles[name] || !Object.values(this.data.origami_profiles).find(v => v.name === name)) {
-                    this.addProfile(name, manifest.version, name, manifest.metadata, name, manifest.metadata.name);
+                    this.addProfile(name, manifest.mc_version, name, manifest.metadata, name, manifest.metadata.name);
                     console.log(chalk_1.default.gray(`✔ Imported version: ${name}`));
                 }
             }

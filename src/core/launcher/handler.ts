@@ -14,6 +14,7 @@ import { ORIGAMi_USER_AGENT } from "../../config/defaults"
 import { Agent } from "https"
 import pLimit, { LimitFunction } from 'p-limit';
 import { ensureDir, getSafeConcurrencyLimit, limitedAll } from "../utils/common"
+import { downloadAsync } from "../utils/download"
 
 let counter = 0;
 
@@ -70,74 +71,7 @@ export default class Handler {
         const targetPath = path.join(directory, name);
         ensureDir(directory);
 
-        let attempt = 0;
-
-        while (attempt <= maxRetries) {
-            try {
-                const response = await axios({
-                    url,
-                    method: "GET",
-                    responseType: "stream",
-                    headers: {
-                        "User-Agent": ORIGAMi_USER_AGENT,
-                    },
-                    httpAgent: this.agent,
-                    httpsAgent: this.agent,
-                    timeout: 50000,
-                    maxContentLength: Infinity,
-                    maxBodyLength: Infinity,
-                    validateStatus: (status) => status < 400
-                });
-
-                const totalBytes = parseInt(response.headers["content-length"] || "0", 10);
-                let receivedBytes = 0;
-
-                await new Promise<void>((resolve, reject) => {
-                    const fileStream = fs.createWriteStream(targetPath);
-
-                    response.data.on("data", (chunk: Buffer) => {
-                        receivedBytes += chunk.length;
-                        this.client.emit("download-status", {
-                            name,
-                            type,
-                            current: receivedBytes,
-                            total: totalBytes,
-                        });
-                    });
-
-                    response.data.pipe(fileStream);
-
-                    fileStream.on("finish", () => {
-                        this.client.emit("download", name);
-                        resolve();
-                    });
-
-                    fileStream.on("error", (err) => {
-                        reject(err);
-                    });
-
-                    response.data.on("error", (err: any) => {
-                        reject(err);
-                    });
-                });
-
-                return true;
-            } catch (err: any) {
-                this.client.emit("debug", `[DOWNLOADER]: Failed to download ${url} to ${targetPath}:\n${err.message}`);
-                if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
-                attempt++;
-
-                if (attempt > maxRetries || !retry) {
-                    return { failed: true, asset: null };
-                }
-
-                const wait = 500 * Math.pow(2, attempt - 1);
-                this.client.emit("debug", `[DOWNLOADER]: Retrying download (${attempt}/${maxRetries}) after ${wait}ms...`);
-                await new Promise(res => setTimeout(res, wait));
-            }
-        }
-
-        return { failed: true, asset: null };
+        return downloadAsync(url, targetPath, retry, type, maxRetries, this.agent, this.client);
     }
 
     public checkSum(hash: string, file: string) {

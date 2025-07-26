@@ -18,8 +18,7 @@ const vanilla_1 = require("../vanilla");
 const metadata = {
     name: 'Fabric',
     description: 'A lightweight, experimental modding toolchain for Minecraft.',
-    author: 'FabricMC',
-    jvm: '-DFabricMcEmu=net.minecraft.client.main.Main',
+    author: 'FabricMC'
 };
 const FABRIC_META = 'https://meta.fabricmc.net/v2';
 const FABRIC_MAVEN = `https://maven.fabricmc.net`;
@@ -36,20 +35,20 @@ async function getAvailableLoaders() {
 async function getInstallerJarUrl(installerVersion) {
     return `${FABRIC_MAVEN}/net/fabricmc/fabric-installer/${installerVersion}/fabric-installer-${installerVersion}.jar`;
 }
-async function installFabricViaExecutor() {
+async function installFabricViaExecutor(version, loader_ver) {
     const spinner = (0, ora_1.default)('🧵 Preparing Fabric installation...').start();
     try {
         const manifest = await (0, minecraft_versions_1.fetchMinecraftVersionManifest)();
         const latestMC = manifest.latest.release;
         spinner.stop();
-        const minecraftVersion = await (0, minecraft_versions_1.askForVersion)(manifest.versions, latestMC);
+        const minecraftVersion = version || await (0, minecraft_versions_1.askForVersion)(manifest.versions, latestMC);
         spinner.stop();
         const isVanillaInstalled = (0, vanilla_1.isMinecraftVersionInstalled)(minecraftVersion);
         if (!isVanillaInstalled) {
             await (0, vanilla_1.installVanillaHelper)(minecraftVersion);
         }
         const loaderVersions = await getAvailableLoaders();
-        const { loaderVersion } = await inquirer_1.default.prompt([
+        const { loaderVersion } = loader_ver ? { loaderVersion: loader_ver } : await inquirer_1.default.prompt([
             {
                 type: 'list',
                 name: 'loaderVersion',
@@ -81,6 +80,8 @@ async function installFabricViaExecutor() {
             `-mcversion`, minecraftVersion,
             `-loader`, loaderVersion
         ]);
+        spinner.text = 'Cleaning caches';
+        await (0, common_1.cleanAfterInstall)(INSTALLER_DIR);
         spinner.succeed('🎉 Fabric installed successfully!');
         return {
             name: metadata.name,

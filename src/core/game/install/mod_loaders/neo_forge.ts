@@ -3,7 +3,7 @@ import inquirer from 'inquirer';
 import ora from 'ora';
 import path from 'path';
 import { downloader } from '../../../utils/download';
-import { ensureDir, cleanDir, localpath, waitForFolder } from '../../../utils/common';
+import { ensureDir, cleanDir, localpath, waitForFolder, cleanAfterInstall } from '../../../utils/common';
 import { run as executeJar } from '../../../tools/executor';
 import { ClientJar } from '../../../../types/client';
 import LauncherProfileManager from '../../../tools/launcher';
@@ -14,7 +14,6 @@ const metadata = {
     name: 'NeoForge',
     description: 'A modern fork of Minecraft Forge, designed to provide a faster, cleaner, and more community-friendly modding experience',
     author: 'NeoForged Project',
-    jvm: "${neoforged}",
 };
 
 const MAVEN_BASE = 'https://maven.neoforged.net/releases/net/neoforged';
@@ -62,7 +61,7 @@ async function mapMCtoNeoForge(): Promise<Record<string, string[]>> {
 
 const INSTALL_DIR = path.join(localpath(true), 'neoforge-client');
 
-async function installNeoForgeViaExecutor(): Promise<ClientJar | null> {
+async function installNeoForgeViaExecutor(version?: string, loader_ver?: string): Promise<ClientJar | null> {
     const spinner = ora('🛠️ Preparing NeoForge installation...').start();
     try {
         const allVersions = await fetchNeoForgeVersions();
@@ -72,7 +71,7 @@ async function installNeoForgeViaExecutor(): Promise<ClientJar | null> {
         const mcVersions = Object.keys(mcMap).sort();
         spinner.stop();
 
-        const { mcVersion } = await inquirer.prompt({
+        const { mcVersion } = version ? { mcVersion: version } : await inquirer.prompt({
             type: 'list',
             name: 'mcVersion',
             message: '🎮 Select Minecraft version:',
@@ -89,7 +88,7 @@ async function installNeoForgeViaExecutor(): Promise<ClientJar | null> {
         const neoChoices = mcMap[mcVersion];
         const defaultNeo = neoChoices[neoChoices.length - 1];
 
-        const { neoVersion } = await inquirer.prompt({
+        const { neoVersion } = loader_ver ? { neoVersion: loader_ver } : await inquirer.prompt({
             type: 'list',
             name: 'neoVersion',
             message: `🧱 Select NeoForge version for MC ${mcVersion}:`,
@@ -118,6 +117,9 @@ async function installNeoForgeViaExecutor(): Promise<ClientJar | null> {
         spinner.text = '🚀 Running NeoForge installer...';
         spinner.stop();
         await executeJar(jarPath, ['--installClient']);
+
+        spinner.text = 'Cleaning caches';
+        await cleanAfterInstall(INSTALL_DIR);
 
         spinner.succeed('✅ NeoForge installed successfully!');
         return {

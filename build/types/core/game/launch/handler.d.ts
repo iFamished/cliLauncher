@@ -15,7 +15,6 @@ export declare class Handler {
     private auth_provider;
     private currentAccount;
     constructor();
-    private jsonParser;
     private launcherToUser;
     private getVersion;
     get_auth(): Promise<{

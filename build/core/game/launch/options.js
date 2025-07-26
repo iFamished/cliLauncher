@@ -125,8 +125,6 @@ class LauncherOptionsManager {
             choices.push(new prompts_1.Separator(`-- Global Options --`));
             const allowOffline = (0, data_manager_1.get)('allow:offline_auth');
             choices.push({ name: `Allow Offline Auth [${allowOffline ? 'ENABLED' : 'DISABLED'}]`, value: '__offline_auth' });
-            const universalDataFolder = (0, data_manager_1.get)('universal:dir');
-            choices.push({ name: `Universal Game Directory [${universalDataFolder ? 'ENABLED' : 'DISABLED'}]`, value: '__universal_dir' });
         }
         const global_options = [
             { name: `Memory Settings [min: ${opts.memory?.min ?? '512M'}, max: ${opts.memory?.max ?? '2G'}]`, value: 'memory' },
@@ -138,6 +136,7 @@ class LauncherOptionsManager {
             { name: `Safe Exit [${opts.safe_exit ? 'ENABLED' : 'DISABLED'}]`, value: 'safe_exit' },
             { name: `Max Sockets [${opts.max_sockets ?? 8}]`, value: 'max_sockets' },
             { name: `Parallel Connections [${opts.connections ?? (0, common_1.getSafeConcurrencyLimit)()}]`, value: 'connections' },
+            { name: `Universal Game Directory [${opts.universal_game_dir ? 'ENABLED' : 'DISABLED'}]`, value: 'universal_dir' }
         ];
         const configChoices = await inquirer_1.default.prompt([
             {
@@ -198,23 +197,22 @@ class LauncherOptionsManager {
                     }
                     await java_1.default.select(true, profile.origami.version);
                     break;
+                case 'universal_dir':
+                    let default_univeraal = opts.universal_game_dir;
+                    let universal = await promptBoolean('Universal Game Directory', default_univeraal);
+                    opts.universal_game_dir = universal;
+                    break;
                 case '__offline_auth':
                     console.warn("⚠️  Offline authentication is experimental and not recommended by Mojang.");
                     console.warn("   Use only if you have no internet and understand the risks.\n");
                     let new_setting = await promptBoolean('Allow Offline Authentication?', false);
                     (0, data_manager_1.set)('allow:offline_auth', new_setting);
                     break;
-                case '__universal_dir':
-                    let default_univeraal = (0, data_manager_1.get)('universal:dir') ? true : false;
-                    let universal = await promptBoolean('Universal Game Directory', default_univeraal);
-                    (0, data_manager_1.set)('universal:dir', universal);
-                    break;
                 case '__reset': // 🆕
                     const confirmReset = await promptBoolean('Are you sure you want to reset all settings to default?', false);
                     if (confirmReset) {
                         this.reset();
                         (0, data_manager_1.set)('allow:offline_auth', false);
-                        (0, data_manager_1.set)('universal:dir', false);
                         console.log(chalk_1.default.green('✅ All settings have been reset.'));
                         this.load();
                     }
@@ -240,6 +238,7 @@ class LauncherOptionsManager {
             safe_exit: opts.safe_exit ?? false,
             max_sockets: opts.max_sockets ?? 8,
             connections: opts.connections ?? (0, common_1.getSafeConcurrencyLimit)(),
+            universal_game_dir: opts.universal_game_dir ?? false,
         };
     }
     setOption(key, value) {
