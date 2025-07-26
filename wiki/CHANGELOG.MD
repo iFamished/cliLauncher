@@ -27,7 +27,7 @@ Some features introduced in these builds may never make it into stable releases.
 
 ---
 
-### \[2.3.2] - 2025-07-27
+### \[2.3.3] - 2025-07-27
  * Updated readme
 
 ---

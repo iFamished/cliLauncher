@@ -198,7 +198,7 @@ Navigate using your keyboard to log in, manage accounts, install versions, or la
   Your browser does not support the video tag.
 </video>
 
-[![Demo Video](https://raw.githubusercontent.com/merasugd/origami-launcher/refs/heads/main/wiki/images/new_image.png)](https://github.com/merasugd/origami-launcher/raw/refs/heads/main/wiki/videos/preview.mp4)
+## [Demo Video](https://github.com/merasugd/origami-launcher/raw/refs/heads/main/wiki/videos/preview.mp4)
 
 ---
 
