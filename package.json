@@ -1,7 +1,7 @@
 {
-  "name": "@origami-minecraft/stable",
+  "name": "@clilauncher-minecraft/stable",
   "version": "2.3.4",
-  "description": "Origami is a terminal-first Minecraft launcher that supports authentication, installation, and launching of Minecraft versions — with built-in support for Microsoft accounts, mod loaders, profile management, and more. Designed for power users, modders, and anyone who loves minimalism and productivity.",
+  "description": "cliLauncher is a terminal-first Minecraft launcher that supports authentication, installation, and launching of Minecraft versions — with built-in support for Microsoft accounts, mod loaders, profile management, and more. Designed for power users, modders, and anyone who loves minimalism and productivity.",
   "keywords": [
     "Minecraft",
     "Launcher",
@@ -10,23 +10,23 @@
     "MC",
     "LauncherCore"
   ],
-  "homepage": "https://github.com/merasugd/origami-launcher#readme",
+  "homepage": "https://github.com/merasugd/clilauncher-launcher#readme",
   "bugs": {
-    "url": "https://github.com/merasugd/origami-launcher/issues"
+    "url": "https://github.com/merasugd/clilauncher-launcher/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/merasugd/origami-launcher.git"
+    "url": "git+https://github.com/merasugd/clilauncher-launcher.git"
   },
   "license": "GPL-3.0-only",
   "author": "MerasuGD",
-  "main": "build/cli/origami.js",
+  "main": "build/cli/clilauncher.js",
   "bin": {
-    "origami": "build/cli/origami.js"
+    "clilauncher": "build/cli/clilauncher.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "origami": "npm run compile && node build/cli/origami.js menu",
+    "clilauncher": "npm run compile && node build/cli/clilauncher.js menu",
     "lint": "gts lint",
     "clean": "gts clean",
     "compile": "tsc",
