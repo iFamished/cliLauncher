@@ -17,7 +17,7 @@ const program = new Command();
 const runtime = new Runtime();
 
 program
-    .name('origami')
+    .name('clilauncher')
     .description('✨ Lightweight Minecraft CLI Launcher')
     .version(runtime.version);
 
@@ -107,7 +107,7 @@ function valid_profile(input: string | boolean | string[]) {
     
     if (!list.includes(raw)) {
         throw new Error(
-            `❌ Profile "${raw}" not found.\n\nTip: Run "origami profile --list" to see all profiles.`
+            `❌ Profile "${raw}" not found.\n\nTip: Run "clilauncher profile --list" to see all profiles.`
         );
     }
 
@@ -276,16 +276,16 @@ program
 
 program
     .command('clean')
-    .description('Reset Origami and/or Minecraft data directories')
+    .description('Reset cliLauncher and/or Minecraft data directories')
     .option('--minecraft', 'Reset the .minecraft directory')
-    .option('--origami', 'Reset Origami config/data (e.g. profiles, accounts)')
-    .option('--all', 'Reset everything (same as --minecraft + --origami)')
+    .option('--clilauncher', 'Reset cliLauncher config/data (e.g. profiles, accounts)')
+    .option('--all', 'Reset everything (same as --minecraft + --clilauncher)')
     .action(async (options) => {
         const doMinecraft = options.all || options.minecraft;
-        const doOrigami = options.all || options.origami;
+        const docliLauncher = options.all || options.clilauncher;
 
-        if (!doMinecraft && !doOrigami) {
-            console.log(chalk.red('❌ Please specify what to reset: --minecraft, --origami, or --all'));
+        if (!doMinecraft && !docliLauncher) {
+            console.log(chalk.red('❌ Please specify what to reset: --minecraft, --clilauncher, or --all'));
             process.exit(1);
         }
 
@@ -293,8 +293,8 @@ program
             await runtime.resetMinecraft();
         }
 
-        if (doOrigami) {
-            await runtime.resetOrigami();
+        if (docliLauncher) {
+            await runtime.resetcliLauncher();
         }
 
         console.log(chalk.green('✅ Done!'));
@@ -302,8 +302,8 @@ program
     });
 
 export async function checkForLatestVersion(currentVersion: string) {
-    const stableURL = 'https://registry.npmjs.org/@origami-minecraft/stable';
-    const devURL = 'https://registry.npmjs.org/@origami-minecraft/devbuilds';
+    const stableURL = 'https://registry.npmjs.org/@clilauncher-minecraft/stable';
+    const devURL = 'https://registry.npmjs.org/@clilauncher-minecraft/devbuilds';
 
     try {
         const [stableRes, devRes] = await Promise.all([
@@ -326,17 +326,17 @@ export async function checkForLatestVersion(currentVersion: string) {
         if (!isCurrentDev && cmpStable > 0) {
             console.log(
                 chalk.yellow(`⚠️ A new stable version is available: ${latestStable}\nRun:`),
-                chalk.cyan(`npm install -g @origami-minecraft/stable@${latestStable}`)
+                chalk.cyan(`npm install -g @clilauncher-minecraft/stable@${latestStable}`)
             );
         } else if (isCurrentDev && cmpStable > 0) {
             console.log(
                 chalk.yellow(`⚠️ You're on a dev build (${currentVersion}), but a new stable version is available: ${latestStable}\nRun:`),
-                chalk.cyan(`npm install -g @origami-minecraft/stable@${latestStable}`)
+                chalk.cyan(`npm install -g @clilauncher-minecraft/stable@${latestStable}`)
             );
         } else if (isCurrentDev && cmpDev > 0) {
             console.log(
                 chalk.yellow(`⚠️ A new dev build is available: ${latestDev}\nRun:`),
-                chalk.cyan(`npm install -g @origami-minecraft/devbuilds@${latestDev}`)
+                chalk.cyan(`npm install -g @clilauncher-minecraft/devbuilds@${latestDev}`)
             );
         }
     } catch {
